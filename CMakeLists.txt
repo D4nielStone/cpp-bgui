@@ -6,9 +6,11 @@ set(OUT_DIR ${CMAKE_SOURCE_DIR}/out)
 # include the default library header
 include_directories(
     include
+    libs
     )
 # set the source of the project
 add_executable(TodoListBubble
     source/tlb.cpp
     source/main.cpp
+    libs/glad/glad.c
     )
