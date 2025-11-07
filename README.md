@@ -1,7 +1,11 @@
-# TodoListBubble
-Is a `Todo List` software used to develop the `BubbleGUI` library.
+# **TodoListBubble**
+Is a *Todo List* software used to develop the `BubbleGUI` library.
 
-[![CMake (Linux + Windows MinGW)](https://github.com/D4nielStone/todo_list_bubble/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/D4nielStone/todo_list_bubble/actions/workflows/cmake-multi-platform.yml)
+[![Stars](https://img.shields.io/github/stars/d4nielstone/todo_list_bubble?style=social)](https://github.com/D4nielStone/todo_list_bubble/stargazers)
+[![License](https://img.shields.io/github/license/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/blob/master/LICENSE)
+[![Version](https://img.shields.io/github/v/tag/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/tags)
+[![Issues](https://img.shields.io/github/issues/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/issues)
+[![Discussions](https://img.shields.io/github/discussions/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/discussions)
 
 # Instalation:
 You can find the `binaries` here:
@@ -10,8 +14,17 @@ You can find the `binaries` here:
 
 ---
 
-# Compilation Guide:
 
+
+## **Contributing**
+
+This project is developed mainly on **Linux Mint** using **NeoVim**.
+
+- Pull Requests are **welcome**!
+- For major changes, please open a **discussion/issue** first.
+- Constructive feedback is appreciated.
+
+## **Compilation Guide:**
 ## Windows
 You need:
 
@@ -39,6 +52,7 @@ git clone https://github.com/glfw/glfw.git
 ---
 ## Linux
 You will just need to install `build-essential` and `libglfw3-dev` with your package manager.
+
 **cmake command**:
 ```bash 
 cmake -S . -B out
