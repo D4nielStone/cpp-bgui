@@ -1,20 +1,14 @@
-# **TodoListBubble**
-Is a *Todo List* software used to develop the `BubbleGUI` library.
+# **📝 Todo List Bubble**
 
 [![Stars](https://img.shields.io/github/stars/d4nielstone/todo_list_bubble?style=social)](https://github.com/D4nielStone/todo_list_bubble/stargazers)
 [![License](https://img.shields.io/github/license/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/blob/master/LICENSE)
-[![Version](https://img.shields.io/github/v/tag/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/tags)
-[![Issues](https://img.shields.io/github/issues/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/issues)
-[![Discussions](https://img.shields.io/github/discussions/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/discussions)
+[![GitHub release (latest by tag)](https://img.shields.io/github/v/tag/d4nielstone/todo_list_bubble?style=badge&label=latest)](https://github.com/d4nielstone/todo_list_bubble/releases)
+[![Issues](https://img.shields.io/github/issues/d4nielstone/todo_list_bubble?style=badge&)](https://github.com/D4nielStone/todo_list_bubble/issues)
+[![Discussions](https://img.shields.io/github/discussions/d4nielstone/todo_list_bubble?style=badge&)](https://github.com/D4nielStone/todo_list_bubble/discussions)
 
-# Instalation:
-You can find the `binaries` here:
-
-[![Version](https://img.shields.io/github/v/tag/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/tags)
+A modern, fast and multi-plataform Todo application mada in C++. Made with the Bubble Graphic User Interface :).
 
 ---
-
-
 
 ## **Contributing**
 
