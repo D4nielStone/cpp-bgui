@@ -1,9 +1,12 @@
 # TodoListBubble
 Is a `Todo List` software used to develop the `BubbleGUI` library.
 
+[![CMake (Linux + Windows MinGW)](https://github.com/D4nielStone/todo_list_bubble/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/D4nielStone/todo_list_bubble/actions/workflows/cmake-multi-platform.yml)
+
 # Instalation:
-Install the `binaries` here:
-![latest](https://img.shields.io/github/v/tag/D4nielStone/todo_list_bubble)
+You can find the `binaries` here:
+
+[![Version](https://img.shields.io/github/v/tag/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/tags)
 
 ---
 
