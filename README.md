@@ -20,7 +20,7 @@ This project is developed mainly on **Linux Mint** using **NeoVim**.
 - Constructive feedback is appreciated.
 
 ## **Compilation Guide:**
-## Windows
+## **Windows**
 You need:
 
  - CMake → the build system generator
@@ -45,10 +45,22 @@ git clone https://github.com/glfw/glfw.git
 ```
 
 ---
-## Linux
-You just need to install `build-essential` and `libglfw3-dev` using your package manager.
+## **Linux**
+You just need to install `build-essential` and `glfw` using your package manager.
 
-**cmake command**:
+### **Fedora**
+
+```bash
+dnf install glfw-devel cmake make automake gcc gcc-c++ kernel-devel mesa-libGL-devel mesa-libGLU-devel
+```
+
+### **Debian/Ubuntu**
+
+```bash
+apt install build-essential libglfw3-dev
+```
+
+### **CMake command**:
 ```bash 
 cmake -S . -B out
 cmake --build out

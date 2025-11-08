@@ -1,6 +1,7 @@
 #include <string>
 #include <map>
 #include <utility>
+#include <stdexcept>
 #include "gl/shader.hpp"
 
 static std::map<std::pair<std::string, std::string>, GLuint> shader_cache;

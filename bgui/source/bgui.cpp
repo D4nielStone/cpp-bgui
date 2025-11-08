@@ -58,7 +58,7 @@ GLuint bgui::get_quad_vao() const {
 
 void bgui::clear() const
 {
-    glClearColor(m_clear_color[0], m_clear_color[1], m_clear_color[2], m_clear_color[4]);
+    glClearColor(m_clear_color[0], m_clear_color[1], m_clear_color[2], m_clear_color[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
