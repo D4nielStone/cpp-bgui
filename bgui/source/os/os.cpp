@@ -12,6 +12,7 @@ bgui_utils::vec2i bgui_os::get_window_size() {
             return bgui_utils::vec2i{width, height};
         }
     }
+    return bgui_utils::vec2i{800, 600};
 }
 std::string bgui_os::read_file(const std::string &path) {
     std::ifstream file(path);
