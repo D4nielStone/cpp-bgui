@@ -2,9 +2,11 @@
 #include <map>
 #include <utility>
 #include <stdexcept>
+#include <iostream>
 #include "gl/shader.hpp"
 
 static std::map<std::pair<std::string, std::string>, GLuint> shader_cache;
+using namespace bgl;
 
 shader::shader(const char * vertex_path, const char * fragment_path) {
     compile(vertex_path, fragment_path);
@@ -75,6 +77,32 @@ GLuint shader::compile(GLenum type, const std::string &source) {
     return m_id;
 }
 
+void bgl::shader::set(const std::string& name, const bgl::uniform &u) {
+    std::cout << "new set: " << name << " type: " << std::to_string(u.m_type) << "\n";
+    switch (u.m_type) {
+    case 0x0: // vec2
+        set_vec2(name.c_str(), u.m_value.m_vec2);
+        break;
+    case 0x1: // vec3
+        set_vec3(name.c_str(), u.m_value.m_vec3);
+        break;
+    case 0x2: // vec4
+        set_vec4(name.c_str(), u.m_value.m_vec4);
+        break;
+    case 0x3: // mat4
+        set_mat4(name.c_str(), u.m_value.m_mat4);
+        break;
+    case 0x4: // float
+        set_float(name.c_str(), u.m_value.m_float);
+        break;
+    case 0x5: // int
+        set_int(name.c_str(), u.m_value.m_int);
+        break;
+    
+    default:
+        break;
+    }
+}
 void shader::set_mat4(const char *name, const butil::mat4 matrix) {
     GLint loc = glGetUniformLocation(m_id, name);
     glUniformMatrix4fv(loc, 1, GL_FALSE, matrix.data());

@@ -1,7 +1,9 @@
-#include "element.hpp"
+#include "elem/element.hpp"
 #include "bgui.hpp"
 
 element::element() : m_bounds({0.f, 0.f, 50.f, 50.f}) {
+    set_theme(bgui::instance().get_theme());
+    m_material.m_visible = false;
 }
 
 void element::set_position(int x, int y)
@@ -30,7 +32,7 @@ void element::set_rect(int x, int y, int width, int height) {
     m_bounds[3] = height;
 }
 
-void element::set_shader(const shader & shd) {
+void element::set_shader(const bgl::shader & shd) {
     m_material.m_shader = shd;
 }
 
@@ -46,7 +48,7 @@ int element::get_y() const {
     return m_bounds[1];
 }
  
-shader & element::get_shader() {
+bgl::shader& element::get_shader() {
     return m_material.m_shader;
 }
  
@@ -64,6 +66,7 @@ int element::get_width() const {
 
 
 void element::get_draw_calls(std::vector<draw_call>& calls) {
+    // by default draw just the background
     calls.push_back({m_material, bgui::instance().get_quad_vao(), GL_TRIANGLES, 6,
          m_bounds});
 };

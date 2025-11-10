@@ -53,13 +53,13 @@ You just need to install `build-essential` and `glfw` using your package manager
 ### **Fedora**
 
 ```bash
-dnf install glfw-devel cmake make automake gcc gcc-c++ kernel-devel mesa-libGL-devel mesa-libGLU-devel
+dnf install glfw-devel cmake make freetype-devel automake gcc gcc-c++ kernel-devel mesa-libGL-devel mesa-libGLU-devel
 ```
 
 ### **Debian/Ubuntu**
 
 ```bash
-apt install build-essential libglfw3-dev
+apt install build-essential libglfw3-dev libfreetype6-dev
 ```
 
 ### **CMake command**:

@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include "utils/material.hpp"
+#include "utils/theme.hpp"
 
 // \brief A draw call structure containing the necessary information to render an element.
 struct draw_call {
@@ -12,6 +13,8 @@ struct draw_call {
     GLenum m_mode{GL_TRIANGLES};
     int m_count{6};
     butil::vec4 m_bounds{0.0f, 0.0f, 100.0f, 100.0f};
+    butil::vec2 m_uv_min{0, 0};
+    butil::vec2 m_uv_max{0, 0};
 
     bool operator==(const draw_call& other) const {
         return m_material == other.m_material &&
@@ -35,14 +38,16 @@ public:
     void set_x(int x);
     void set_y(int y);
     void set_rect(int x, int y, int width, int height);
-    void set_shader(const shader& shd);
+    void set_shader(const bgl::shader& shd);
     void set_material(const butil::material& mhd);
+    virtual void set_theme(const butil::theme& theme) {
+    };
     // \brief getters
     int get_x() const;
     int get_y() const;
     int get_width() const;
     int get_height() const;
-    shader& get_shader();
+    bgl::shader& get_shader();
     butil::material& get_material();
 
     virtual void update();

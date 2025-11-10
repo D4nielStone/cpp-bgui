@@ -8,9 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # set the source of the project
 add_library(bgui STATIC
     source/bgui.cpp
-    source/element.cpp
-    source/elements/absolute_layout.cpp
+    source/elem/element.cpp
+    source/elem/absolute_layout.cpp
+    source/elem/text.cpp
     source/os/os.cpp
+    source/os/font.cpp
     source/gl/shader.cpp
     source/utils/material.cpp
     ) 
@@ -29,9 +31,14 @@ target_include_directories(glad PUBLIC
 if(WIN32)
     message(STATUS "Configuring for Windows (WIN32)")
     set(GLFW_LIB "${CMAKE_SOURCE_DIR}/libs/lib/libglfw3.a")
+    set(FT_LIB "${CMAKE_SOURCE_DIR}/libs/lib/libfreetype.a")
 
     if(NOT EXISTS ${GLFW_LIB})
         message(FATAL_ERROR "GLFW static/import library not found: ${GLFW_LIB}")
+    endif()
+
+    if(NOT EXISTS ${FT_LIB})
+        message(FATAL_ERROR "FreeType static/import library not found: ${GLFW_LIB}")
     endif()
 
     target_include_directories(bgui PRIVATE
@@ -43,6 +50,7 @@ if(WIN32)
     # Link by full path and add required system libs
     target_link_libraries(bgui PRIVATE
         ${GLFW_LIB}
+        ${FT_LIB}
         glad
         opengl32
         gdi32
@@ -67,5 +75,6 @@ else()
     target_link_libraries(bgui PUBLIC
         glad
         glfw
+        freetype
     )
 endif()

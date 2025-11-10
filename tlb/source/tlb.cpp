@@ -1,11 +1,14 @@
 #include <iostream>
 #include "tlb.hpp"
 #include "bgui.hpp"
+#include "elem/text.hpp"
 
 GLFWwindow* TLB::m_window = nullptr;
 
 void TLB::config_layout() {
     bgui::instance().init_lib();
+    auto* lay = bgui::instance().get_main_layout();
+    lay->add_element<elements::text>("Todo List Bubble", 48);
 }
 
 void TLB::error(const std::string &msg) {
@@ -25,6 +28,7 @@ void TLB::init_graphics() {
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);    
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     */
+    
     m_window = glfwCreateWindow(400, 600, "Todo List Bubble Application", NULL, NULL);
     if (!m_window) {
         TLB::error("Invalid window");

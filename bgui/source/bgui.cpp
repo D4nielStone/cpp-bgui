@@ -36,6 +36,10 @@ void bgui::set_theme(const butil::theme& gui_theme) {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     // set the theme and update clear color accordingly
     m_theme = gui_theme;
+
+    for(auto& elem : m_main_layout->get_elements()) {
+        elem->set_theme(m_theme);
+    }
 }
 
 butil::theme bgui::get_theme() const {
@@ -114,14 +118,16 @@ void bgui::render(layout &lay) {
     calls.clear();
     lay.get_draw_calls(calls);
 
-    for (draw_call& call : calls) {
-        auto proj = bos::get_projection();
-        auto w_size = bos::get_window_size();
+    const butil::mat4 proj = bos::get_projection();
 
+    for (draw_call& call : calls) {
+        if(!call.m_material.m_visible) continue;
+
+        call.m_material.set("u_rect", call.m_bounds);
+        call.m_material.set("u_uv_min", call.m_uv_min);
+        call.m_material.set("u_uv_max", call.m_uv_max);
+        call.m_material.set("u_projection", proj);
         call.m_material.bind_uniforms();
-        call.m_material.m_shader.set_vec2("u_resolution", {(float)w_size[0], (float)w_size[1]});
-        call.m_material.m_shader.set_vec4("u_rect", call.m_bounds);
-        call.m_material.m_shader.set_mat4("u_projection", proj);
         
         glBindVertexArray(call.m_vao);
         glDrawArrays(call.m_mode, 0, call.m_count);

@@ -29,8 +29,8 @@
 */
 
 #pragma once
-#include "element.hpp"
-#include "elements/absolute_layout.hpp"
+#include "elem/element.hpp"
+#include "elem/absolute_layout.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
 #include "utils/theme.hpp"
@@ -45,7 +45,7 @@ private:
     std::queue<std::function<void()>> m_gl_calls;
     std::unique_ptr<absolute_layout> m_main_layout;
 public:
-    bgui(const butil::theme& theme = butil::light_theme);
+    bgui(const butil::theme& theme = butil::dark_theme);
     ~bgui();
 
     static bgui& instance() {

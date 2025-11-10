@@ -48,6 +48,9 @@ public:
         *this = (*this) * other;
         return *this;
     }
+    bool operator==(const mat<R, C, T>& other) const {
+        return m == other.m;
+    }
 };
 
 // Common aliases

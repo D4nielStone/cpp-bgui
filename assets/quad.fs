@@ -7,17 +7,11 @@ out vec4 FragColor;
 uniform vec4 u_bg_color;
 uniform vec4 u_border_color;
 uniform bool u_bordered;
-uniform bool u_visible;
 uniform float u_border_radius;
 uniform int u_border_size;
-//uniform vec2 u_resolution;     // screen or framebuffer resolution
 uniform vec4 u_rect;
 
 void main() {
-    if(!u_visible) {
-        discard;
-    }
-
     if(u_bordered) {
         vec2 pos = u_rect.zw * Uv;
         vec2 halfSize = u_rect.zw / 2;
