@@ -1,5 +1,11 @@
 #include "elem/absolute_layout.hpp"
 #include "bgui.hpp"
+    
+void absolute_layout::update() {
+    for (auto& elem : m_elements) {
+        elem->update();
+    }
+};
 
 void absolute_layout::get_draw_calls(std::vector<draw_call>& calls) {
     element::get_draw_calls(calls);

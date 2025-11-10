@@ -43,7 +43,7 @@ class bgui {
 private:
     butil::theme m_theme;
     std::queue<std::function<void()>> m_gl_calls;
-    std::unique_ptr<absolute_layout> m_main_layout;
+    std::unique_ptr<layout> m_main_layout;
 public:
     bgui(const butil::theme& theme = butil::dark_theme);
     ~bgui();
@@ -55,7 +55,14 @@ public:
 
     void init_lib();
     void add_gl_call(const std::function<void()>& f);
-    absolute_layout* get_main_layout();
+    layout* get_layout();
+
+    template<typename T, typename... Args>
+    T& set_layout(Args&&... args) {
+        m_main_layout = std::make_unique<T>(std::forward<Args>(args)...);
+        T* ref = dynamic_cast<T*>(m_main_layout.get());
+        return *ref;
+    }
 
     // \{ 
     // style management

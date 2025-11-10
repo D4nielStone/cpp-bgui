@@ -78,7 +78,6 @@ GLuint shader::compile(GLenum type, const std::string &source) {
 }
 
 void bgl::shader::set(const std::string& name, const bgl::uniform &u) {
-    std::cout << "new set: " << name << " type: " << std::to_string(u.m_type) << "\n";
     switch (u.m_type) {
     case 0x0: // vec2
         set_vec2(name.c_str(), u.m_value.m_vec2);

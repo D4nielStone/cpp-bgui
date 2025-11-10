@@ -14,7 +14,7 @@ bgui::~bgui() {
 void bgui::init_lib() {
     init_trigger = true;
     if(!m_main_layout)
-        m_main_layout = std::make_unique<absolute_layout>();
+        set_layout<absolute_layout>();
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -27,12 +27,13 @@ void bgui::add_gl_call(const std::function<void()> &f) {
     m_gl_calls.push(f);
 }
 
-absolute_layout *bgui::get_main_layout() {
+layout *bgui::get_layout() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     return m_main_layout.get();
 }
 
-void bgui::set_theme(const butil::theme& gui_theme) {
+void bgui::set_theme(const butil::theme &gui_theme)
+{
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     // set the theme and update clear color accordingly
     m_theme = gui_theme;

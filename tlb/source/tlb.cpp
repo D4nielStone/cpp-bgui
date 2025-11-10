@@ -2,13 +2,18 @@
 #include "tlb.hpp"
 #include "bgui.hpp"
 #include "elem/text.hpp"
+#include "elem/linear_layout.hpp"
 
 GLFWwindow* TLB::m_window = nullptr;
 
 void TLB::config_layout() {
     bgui::instance().init_lib();
-    auto* lay = bgui::instance().get_main_layout();
-    lay->add_element<elements::text>("Todo List Bubble", 48);
+    
+    auto& lay = bgui::instance().set_layout<linear_layout>(orientation::vertical);
+    lay.add<elements::text>("Todo List Bubble", 36);
+    lay.add<elements::text>("Look", 36);
+    lay.add<elements::text>("Looks fine for me!", 25);
+    lay.set_aligniment(alignment::center);
 }
 
 void TLB::error(const std::string &msg) {
