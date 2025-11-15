@@ -1676,7 +1676,7 @@ FT_BEGIN_HEADER
     TT_Face          face;
     TT_Size          size;
     FT_GlyphSlot     glyph;
-    FT_GlyphLoader   gloader;
+    FT_Glypboxoader   gloader;
 
     FT_ULong         load_flags;
     FT_UInt          glyph_index;

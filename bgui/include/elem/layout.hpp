@@ -19,10 +19,16 @@ protected:
     alignment m_alignment, m_cross_alignment;
     butil::vec<2, unsigned int> m_spacing_elements;
 public:
-    layout() : m_orientation(orientation::horizontal), m_alignment(alignment::start), m_spacing_elements(1) {
-        m_material.m_visible = false;
-    };
+    layout();
     ~layout() = default;
+
+    virtual void set_theme(const butil::theme& theme) {
+        m_material.set("u_bg_color", theme.m_box_color);
+        m_material.set("u_bordered", true);
+        m_material.set("u_border_radius", 5.f);
+        m_material.set("u_border_size", 5.f);
+        m_material.set("u_border_color", theme.m_box_color);
+    };
 
     template<typename T, typename... Args>
     T& add(Args&&... args) {

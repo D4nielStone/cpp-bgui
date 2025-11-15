@@ -11,9 +11,10 @@ add_library(bgui STATIC
     source/elem/element.cpp
     source/elem/absolute_layout.cpp
     source/elem/linear_layout.cpp
+    source/elem/layout.cpp
     source/elem/text.cpp
     source/elem/button.cpp
-    source/elem/hl.cpp
+    source/elem/box.cpp
     source/os/os.cpp
     source/os/font.cpp
     source/gl/shader.cpp

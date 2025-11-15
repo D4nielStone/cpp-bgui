@@ -30,7 +30,7 @@ FT_BEGIN_HEADER
   /**************************************************************************
    *
    * @struct:
-   *   FT_GlyphLoader
+   *   FT_Glypboxoader
    *
    * @description:
    *   The glyph loader is an internal object used to load several glyphs
@@ -47,7 +47,7 @@ FT_BEGIN_HEADER
   } FT_SubGlyphRec;
 
 
-  typedef struct  FT_GlyphLoadRec_
+  typedef struct  FT_GlypboxoadRec_
   {
     FT_Outline   outline;       /* outline                   */
     FT_Vector*   extra_points;  /* extra points table        */
@@ -55,10 +55,10 @@ FT_BEGIN_HEADER
     FT_UInt      num_subglyphs; /* number of subglyphs       */
     FT_SubGlyph  subglyphs;     /* subglyphs                 */
 
-  } FT_GlyphLoadRec, *FT_GlyphLoad;
+  } FT_GlypboxoadRec, *FT_Glypboxoad;
 
 
-  typedef struct  FT_GlyphLoaderRec_
+  typedef struct  FT_GlypboxoaderRec_
   {
     FT_Memory        memory;
     FT_UInt          max_points;
@@ -66,60 +66,60 @@ FT_BEGIN_HEADER
     FT_UInt          max_subglyphs;
     FT_Bool          use_extra;
 
-    FT_GlyphLoadRec  base;
-    FT_GlyphLoadRec  current;
+    FT_GlypboxoadRec  base;
+    FT_GlypboxoadRec  current;
 
     void*            other;            /* for possible future extension? */
 
-  } FT_GlyphLoaderRec, *FT_GlyphLoader;
+  } FT_GlypboxoaderRec, *FT_Glypboxoader;
 
 
   /* create new empty glyph loader */
   FT_BASE( FT_Error )
-  FT_GlyphLoader_New( FT_Memory        memory,
-                      FT_GlyphLoader  *aloader );
+  FT_Glypboxoader_New( FT_Memory        memory,
+                      FT_Glypboxoader  *aloader );
 
   /* add an extra points table to a glyph loader */
   FT_BASE( FT_Error )
-  FT_GlyphLoader_CreateExtra( FT_GlyphLoader  loader );
+  FT_Glypboxoader_CreateExtra( FT_Glypboxoader  loader );
 
   /* destroy a glyph loader */
   FT_BASE( void )
-  FT_GlyphLoader_Done( FT_GlyphLoader  loader );
+  FT_Glypboxoader_Done( FT_Glypboxoader  loader );
 
   /* reset a glyph loader (frees everything int it) */
   FT_BASE( void )
-  FT_GlyphLoader_Reset( FT_GlyphLoader  loader );
+  FT_Glypboxoader_Reset( FT_Glypboxoader  loader );
 
   /* rewind a glyph loader */
   FT_BASE( void )
-  FT_GlyphLoader_Rewind( FT_GlyphLoader  loader );
+  FT_Glypboxoader_Rewind( FT_Glypboxoader  loader );
 
   /* check that there is enough space to add `n_points' and `n_contours' */
   /* to the glyph loader                                                 */
   FT_BASE( FT_Error )
-  FT_GlyphLoader_CheckPoints( FT_GlyphLoader  loader,
+  FT_Glypboxoader_CheckPoints( FT_Glypboxoader  loader,
                               FT_UInt         n_points,
                               FT_UInt         n_contours );
 
 
-#define FT_GLYPHLOADER_CHECK_P( _loader, _count )       \
+#define FT_GLYPboxOADER_CHECK_P( _loader, _count )       \
   ( (_count) == 0                                    || \
     ( (FT_UInt)(_loader)->base.outline.n_points    +    \
       (FT_UInt)(_loader)->current.outline.n_points +    \
       (FT_UInt)(_count) ) <= (_loader)->max_points   )
 
-#define FT_GLYPHLOADER_CHECK_C( _loader, _count )         \
+#define FT_GLYPboxOADER_CHECK_C( _loader, _count )         \
   ( (_count) == 0                                      || \
     ( (FT_UInt)(_loader)->base.outline.n_contours    +    \
       (FT_UInt)(_loader)->current.outline.n_contours +    \
       (FT_UInt)(_count) ) <= (_loader)->max_contours   )
 
-#define FT_GLYPHLOADER_CHECK_POINTS( _loader, _points, _contours ) \
-  ( ( FT_GLYPHLOADER_CHECK_P( _loader, _points )   &&              \
-      FT_GLYPHLOADER_CHECK_C( _loader, _contours ) )               \
+#define FT_GLYPboxOADER_CHECK_POINTS( _loader, _points, _contours ) \
+  ( ( FT_GLYPboxOADER_CHECK_P( _loader, _points )   &&              \
+      FT_GLYPboxOADER_CHECK_C( _loader, _contours ) )               \
     ? 0                                                            \
-    : FT_GlyphLoader_CheckPoints( (_loader),                       \
+    : FT_Glypboxoader_CheckPoints( (_loader),                       \
                                   (FT_UInt)(_points),              \
                                   (FT_UInt)(_contours) ) )
 
@@ -127,16 +127,16 @@ FT_BEGIN_HEADER
   /* check that there is enough space to add `n_subs' sub-glyphs to */
   /* a glyph loader                                                 */
   FT_BASE( FT_Error )
-  FT_GlyphLoader_CheckSubGlyphs( FT_GlyphLoader  loader,
+  FT_Glypboxoader_CheckSubGlyphs( FT_Glypboxoader  loader,
                                  FT_UInt         n_subs );
 
   /* prepare a glyph loader, i.e. empty the current glyph */
   FT_BASE( void )
-  FT_GlyphLoader_Prepare( FT_GlyphLoader  loader );
+  FT_Glypboxoader_Prepare( FT_Glypboxoader  loader );
 
   /* add the current glyph to the base glyph */
   FT_BASE( void )
-  FT_GlyphLoader_Add( FT_GlyphLoader  loader );
+  FT_Glypboxoader_Add( FT_Glypboxoader  loader );
 
 
 FT_END_HEADER

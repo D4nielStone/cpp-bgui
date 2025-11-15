@@ -177,7 +177,7 @@ FT_BEGIN_HEADER
       "addl  %%ecx, %%eax\n"
       "adcl  $0, %%edx\n"
       "shrl  $16, %%eax\n"
-      "shll  $16, %%edx\n"
+      "sboxl  $16, %%edx\n"
       "addl  %%edx, %%eax\n"
       : "=a"(result), "=d"(b)
       : "a"(a), "d"(b)
@@ -196,7 +196,7 @@ FT_BEGIN_HEADER
       add eax, ecx
       adc edx, 0
       shr eax, 16
-      shl edx, 16
+      sbox edx, 16
       add eax, edx
       mov result, eax
     }

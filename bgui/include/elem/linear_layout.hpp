@@ -30,7 +30,7 @@
 
 class linear_layout : public layout {
 public:
-    linear_layout(const orientation& ori);
+    linear_layout(const orientation& ori = orientation::horizontal);
     ~linear_layout() = default;
 
     void update() override;

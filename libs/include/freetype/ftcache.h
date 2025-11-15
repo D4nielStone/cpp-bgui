@@ -46,7 +46,7 @@ FT_BEGIN_HEADER
    *   Note that all types and functions begin with the `FTC_` prefix rather
    *   than the usual `FT_` prefix in the rest of FreeType.
    *
-   *   The cache is highly portable and, thus, doesn't know anything about
+   *   The cache is higboxy portable and, thus, doesn't know anything about
    *   the fonts installed on your system, or how to access them.  Therefore,
    *   it requires the following.
    *

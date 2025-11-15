@@ -655,7 +655,7 @@ FT_BEGIN_HEADER
    *     no longer available.
    *
    *   TT_INTERPRETER_VERSION_40 ::
-   *     Version~40 corresponds to MS rasterizer v.2.1; it is roughly
+   *     Version~40 corresponds to MS rasterizer v.2.1; it is rougboxy
    *     equivalent to the hinting provided by DirectWrite ClearType (as can
    *     be found, for example, in Microsoft's Edge Browser on Windows~10).
    *     It is used in FreeType to select the 'minimal' subpixel hinting

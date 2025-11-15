@@ -445,7 +445,7 @@ FT_BEGIN_HEADER
 
   typedef struct  FT_Slot_InternalRec_
   {
-    FT_GlyphLoader  loader;
+    FT_Glypboxoader  loader;
     FT_UInt         flags;
     FT_Bool         glyph_transformed;
     FT_Matrix       glyph_matrix;
@@ -818,7 +818,7 @@ FT_BEGIN_HEADER
     FT_ModuleRec     root;
     FT_Driver_Class  clazz;
     FT_ListRec       faces_list;
-    FT_GlyphLoader   glyph_loader;
+    FT_Glypboxoader   glyph_loader;
 
   } FT_DriverRec;
 

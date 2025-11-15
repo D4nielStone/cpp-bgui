@@ -29,8 +29,8 @@ protected:
     butil::material m_material;
     // absolute position and size
     butil::vec4 m_bounds;
-    butil::vec<2, unsigned int> m_intern_spacing {0, 0}, m_extern_spacing{0, 0};
 public:
+    butil::vec<2, unsigned int> m_intern_spacing {0, 0}, m_extern_spacing{0, 0};
     element();
     virtual ~element() = default;
     // \brief setters

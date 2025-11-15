@@ -3,21 +3,19 @@
 #include "bgui.hpp"
 #include "elem/text.hpp"
 #include "elem/button.hpp"
-#include "elem/hl.hpp"
+#include "elem/box.hpp"
 #include "elem/linear_layout.hpp"
 
 GLFWwindow* TLB::m_window = nullptr;
 
 void TLB::config_layout() {
     bgui::instance().init_lib();
-    auto& lay = bgui::instance().set_layout<linear_layout>(orientation::vertical);
+    auto& lay = bgui::instance().set_layout<linear_layout>();
 
-    lay.add<elements::text>("Todo", 0.8f);
-    lay.add<elements::hl>();
-    auto& btn = lay.add<elements::button>("new task +", 0.5f, [&](){
-    });
-    btn.set_intern_spacing(16, 0);
-    lay.set_cross_aligniment(alignment::center);
+    // lateral panel
+    auto& p = lay.add<linear_layout>();
+    p.get_material().m_visible = true;
+    p.set_rect(0, 0, 200, 1000);
 }
 
 void TLB::error(const std::string &msg) {

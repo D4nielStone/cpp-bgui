@@ -2,10 +2,10 @@
 #include "element.hpp"
 
 namespace elements {
-    class hl : public element {
+    class box : public element {
     public:
-        hl();
-        ~hl() = default;
+        box();
+        ~box() = default;
 
         void update() override;
         void set_theme(const butil::theme& t) override;

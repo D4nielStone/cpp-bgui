@@ -158,7 +158,7 @@ FT_BEGIN_HEADER
   /**************************************************************************
    *
    * @functype:
-   *   FT_AutoHinter_GlyphLoadFunc
+   *   FT_AutoHinter_GlypboxoadFunc
    *
    * @description:
    *   This function is used to load, scale, and automatically hint a glyph
@@ -182,7 +182,7 @@ FT_BEGIN_HEADER
    *   @FT_LOAD_NO_SCALE set.
    */
   typedef FT_Error
-  (*FT_AutoHinter_GlyphLoadFunc)( FT_AutoHinter  hinter,
+  (*FT_AutoHinter_GlypboxoadFunc)( FT_AutoHinter  hinter,
                                   FT_GlyphSlot   slot,
                                   FT_Size        size,
                                   FT_UInt        glyph_index,
@@ -202,7 +202,7 @@ FT_BEGIN_HEADER
     FT_AutoHinter_GlobalResetFunc  reset_face;
     FT_AutoHinter_GlobalGetFunc    get_global_hints;
     FT_AutoHinter_GlobalDoneFunc   done_global_hints;
-    FT_AutoHinter_GlyphLoadFunc    load_glyph;
+    FT_AutoHinter_GlypboxoadFunc    load_glyph;
 
   } FT_AutoHinter_InterfaceRec, *FT_AutoHinter_Interface;
 

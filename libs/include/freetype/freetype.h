@@ -1726,7 +1726,7 @@ FT_BEGIN_HEADER
    *   handling so that the face is treated as an ordinary outline font with
    *   scalable outlines.
    *
-   *   Here is some pseudo code that roughly illustrates how to implement
+   *   Here is some pseudo code that rougboxy illustrates how to implement
    *   'sbix' handling according to the OpenType specification.
    *
    * ```

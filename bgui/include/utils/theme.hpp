@@ -5,7 +5,7 @@ namespace butil {
     struct theme{
         butil::color m_clear_color;
         butil::color m_text_color;
-        butil::color m_hl_color;
+        butil::color m_box_color;
         butil::color m_button_color;
         butil::color m_button_border_color;
     };
@@ -20,7 +20,7 @@ namespace butil {
     static const theme dark_theme = {
         {0.11f, 0.11f, 0.11f, 1.f},
         {1.f, 1.f, 1.f, 1.f},
-        {0.9f, 0.9f, 0.9f, 1.f},
+        {0.07f, 0.07f, 0.07f, 1.f},
         {0.14f, 0.14f, 0.14f, 1.f},
         {0.2f, 0.2f, 0.2f, 1.f}
     };

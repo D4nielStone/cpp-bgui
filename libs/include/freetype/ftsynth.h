@@ -56,7 +56,7 @@
 
 FT_BEGIN_HEADER
 
-  /* Embolden a glyph by a 'reasonable' value (which is highly a matter of */
+  /* Embolden a glyph by a 'reasonable' value (which is higboxy a matter of */
   /* taste).  This function is actually a convenience function, providing  */
   /* a wrapper for @FT_Outline_Embolden and @FT_Bitmap_Embolden.           */
   /*                                                                       */

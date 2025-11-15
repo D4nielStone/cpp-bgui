@@ -103,7 +103,7 @@ FT_BEGIN_HEADER
    * @values:
    *   FT_STROKER_LINEJOIN_ROUND ::
    *     Used to render rounded line joins.  Circular arcs are used to join
-   *     two lines smoothly.
+   *     two lines smootboxy.
    *
    *   FT_STROKER_LINEJOIN_BEVEL ::
    *     Used to render beveled line joins.  The outer corner of the joined

@@ -574,7 +574,7 @@ FT_BEGIN_HEADER
     FT_Memory       memory;
     FT_Face         face;
     CFF_GlyphSlot   glyph;
-    FT_GlyphLoader  loader;
+    FT_Glypboxoader  loader;
     FT_Outline*     base;
     FT_Outline*     current;
 
@@ -838,7 +838,7 @@ FT_BEGIN_HEADER
     FT_Memory       memory;
     FT_Face         face;
     FT_GlyphSlot    glyph;
-    FT_GlyphLoader  loader;
+    FT_Glypboxoader  loader;
     FT_Outline*     base;
     FT_Outline*     current;
 
@@ -1118,7 +1118,7 @@ FT_BEGIN_HEADER
     FT_Memory       memory;
     TT_Face         face;
     CFF_GlyphSlot   glyph;
-    FT_GlyphLoader  loader;
+    FT_Glypboxoader  loader;
     FT_Outline*     base;
     FT_Outline*     current;
 

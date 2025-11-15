@@ -61,7 +61,7 @@ void linear_layout::update() {
             elem->set_y(ey);
 
             // advance cursor
-            cursor_main += elem->get_height() + spacing;
+            cursor_main += elem->get_height() + spacing + elem->m_extern_spacing[1];
         } else {
             // cross-axis (vertical) alignment for this child
             if (m_cross_alignment == alignment::start)
@@ -79,7 +79,7 @@ void linear_layout::update() {
             elem->set_y(ey);
 
             // advance cursor
-            cursor_main += elem->get_width() + spacing;
+            cursor_main += elem->get_width() + spacing + elem->m_extern_spacing[0];
         }
     }
 }

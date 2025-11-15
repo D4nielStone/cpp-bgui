@@ -63,7 +63,7 @@ FT_BEGIN_HEADER
    *   that are statically linked to the library at compile time.  By
    *   default, this file is `<freetype/config/ftmodule.h>`.
    *
-   * We highly recommend using the third method whenever possible.
+   * We higboxy recommend using the third method whenever possible.
    *
    */
 
@@ -717,7 +717,7 @@ FT_BEGIN_HEADER
    *
    * Apple and MS disagree on the default behavior of component offsets in
    * composites.  Apple says that they should be scaled by the scaling
-   * factors in the transformation matrix (roughly, it's more complex) while
+   * factors in the transformation matrix (rougboxy, it's more complex) while
    * MS says they should not.  OpenType defines two bits in the composite
    * flags array which can be used to disambiguate, but old fonts will not
    * have them.
