@@ -1,7 +1,11 @@
 
 ## **Contributing**
 
+<<<<<<< HEAD
 This project is developed mainly on **Fedora Linux** using **Vscode**.
+=======
+This project is developed mainly on **Linux Mint** using **NeoVim**.
+>>>>>>> f9302d855e4d0291fabada87100ce74b30e995bb
 
 - Pull Requests are **welcome**!
 - For major changes, please open a **discussion/issue** first.
@@ -23,13 +27,18 @@ cmake -S . -B out -G "MinGW Makefiles"
 cmake --build out
 ```
 
+<<<<<<< HEAD
 Clone and compile glfw and freetpye:
+=======
+Don't forget to clone and compile glfw:
+>>>>>>> f9302d855e4d0291fabada87100ce74b30e995bb
 ```bash
 git clone https://github.com/glfw/glfw.git
     cmake -S glfw -B glfw/build -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF
     cmake --build glfw/build --config Release
     mkdir -p libs/lib
     cp glfw/build/src/libglfw3.a libs/lib/
+<<<<<<< HEAD
 
 git clone https://github.com/freetype/freetype.git
     cmake -S freetype -B freetype/build -G "MinGW Makefiles" \
@@ -40,6 +49,8 @@ git clone https://github.com/freetype/freetype.git
     cp freetype/build/libfreetype.a libs/lib/libfreetype.a || cp freetype/build/Release/freetype.a libs/lib/libfreetype.a
     mkdir -p libs/include/freetype
     cp -r freetype/include/* libs/include/freetype/
+=======
+>>>>>>> f9302d855e4d0291fabada87100ce74b30e995bb
 ```
 
 ---

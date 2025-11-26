@@ -11,6 +11,12 @@
 </p>
 <hr>
 
+<<<<<<< HEAD
 🧰 A modern, fast and multi-plataform Todo application made in C++. 
 The main mission is develop the Bubble Graphical User Interface while work in this project!
+=======
+A modern, fast and multi-plataform Todo application made in C++. 
+The mission of this project is develop the Bubble Graphical User Interface to others projects.
+
+>>>>>>> f9302d855e4d0291fabada87100ce74b30e995bb
 ---
