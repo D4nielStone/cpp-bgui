@@ -39,19 +39,19 @@ void layout::pop_modal()
 {
     m_modals.pop();
 }
-void layout::get_draw_calls(std::vector<butil::draw_call> &calls)
+void layout::get_draw_requests(std::vector<butil::draw_request> &calls)
 {
     static bool shader_compiled = false;
     if(!shader_compiled) {
         m_material.m_shader.compile("quad.vs", "quad.fs");
         shader_compiled = true;
     }
-    element::get_draw_calls(calls);
+    element::get_draw_requests(calls);
     // linear layouts get the draw call in addition order
     for (auto& elem : m_elements) {
         elem->set_position(elem->get_x()+get_x(), elem->get_y()+get_y());
-        elem->get_draw_calls(calls);
+        elem->get_draw_requests(calls);
     }
     if(!m_modals.empty())
-        m_modals.front()->get_draw_calls(calls);
+        m_modals.front()->get_draw_requests(calls);
 };

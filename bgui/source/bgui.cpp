@@ -134,7 +134,7 @@ bool bgui::update_inputs(layout &lay){
             if (inside) {
                 elem->on_mouse_hover();
                 if (mouse_click) {
-                    elem->on_pressed();
+                    elem->on_clicked();
                     return true; 
                 }
                 if (mouse_released) {
@@ -166,14 +166,14 @@ void bgui::update(layout &lay) {
 
 void bgui::render(layout &lay) {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
-    static std::vector<butil::draw_call> calls;
+    static std::vector<butil::draw_request> calls;
     calls.clear();
-    lay.get_draw_calls(calls);
+    lay.get_draw_requests(calls);
 
     const butil::mat4 proj = bos::get_projection();
 
     butil::material* last_mat;
-    for (butil::draw_call& call : calls) {
+    for (butil::draw_request& call : calls) {
         if(!call.m_material.m_visible) continue;
         // if the material is the same, skip the color set
         if(*last_mat != call.m_material)

@@ -25,7 +25,7 @@ void elements::text::set_font(const std::string &path) {
     m_font = i.get_font(path);
 }
 
-void elements::text::get_draw_calls(std::vector<butil::draw_call>& calls) {
+void elements::text::get_draw_requests(std::vector<butil::draw_request>& calls) {
     const auto& chs = m_font.chs;
     if (chs.empty()) return;
     float ascent = m_font.ascent * m_scale;

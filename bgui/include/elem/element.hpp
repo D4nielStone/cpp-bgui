@@ -51,8 +51,8 @@ public:
     virtual layout* as_layout() { return nullptr; }
     virtual void update();
     virtual void apply_theme(const butil::theme& theme){};
-    virtual void on_pressed() {};
+    virtual void on_clicked() {};
     virtual void on_released() {};
     virtual void on_mouse_hover() {};
-    virtual void get_draw_calls(std::vector<butil::draw_call>& calls);
+    virtual void get_draw_requests(std::vector<butil::draw_request>& calls);
 };

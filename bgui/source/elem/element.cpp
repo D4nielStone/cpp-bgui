@@ -112,7 +112,7 @@ int element::get_width() const
     return m_bounds[2];
 }
 
-void element::get_draw_calls(std::vector<butil::draw_call>& calls) {
+void element::get_draw_requests(std::vector<butil::draw_request>& calls) {
     static bool shader_compiled = false;
     if(!shader_compiled) {
         m_material.m_shader.compile("quad.vs", "quad.fs");

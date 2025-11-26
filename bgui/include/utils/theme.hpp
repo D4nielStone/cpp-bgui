@@ -4,7 +4,7 @@
 
 namespace butil {
     // \brief A draw call structure containing the necessary information to render an element.
-    struct draw_call {
+    struct draw_request {
         butil::material& m_material;
         GLuint m_vao{0};
         GLenum m_mode{GL_TRIANGLES};
@@ -13,7 +13,7 @@ namespace butil {
         butil::vec2 m_uv_min{0, 0};
         butil::vec2 m_uv_max{0, 0};
 
-        bool operator==(const draw_call& other) const {
+        bool operator==(const draw_request& other) const {
             return m_material == other.m_material &&
                    m_vao == other.m_vao &&
                    m_mode == other.m_mode &&
@@ -37,7 +37,7 @@ namespace butil {
         butil::color m_box_color;
         butil::color m_button_color;
         butil::color m_button_border_color;
-        butil::color m_button_pressed_color;
+        butil::color m_button_clicked_color;
         butil::color m_button_hovered_color;
     };
     

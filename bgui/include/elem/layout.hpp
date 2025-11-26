@@ -46,7 +46,7 @@ public:
         return false;
     }
     void update() override;
-    void get_draw_calls(std::vector<butil::draw_call>& calls);
+    void get_draw_requests(std::vector<butil::draw_request>& calls);
     virtual void fit_to_content();
     std::queue<std::unique_ptr<layout>> &get_modals();
     std::vector<std::unique_ptr<element>>& get_elements();
