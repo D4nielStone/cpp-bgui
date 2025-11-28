@@ -40,6 +40,6 @@
 # debug information files
 *.dwo
 
-out/*
-build/*
+out
+build
 .vscode
