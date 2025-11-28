@@ -1,4 +1,4 @@
-name: CMake (Linux + Windows MinGW)
+name: build
 
 on:
   push:
