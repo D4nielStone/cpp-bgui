@@ -1,4 +1,4 @@
-# **📝 Todo List Bubble**
+# **📝 ToDo List Bubble**
 
 [![Stars](https://img.shields.io/github/stars/d4nielstone/todo_list_bubble?style=social)](https://github.com/D4nielStone/todo_list_bubble/stargazers)
 [![License](https://img.shields.io/github/license/d4nielstone/todo_list_bubble)](https://github.com/D4nielStone/todo_list_bubble/blob/master/LICENSE)
