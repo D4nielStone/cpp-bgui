@@ -15,32 +15,32 @@ void bos::font_manager::search_system_fonts() {
             auto path = entry.path().string();
             if (!(path.ends_with(".ttf") || path.ends_with(".otf")))
                 continue;
-
+/*
             FT_Face face;
             if (!FT_New_Face(ft, path.c_str(), 0, &face)) {
                 std::string family_name  = face->family_name ? face->family_name : "(unknown)";
                 std::string style = face->style_name ? face->style_name : "(unknown)";
                 m_system_fonts[family_name + "-" + style] = path;
                 FT_Done_Face(face);
-            }
+            }*///TODO: implement on backend
         }
     }
 }
 
-bos::font_manager::font_manager() {
+bos::font_manager::font_manager() {/*
     if (FT_Init_FreeType(&ft)) {
         throw std::runtime_error("Error initializing Freetype.");
-    }
+    }*/
     search_system_fonts();
 }
 
 bos::font_manager::~font_manager() {
-    m_fonts.clear();
-    FT_Done_FreeType(ft);
+    m_fonts.clear();/*
+    FT_Done_FreeType(ft);*/
 }
 
-bos::font &bos::font_manager::load_font(const std::string &font_name, const std::string &font_path, FT_UInt resolution) {
-    if (has_font(font_name) && m_fonts[font_name].path == font_path)
+bos::font &bos::font_manager::load_font(const std::string &font_name, const std::string &font_path, unsigned int resolution) {
+    /*if (has_font(font_name) && m_fonts[font_name].path == font_path)
         return m_fonts[font_name];
 
     FT_Face face{};
@@ -124,7 +124,7 @@ bos::font &bos::font_manager::load_font(const std::string &font_name, const std:
     _font.line_gap = (face->size->metrics.height / 64.0f) - (_font.ascent + _font.descent);
 
     m_fonts.emplace(font_name, _font);
-    FT_Done_Face(face);
+    FT_Done_Face(face);*/
     return m_fonts[font_name];
 }
 

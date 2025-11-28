@@ -47,14 +47,53 @@ After initializing the library, you can set the main layout and add UI elements 
 
 ### Example
 
-```cpp
-bgui::init_lib();
+*Using GLFW & Opengl:*
 
-auto& root = bgui::set_layout<blay::relative_layout>(); 
+- Initialize glfw and creates a window
+- Initialize the library
+- Set up the glfw and opengl configs
+
+#### Preset
+
+```cpp
+#include <bgui_backend_glfw.hpp>
+#include <bgui_backend_opengl3.hpp>
+#include <bgui.hpp>
+#include <GLFW/glfw3.h>
+
+if (!glfwInit()) {
+        std::cerr << "Failed to init GLFW\n";
+        return -1;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "BGUI Example", nullptr, nullptr);
+    if (!window) {
+        std::cerr << "Failed to create window\n";
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+    bgui::init_lib();
+
+    bgui_set_opengl3();
+    bgui_set_glfw(window);
+```
+
+- Configure the layout as you want
+
+```cpp
+auto& root = bgui::set_layout<blay::relative>(); 
 // Supported layouts: linear, absolute (base), relative, and more.
 
 // Lateral panel: vertical linear layout
-auto& panel = root.add<blay::linear_layout>(butil::orientation::vertical);
+auto& panel = root.add<blay::linear>(butil::orientation::vertical);
 
 // Cross alignment (horizontal)
 panel.set_cross_alignment(butil::alignment::stretch);
@@ -62,17 +101,26 @@ panel.set_width(300/*, butil::pixel*/); // Pixel is default
 panel.set_height(1.f, butil::relative);
 
 // Adding elements
-panel.add<belem::text>("Hello World!", 0.5f);
+panel.add<bbelem::text>("Hello World!", 0.5f);
 ```
 
 #### Main Loop
 
+> GLFW & Opengl exemple
+
 ```cpp
-bgui::backend::glfw_update_inputs();
-bgui::backend::opengl3_render(
-    bgui::get_draw_requests()
-);
+while (!glfwWindowShouldClose(window)) {
+    glfwPollEvents();
+    bgui_glfw_update_inputs(); // Generates input data
+    bgui::update();
+    bgui_opengl3_render(
+        bgui::get_draw_data() // Generates draw request data
+    );
+    glfwSwapBuffers(window);
+}
 ```
 
 > Note: The final layout and draw state are not stored.
 > They are recalculated every frame and immediately sent to the backend as draw commands.
+
+> Note: The bgui just updates the layout and store draw commands information.

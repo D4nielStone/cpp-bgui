@@ -4,8 +4,9 @@
 #include <vector>
 #include <memory>
 #include "utils/theme.hpp"
+#include "utils/draw.hpp"
 
-class layout;
+namespace blay{class layout;}
 class element {
 protected:
     butil::orientation m_orientation = butil::orientation::horizontal;
@@ -15,6 +16,7 @@ protected:
     bool m_visible {true};
 
     // absolute position and size
+    butil::vec<2, butil::mode> m_size_mode {butil::mode::pixel, butil::mode::pixel};
     butil::vec<2, unsigned int> m_intern_spacing {0, 0}, m_extern_spacing{0, 0}, m_padding{0, 0};
     butil::vec4 m_bounds{0, 0, 20, 20};
 public:
@@ -26,8 +28,8 @@ public:
     void set_padding(int x, int y);
     void set_position(int x, int y);
     void set_size(int width, int height);
-    void set_height(int h);
-    void set_width(int h);
+    void set_height(float h, butil::mode m = butil::mode::pixel);
+    void set_width(float h, butil::mode m = butil::mode::pixel);
     void set_x(int x);
     void set_y(int y);
     void set_rect(int x, int y, int width, int height);
@@ -50,11 +52,11 @@ public:
     butil::material& get_material();
 
     // \brief virtual functions
-    virtual layout* as_layout() { return nullptr; }
+    virtual blay::layout* as_layout() { return nullptr; }
     virtual void update();
     virtual void apply_theme(const butil::theme& theme){};
     virtual void on_clicked() {};
     virtual void on_released() {};
     virtual void on_mouse_hover() {};
-    virtual void get_draw_requests(std::vector<butil::draw_request>& calls);
+    virtual void get_requests(butil::draw_data& calls);
 };

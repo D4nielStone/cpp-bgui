@@ -1,8 +1,9 @@
 #pragma once
 #include "elem/text.hpp"
+#include "utils/draw.hpp"
 #include <functional>
 
-namespace elements {
+namespace belem {
     class button : public element {
     private:
         std::function<void()> m_function;
@@ -15,7 +16,7 @@ namespace elements {
         void on_released() override;
         void on_mouse_hover() override;
         void update() override;
-        void get_draw_requests(std::vector<butil::draw_request>& calls) override;
+        void get_requests(butil::draw_data& calls) override;
         void apply_theme(const butil::theme& t) override;
     };
-} // namespace elements
+} // namespace belem

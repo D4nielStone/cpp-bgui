@@ -13,13 +13,13 @@ bgui::~bgui() {
 
 void bgui::init_lib() {
     init_trigger = true;
-    if(!m_main_layout)
-        set_layout<layout>();
+    if(!instance().m_main_layout)
+        instance().set_layout<blay::layout>();
     /*
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     */
-    apply_theme(m_theme);
+    instance().apply_theme(instance().m_theme);
 }
 
 void bgui::add_call(const std::function<void()> &f) {
@@ -27,7 +27,7 @@ void bgui::add_call(const std::function<void()> &f) {
     m_calls.push(f);
 }
 
-layout *bgui::get_layout() {
+blay::layout *bgui::get_layout() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     return m_main_layout.get();
 }
@@ -86,20 +86,27 @@ void bgui::clear() const {
     glViewport(0, 0, size[0], size[1]);
 }
 */
+butil::draw_data* bgui::get_draw_data() {
+    if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
+    return &instance().m_draw_data;
+}
+bool bgui::shutdown_lib() {
+    return true;
+}
 void bgui::update() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     // the main layout must to be resized based on the window size.
     butil::vec2i w_size = bos::get_window_size();
-    m_main_layout->set_rect(0.f, 0.f, static_cast<float>(w_size[0]), static_cast<float>(w_size[1]));
+    instance().m_main_layout->set_rect(0.f, 0.f, static_cast<float>(w_size[0]), static_cast<float>(w_size[1]));
 
-    update(*m_main_layout);
+    instance().update(*instance().m_main_layout);
 }/*
 void bgui::render() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     render(*m_main_layout);
 }
 */
-bool bgui::update_inputs(layout &lay){
+bool bgui::update_inputs(blay::layout &lay){
     auto m = bos::get_mouse_position();
     float mx = m[0];
     float my = m[1];
@@ -150,7 +157,7 @@ bool bgui::update_inputs(layout &lay){
     }
     return false;
 }
-void bgui::update(layout &lay) {
+void bgui::update(blay::layout &lay) {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     // call gl functions
     while (!m_calls.empty()) {
@@ -167,7 +174,7 @@ void bgui::render(layout &lay) {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     static std::vector<butil::draw_request> calls;
     calls.clear();
-    lay.get_draw_requests(calls);
+    lay.get_requests(calls);
 
     const butil::mat4 proj = bos::get_projection();
 
@@ -176,10 +183,10 @@ void bgui::render(layout &lay) {
         // if the material is the same, skip the color set
         if(*last_mat != call.m_material)
             call.m_material.bind_properties();
-        call.m_material.m_shader.set("u_rect", call.m_bounds);
-        call.m_material.m_shader.set("u_uv_min", call.m_uv_min);
-        call.m_material.m_shader.set("u_uv_max", call.m_uv_max);
-        call.m_material.m_shader.set("u_projection", proj);
+        call.m_material.m_shader.set("rect", call.m_bounds);
+        call.m_material.m_shader.set("uv_min", call.m_uv_min);
+        call.m_material.m_shader.set("uv_max", call.m_uv_max);
+        call.m_material.m_shader.set("projection", proj);
         glBindVertexArray(call.m_vao);
         glDrawArrays(call.m_mode, 0, call.m_count);
         last_mat = &call.m_material;

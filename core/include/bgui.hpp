@@ -20,7 +20,7 @@
             - [] Keyboard inputs will be handled by the focused element.
     -  Render:
         - [] Build the buffer of quad based on the main opengl context. 
-        - [x] Clear the screen with the bgui clear color
+        - [] Clear the screen with the bgui clear color
         - [] Propagate the projection matrix to all elements
         - [] Render all elements base in a z-index order.
         - [] Optimize rendering with techniques like:
@@ -30,7 +30,11 @@
 
 #pragma once
 #include "elem/element.hpp"
-#include "elem/layout.hpp"
+#include "elem/button.hpp"
+#include "elem/text.hpp"
+#include "lay/layout.hpp"
+#include "lay/relative.hpp"
+#include "lay/linear.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
 #include "utils/theme.hpp"
@@ -41,10 +45,11 @@ class bgui {
 private:
     butil::theme m_theme;
     std::queue<std::function<void()>> m_calls;
-    std::unique_ptr<layout> m_main_layout;
+    std::unique_ptr<blay::layout> m_main_layout;
     // input
     bool m_last_mouse_left = false;
 public:
+    butil::draw_data m_draw_data;
     bgui(const butil::theme& theme = butil::light_theme);
     ~bgui();
 
@@ -53,14 +58,13 @@ public:
         return instance;
     }
 
-    void init_lib();
     void add_call(const std::function<void()>& f);
-    layout* get_layout();
+    blay::layout* get_layout();
 
     template<typename T, typename... Args>
-    T& set_layout(Args&&... args) {
-        m_main_layout = std::make_unique<T>(std::forward<Args>(args)...);
-        T* ref = dynamic_cast<T*>(m_main_layout.get());
+    static T& set_layout(Args&&... args) {
+        instance().m_main_layout = std::make_unique<T>(std::forward<Args>(args)...);
+        T* ref = dynamic_cast<T*>(instance().m_main_layout.get());
         return *ref;
     }
 
@@ -73,12 +77,12 @@ public:
     // rendering
     /*
     GLuint get_quad_vao() const;*/
-    void clear() const;
 
-    void update();
-    void render();
-    bool update_inputs(layout & lay);
-    void update(layout &lay);
-    void render(layout& lay);
+    static butil::draw_data* get_draw_data();
+    static void init_lib();
+    static bool shutdown_lib();
+    static void update();
+    bool update_inputs(blay::layout & lay);
+    void update(blay::layout &lay);
     // \}
 };

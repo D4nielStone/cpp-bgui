@@ -1,5 +1,7 @@
-#include "elem/layout.hpp"
+#include "lay/layout.hpp"
 #include "bgui.hpp"
+
+using namespace blay;
 
 layout::layout() : element() {
     m_visible = false;
@@ -39,19 +41,17 @@ void layout::pop_modal()
 {
     m_modals.pop();
 }
-void layout::get_draw_requests(std::vector<butil::draw_request> &calls)
+
+void layout::get_requests(butil::draw_data &data)
 {
-    static bool shader_compiled = false;
-    if(!shader_compiled) {
-        m_material.m_shader.compile("quad.vs", "quad.fs");
-        shader_compiled = true;
-    }
-    element::get_draw_requests(calls);
+    element::get_requests(data);
     // linear layouts get the draw call in addition order
     for (auto& elem : m_elements) {
+        // TODO: final position should not be stored directly in the element and draw requests
+        // shoulds be stored separately
         elem->set_position(elem->get_x()+get_x(), elem->get_y()+get_y());
-        elem->get_draw_requests(calls);
+        elem->get_requests(data);
     }
     if(!m_modals.empty())
-        m_modals.front()->get_draw_requests(calls);
+        m_modals.front()->get_requests(data);
 };

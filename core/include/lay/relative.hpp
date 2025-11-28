@@ -18,22 +18,24 @@
  *
  * Example:
  * @code
- * linear_layout layout(orientation::vertical);
+ * linear layout(orientation::vertical);
  * layout.set_spacing(8);
  * layout.set_alignment(alignment::center);
- * layout.add<elements::text>("My Text", 0.5);
+ * layout.add<belem::text>("My Text", 0.5);
  * @endcode
  */
 
 #pragma once
 #include "layout.hpp"
 
-class linear_layout : public layout {
-public:
-    linear_layout(const butil::orientation& ori = butil::orientation::horizontal);
-    ~linear_layout() = default;
-
-    void update() override;
-    void fit_to_content() override;
-    layout* as_layout() override { return this; }
-};
+namespace blay {
+    class relative : public layout {
+    public:
+        relative(const butil::orientation& ori = butil::orientation::horizontal);
+        ~relative() = default;
+    
+        void update() override;
+        void fit_to_content() override;
+        blay::layout* as_layout() override { return this; }
+    };
+}// namespace lay

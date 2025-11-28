@@ -1,16 +1,17 @@
 
-#include "elem/linear_layout.hpp"
+#include "lay/linear.hpp"
 #include "bgui.hpp"
+using namespace blay;
 
 using namespace butil;
     
-linear_layout::linear_layout(const orientation& ori) {
+linear::linear(const orientation& ori) {
     m_orientation = ori;
     m_visible = false;
-    m_material.m_shader.compile("quad.vs", "quad.fs");
+    m_material.m_shader_tag = "ui::default";
 }
 
-void linear_layout::update() {
+void linear::update() {
     if (m_elements.empty()) return;
 
     layout::update();
@@ -56,7 +57,7 @@ void linear_layout::update() {
             break;
     }
 
-    // Place elements
+    // Place elem
     for (auto& elem : m_elements) {
 
         int cross_pos = 0;
@@ -101,7 +102,7 @@ void linear_layout::update() {
     }
 }
 
-void linear_layout::fit_to_content() {
+void linear::fit_to_content() {
     const bool vertical = (m_orientation == orientation::vertical);
     int max_cross = 0;
     for (auto& elem : m_elements) {

@@ -15,7 +15,7 @@ namespace butil {
     };
 
     struct propertie {
-        uint8_t m_type; /// < the type of the propertie
+        char m_type; /// < the type of the propertie
         any_t m_value;
         // constructors:
         propertie() : m_type(0x5) {m_value.m_int = 0;};

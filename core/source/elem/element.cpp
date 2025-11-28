@@ -31,12 +31,14 @@ void element::set_size(int width, int height) {
     m_bounds[3] = height;
 }
 
-void element::set_height(int h)
+void element::set_height(float h, butil::mode m)
 {
+    m_size_mode[1] = m;
     m_bounds[3] = h;
 }
-void element::set_width(int w)
+void element::set_width(float w, butil::mode m)
 {
+    m_size_mode[0] = m;
     m_bounds[2] = w;
 }
 void element::set_x(int x)
@@ -55,8 +57,8 @@ void element::set_rect(int x, int y, int width, int height) {
     m_bounds[3] = height;
 }
 
-void element::set_shader(const bgl::shader & shd) {
-    m_material.m_shader = shd;
+void element::set_shader_tag(const std::string &shd) {
+    m_material.m_shader_tag = shd;
 }
 
 void element::set_material(const butil::material &mhd) {
@@ -89,8 +91,8 @@ int element::get_y() const {
     return m_bounds[1];
 }
  
-bgl::shader& element::get_shader() {
-    return m_material.m_shader;
+std::string element::get_shader_tag() const {
+    return m_material.m_shader_tag;
 }
  
 butil::material & element::get_material() {
@@ -116,16 +118,10 @@ int element::get_width() const
     return m_bounds[2];
 }
 
-void element::get_draw_requests(std::vector<butil::draw_request>& calls) {
+void element::get_requests(butil::draw_data& data) {
     if(!m_visible) return;
-    static bool shader_compiled = false;
-    if(!shader_compiled) {
-        m_material.m_shader.compile("quad.vs", "quad.fs");
-        shader_compiled = true;
-    }
     // by default draw just the background
-    calls.push_back({m_material, bgui::instance().get_quad_vao(), GL_TRIANGLES, 6,
-         m_bounds});
+    data.m_quad_requests.push_back({m_material, 6, m_bounds});
 };
     
 void element::update() {

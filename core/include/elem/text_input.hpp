@@ -2,7 +2,7 @@
 #include "text.hpp"
 #include <functional>
 
-namespace elements {
+namespace belem {
     /// \brief A text input element.
     /// It allows the user to input text.
     class text_input : public element {
@@ -21,7 +21,7 @@ namespace elements {
         void on_released() override;
         void on_mouse_hover() override;
         void update() override;
-        void get_draw_requests(std::vector<butil::draw_request>& calls) override;
+        void get_requests(butil::draw_data& calls) override;
         void apply_theme(const butil::theme& t) override;
     };
-} // namespace elements
+} // namespace belem

@@ -9,23 +9,23 @@ std::u32string utf8_to_utf32(const std::string& str) {
     return conv.from_bytes(str);
 }
 
-elements::text::text(const std::string &buffer, float scale) : m_buffer(buffer),
+belem::text::text(const std::string &buffer, float scale) : m_buffer(buffer),
     m_font_name("Noto Sans-Condensed"), m_scale(scale) {
     set_font(m_font_name);
     apply_theme(bgui::instance().get_theme());
     m_material.m_use_tex = true;
-    m_material.m_shader.compile("quad.vs", "text.fs");
+    m_material.m_shader_tag = "ui::text";
 }
-elements::text::~text() {
+belem::text::~text() {
 }
-void elements::text::update() {
+void belem::text::update() {
 }
-void elements::text::set_font(const std::string &path) {
+void belem::text::set_font(const std::string &path) {
     auto& i = bos::font_manager::instance();
     m_font = i.get_font(path);
 }
 
-void elements::text::get_draw_requests(std::vector<butil::draw_request>& calls) {
+void belem::text::get_requests(butil::draw_data& data) {
     const auto& chs = m_font.chs;
     if (chs.empty()) return;
     float ascent = m_font.ascent * m_scale;
@@ -37,7 +37,7 @@ void elements::text::get_draw_requests(std::vector<butil::draw_request>& calls) 
     float max_line_width = 0.0f;
     int line_count = 1;
 
-    m_material.m_texture = m_font.atlas;
+    //m_material.m_texture = m_font.atlas; TODO: change to butil::texture
 
     for (char32_t ca : utf8_to_utf32(m_buffer)) {
         if (ca == U'\n') {
@@ -60,8 +60,8 @@ void elements::text::get_draw_requests(std::vector<butil::draw_request>& calls) 
         float w = m_scale * ch.size[0];
         float h = m_scale * ch.size[1];
 
-        calls.push_back({
-            m_material, bgui::instance().get_quad_vao(), GL_TRIANGLES, 6,
+        data.m_quad_requests.push_back({
+            m_material, 6,
             { xpos, ypos, w, -h },
             ch.uv_min, ch.uv_max
         });
