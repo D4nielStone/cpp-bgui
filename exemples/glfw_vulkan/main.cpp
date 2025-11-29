@@ -2,9 +2,9 @@
 #include <iostream>
 
 int main() {
-    GLFWwindow* window = bkend::set_up_glfw(1280, 720, "BGUI GLFW & Opengl3 Exemple");
+    GLFWwindow* window = bkend::set_up_glfw(800, 400, "BGUI GLFW & Vulkan Exemple");
     
-    bkend::set_up_opengl3();
+    bkend::set_up_vulkan();
     bkend::set_up_freetype();
 
     bgui::set_up();
@@ -17,14 +17,14 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         bkend::glfw_update();           // update events
         bgui::update();                 // update layout
-        bkend::opengl3_render(
+        bkend::vulkan_render(
             bgui::get_draw_data()       // render the layout data
         );
         glfwSwapBuffers(window);
     }
 
     bgui::shutdown_lib();
-    bkend::shutdown_opengl3();
+    bkend::shutdown_vulkan();
     bkend::shutdown_freetype();
     bkend::shutdown_glfw();
     return 0;

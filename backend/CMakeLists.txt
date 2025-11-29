@@ -13,6 +13,11 @@ if(BGUI_USE_OPENGL)
     target_link_libraries(bgui_backend INTERFACE bgui_backend_opengl3)
 endif()
 
+if(BGUI_USE_VULKAN)
+    add_subdirectory(vulkan)
+    target_link_libraries(bgui_backend INTERFACE bgui_backend_vulkan)
+endif()
+
 # GLFW backend
 if(BGUI_USE_GLFW)
     add_subdirectory(glfw)

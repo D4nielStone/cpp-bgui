@@ -46,6 +46,8 @@
 #endif
 #ifdef BGUI_USE_OPENGL
     #include "backend/bgui_backend_opengl3.hpp"
+#elif defined(BGUI_USE_VULKAN)
+    #include "backend/bgui_backend_vulkan.hpp"
 #endif
 #ifdef BGUI_USE_FREETYPE
     #include "backend/bgui_backend_freetype.hpp"
@@ -77,20 +79,12 @@ public:
         return *ref;
     }
 
-    // \{ 
-    // style management
     void apply_theme(const butil::theme& gui_theme);
     butil::theme get_theme() const;
-    // \}
-    // \{
-    // rendering
-    //
-
     static butil::draw_data* get_draw_data();
     static void set_up();
     static bool shutdown_lib();
     static void update();
     bool update_inputs(blay::layout & lay);
     void update(blay::layout &lay);
-    // \}
 };

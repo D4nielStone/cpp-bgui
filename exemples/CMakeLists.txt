@@ -1,9 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
-project(exemple_glfw_opengl3 VERSION 1.0 LANGUAGES CXX)
+project(exemples VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(${CMAKE_SOURCE_DIR})
-add_subdirectory(glfw_opengl3)
+if(BGUI_USE_GLFW)
+if(BGUI_USE_OPENGL)
+    add_subdirectory(glfw_opengl3)
+elseif(BGUI_USE_VULKAN)
+    add_subdirectory(glfw_vulkan)
+endif()
+endif()
