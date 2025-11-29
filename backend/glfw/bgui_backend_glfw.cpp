@@ -46,3 +46,7 @@ void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int 
 
     bos::s_input_map[internal_key] = internal_action;
 }
+void bkend::shutdown_glfw() {
+    glfwDestroyWindow(glfwGetCurrentContext());
+    glfwTerminate();
+}

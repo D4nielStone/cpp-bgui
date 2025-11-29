@@ -53,72 +53,65 @@ After initializing the library, you can set the main layout and add UI elements 
 - Initialize the library
 - Set up the glfw and opengl configs
 
-#### Preset
+#### GLFW and Opengl Preset
 
 ```cpp
-#include <bgui_backend_glfw.hpp>
-#include <bgui_backend_opengl3.hpp>
+/* backends are included based on the cmake build settings */
 #include <bgui.hpp>
-#include <GLFW/glfw3.h>
+#include <iostream>
 
-if (!glfwInit()) {
-        std::cerr << "Failed to init GLFW\n";
-        return -1;
-    }
+int main() {
+    bgui::set_up();
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    GLFWwindow* window = bkend::set_up_glfw(1280, 720, "BGUI Exemple");
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "BGUI Example", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create window\n";
-        glfwTerminate();
-        return -1;
-    }
-
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-
-    bgui::initialize_interface();
-
-    bgui_set_opengl3();
-    bgui_set_glfw(window);
+    bkend::set_up_freetype();
+    bkend::set_up_opengl3();
+    [...]
 ```
 
 - Configure the layout as you want
 
 ```cpp
-auto& root = bgui::set_layout<blay::relative>(); 
-// Supported layouts: linear, absolute (base), relative, and more.
 
-// Lateral panel: vertical linear layout
-auto& panel = root.add<blay::linear>(butil::orientation::vertical);
+    auto& root = bgui::set_layout<blay::relative>(butil::orientation::horizontal); 
+    // Supported layouts: linear, absolute (base), relative, and more.
 
-// Cross alignment (horizontal)
-panel.set_cross_alignment(butil::alignment::stretch);
-panel.set_width(300/*, butil::pixel*/); // Pixel is default
-panel.set_height(1.f, butil::relative);
+    // Lateral panel: vertical linear layout
+    auto& panel = root.add<blay::linear>(butil::orientation::vertical);
 
-// Adding elements
-panel.add<bbelem::text>("Hello World!", 0.5f);
+    // Cross alignment (horizontal)
+    panel.set_cross_alignment(butil::alignment::stretch);
+    panel.set_width(300/*, butil::pixel*/); // Pixel is default
+    panel.set_height(1.f, butil::mode::relative);
+
+    // Adding elements
+    panel.add<belem::text>("Hello World!", 0.5f);
 ```
 
 #### Main Loop
 
-> GLFW & Opengl exemple
-
 ```cpp
-while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
-    bgui_glfw_update_inputs(); // Generates input data
-    bgui::update();
-    bgui_opengl3_render(
-        bgui::get_draw_data() // Generates draw request data
-    );
-    glfwSwapBuffers(window);
+    [...]
+    while (!glfwWindowShouldClose(window)) {
+        bkend::glfw_update(); // update events
+        bgui::update();       // update layout
+        bkend::opengl3_render(
+            bgui::get_draw_data() // render the layout data
+        );
+        glfwSwapBuffers(window);
+    }
+
+    // don't forget to clean-up the trash!
+    bgui::shutdown_lib();
+    bkend::shutdown_opengl3();
+    bkend::shutdown_freetype();
+    bkend::shutdown_glfw();
+    return 0;
 }
 ```
+
+---
 
 > Note: The final layout and draw state are not stored.
 > They are recalculated every frame and immediately sent to the backend as draw commands.

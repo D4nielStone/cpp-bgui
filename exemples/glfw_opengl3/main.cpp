@@ -2,7 +2,7 @@
 #include <iostream>
 
 int main() {
-    bgui::initialize_interface();
+    bgui::set_up();
 
     GLFWwindow* window = bkend::set_up_glfw(1280, 720, "BGUI Exemple");
 
@@ -24,22 +24,19 @@ int main() {
     panel.add<belem::text>("Hello World!", 0.5f);
 
     while (!glfwWindowShouldClose(window)) {
-        bkend::glfw_update();
-        bgui::update();
+        bkend::glfw_update(); // update events
+        bgui::update();       // update layout
         bkend::opengl3_render(
-            bgui::get_draw_data()
+            bgui::get_draw_data() // render the layout data
         );
-
         glfwSwapBuffers(window);
     }
 
-    // ============================
-    // CLEANUP
-    // ============================
     bgui::shutdown_lib();
+    bkend::shutdown_opengl3();
     bkend::shutdown_freetype();
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    bkend::shutdown_glfw();
+    return 0;
 
     return 0;
 }

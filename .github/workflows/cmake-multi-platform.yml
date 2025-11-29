@@ -31,33 +31,38 @@ jobs:
       uses: actions/checkout@v4
 
     # -------------------------------
-    # Install Dependencies on Ubuntu
+    # Install vcpkg
     # -------------------------------
-    - name: Install Dependencies on Ubuntu
-      if: matrix.os == 'ubuntu-latest'
+    - name: Install vcpkg
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libglfw3-dev libfreetype6-dev libglew-dev build-essential cmake
+        git clone https://github.com/microsoft/vcpkg.git vcpkg
+        ./vcpkg/bootstrap-vcpkg.sh || .\vcpkg\bootstrap-vcpkg.bat
 
     # -------------------------------
-    # Install Dependencies on Windows (MinGW)
+    # Install dependencies via vcpkg
     # -------------------------------
-    - name: Install Dependencies on Windows
-      if: matrix.os == 'windows-latest'
+    - name: Install libraries with vcpkg
       run: |
-        choco install mingw -y
-        choco install glfw freetype glew -y
-        setx PATH "%PATH%;C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin"
+        ./vcpkg/vcpkg install glfw3 freetype glew
+      shell: bash
+      if: matrix.os == 'ubuntu-latest'
+
+    - name: Install libraries with vcpkg on Windows
+      run: |
+        vcpkg\vcpkg.exe install glfw3 freetype glew
+      if: matrix.os == 'windows-latest'
 
     # -------------------------------
     # Configure CMake
     # -------------------------------
     - name: Configure CMake
-      run: cmake -B build \
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-        -S ${{ github.workspace }}
+      run: |
+        cmake -B build \
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
+          -S ${{ github.workspace }}
 
     # -------------------------------
     # Build Project

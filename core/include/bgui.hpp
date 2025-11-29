@@ -89,7 +89,7 @@ public:
     GLuint get_quad_vao() const;*/
 
     static butil::draw_data* get_draw_data();
-    static void initialize_interface();
+    static void set_up();
     static bool shutdown_lib();
     static void update();
     bool update_inputs(blay::layout & lay);

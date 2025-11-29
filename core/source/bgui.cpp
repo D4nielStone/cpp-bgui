@@ -11,7 +11,7 @@ bgui::bgui(const butil::theme& gui_theme) : m_main_layout(nullptr), m_theme(gui_
 bgui::~bgui() {
 }
 
-void bgui::initialize_interface() {
+void bgui::set_up() {
     init_trigger = true;
     if(!instance().m_main_layout)
         instance().set_layout<blay::layout>();
