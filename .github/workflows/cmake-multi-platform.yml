@@ -62,13 +62,13 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        git clone https://github.com/glfw/glfw.git
-        cmake -S glfw -B glfw/build -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF
-        cmake --build glfw/build --config Release
-        mkdir -p libs/lib
-        cp glfw/build/src/libglfw3.a libs/lib/libglfw3.a
-        mkdir -p libs/include/GLFW
-        cp -r glfw/include/GLFW/* libs/include/GLFW/
+        git clone https://github.com/glfw/glfw.gitgit clone https://github.com/nigels-com/glew.git
+        cd glew
+        mingw32-make
+        mkdir -p ../../libs/lib
+        cp lib/libGLEW.a ../../libs/lib/
+        mkdir -p ../../libs/include/GL
+        cp -r include/GL/* ../../libs/include/GL/
 
     # -------------------------------
     # Build FreeType for Windows
