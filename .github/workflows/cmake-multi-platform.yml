@@ -31,117 +31,43 @@ jobs:
       uses: actions/checkout@v4
 
     # -------------------------------
-    # Ubuntu Dependencies
+    # Install Dependencies on Ubuntu
     # -------------------------------
     - name: Install Dependencies on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libglfw3-dev libfreetype6-dev libglew-dev
+        sudo apt-get install -y libglfw3-dev libfreetype6-dev libglew-dev build-essential cmake
 
     # -------------------------------
-    # Windows Dependencies (MinGW)
+    # Install Dependencies on Windows (MinGW)
     # -------------------------------
-    - name: Install MinGW on Windows
+    - name: Install Dependencies on Windows
       if: matrix.os == 'windows-latest'
       run: |
-        choco install mingw --no-progress --yes
-        echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $env:GITHUB_PATH
-        g++ --version
-
-    - name: Set reusable strings
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        choco install mingw -y
+        choco install glfw freetype glew -y
+        setx PATH "%PATH%;C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin"
 
     # -------------------------------
-    # Build GLFW for Windows
+    # Configure CMake
     # -------------------------------
-    - name: Build GLFW for Windows
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        git clone https://github.com/glfw/glfw.git
-        cmake -S glfw -B glfw/build -G "MinGW Makefiles" -DBUILD_SHARED_LIBS=OFF cmake --build glfw/build --config Release
-        mkdir -p libs/lib 
-        cp glfw/build/src/libglfw3.a libs/lib/libglfw3.a 
-        mkdir -p libs/include/GLFW 
-        cp -r glfw/include/GLFW/* libs/include/GLFW/
-
-    # -------------------------------
-    # Build FreeType for Windows
-    # -------------------------------
-    - name: Build FreeType for Windows
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        git clone https://github.com/freetype/freetype.git
-        cmake -S freetype -B freetype/build -G "MinGW Makefiles" \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF
-        cmake --build freetype/build --config Release
-        mkdir -p libs/lib
-        cp freetype/build/libfreetype.a libs/lib/libfreetype.a || cp freetype/build/Release/freetype.a libs/lib/libfreetype.a
-        mkdir -p libs/include/freetype
-        cp -r freetype/include/* libs/include/freetype/
-
-    # -------------------------------
-    # Build GLEW for Windows
-    # -------------------------------
-    - name: Build GLEW for Windows
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        clone https://github.com/nigels-com/glew.git
-        cd glew
-        mingw32-make
-        mkdir -p ../../libs/lib
-        cp lib/libGLEW.a ../../libs/lib/
-        mkdir -p ../../libs/include/GL
-        cp -r include/GL/* ../../libs/include/GL/
-
-    # -------------------------------
-    # Configure CMake Windows
-    # -------------------------------
-    - name: Configure CMake Windows
-      if: matrix.os == 'windows-latest'
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -G "MinGW Makefiles"
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DFREETYPE_INCLUDE_DIRS="${{ github.workspace }}/libs/include/freetype"
-        -DFREETYPE_LIBRARIES="${{ github.workspace }}/libs/lib/libfreetype.a"
-        -DGLFW_INCLUDE_DIR="${{ github.workspace }}/libs/include"
-        -DGLFW_LIBRARY="${{ github.workspace }}/libs/lib/libglfw3.a"
-        -DGLEW_INCLUDE_DIR="${{ github.workspace }}/libs/include"
-        -DGLEW_LIBRARY="${{ github.workspace }}/libs/lib/libglew.a"
-        -S ${{ github.workspace }}
-
-    # -------------------------------
-    # Configure CMake Ubuntu
-    # -------------------------------
-    - name: Configure CMake Ubuntu
-      if: matrix.os == 'ubuntu-latest'
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+    - name: Configure CMake
+      run: cmake -B build \
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
         -S ${{ github.workspace }}
 
     # -------------------------------
     # Build Project
     # -------------------------------
     - name: Build
-      run: |
-        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: cmake --build build --config ${{ matrix.build_type }}
 
     # -------------------------------
     # Run Tests
     # -------------------------------
     #- name: Run tests
-    #  working-directory: ${{ steps.strings.outputs.build-output-dir }}
+    #  working-directory: build
     #  run: ctest --build-config ${{ matrix.build_type }}
