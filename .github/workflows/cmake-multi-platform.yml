@@ -62,7 +62,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        git clone https://github.com/glfw/glfw.gitgit clone https://github.com/nigels-com/glew.git
+        git clone https://github.com/glfw/glfw.git clone https://github.com/nigels-com/glew.git
         cd glew
         mingw32-make
         mkdir -p ../../libs/lib
