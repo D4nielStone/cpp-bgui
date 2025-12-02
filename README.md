@@ -4,10 +4,10 @@
 
 ---
 
-[![Build Status](https://github.com/D4nielStone/cpp-bgui/workflows/build/badge.svg)](https://github.com/D4nielStone/cpp-bgui/actions?workflow=build-without-backend)
+[![build without backend](https://github.com/D4nielStone/cpp-bgui/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/D4nielStone/cpp-bgui/actions/workflows/cmake-multi-platform.yml)
 [![Stars](https://img.shields.io/github/stars/D4nielStone/cpp-bgui?style=social)](https://github.com/D4nielStone/cpp-bgui/stargazers)
 
-| [Overview](#overview) – [Releases & Changelogs](#releases--changelogs) – [Usage](#usage) |
+| [Overview](#overview) – [Releases & Changelogs](#releases--changelogs) – [Usage](#usage) - [Back End(#back-end) |
 |:--:|
 
 ---
@@ -21,14 +21,14 @@ Bubble GUI is designed (but not limited) to simplify the creation of **web-like 
 
 ### Programming Model
 
-Bubble GUI works with a **retained + immediate** hybrid logic model:
+Bubble GUI works with a **retained** logic model:
 
 | Part          | Model                  |
 | ------------- | ---------------------- |
-| Initial State | Retained               |
-| Layout        | Retained + Immediate   |
-| Rendering     | Immediate              |
-| Final State   | Discarded              |
+| Initial State | Store configuration    |
+| Layout        | Processes positioning  |
+| Rendering     | Render the drawdata queue |
+| Final State   | Store position to compare in future updates |
 
 > The final visual state is calculated only when generating draw commands and is **not stored**.
 
@@ -111,9 +111,15 @@ int main() {
 }
 ```
 
+## Back End
+
+Bubble's GUI is library-agnostic, so if you want to create a system window or render the elements, you must use ***back ends***.
+You'll be able to set these options on the cmake configuration:
+```cmake
+BGUI_USE_OPENGL
+BGUI_USE_GLFW
+BGUI_USE_FREETYPE
+BGUI_USE_VULKAN
+```
+
 ---
-
-> Note: The final layout and draw state are not stored.
-> They are recalculated every frame and immediately sent to the backend as draw commands.
-
-> Note: The bgui just updates the layout and store draw commands information.
