@@ -12,8 +12,7 @@ linear::linear(const orientation& ori) {
 
 void linear::update() {
     if (m_elements.empty()) return;
-
-    layout::update();
+    for(auto& elem : m_elements) elem->update();
 
     const bool vertical = (m_orientation == orientation::vertical);
     const int main_index = vertical ? 1 : 0;
@@ -89,17 +88,16 @@ void linear::update() {
 
         // Set position
         if (vertical) {
-            elem->set_x(cross_pos);
-            elem->set_y(cursor_main);
+            elem->set_x(cross_pos + get_x());
+            elem->set_y(cursor_main + get_y());
         } else {
-            elem->set_x(cursor_main);
-            elem->set_y(cross_pos);
+            elem->set_x(cursor_main + get_x());
+            elem->set_y(cross_pos + get_y());
         }
 
         // Advance in main axis
         cursor_main += elem->get_size()[main_index] + spacing;
     }
-
 }
 
 void linear::fit_to_content() {

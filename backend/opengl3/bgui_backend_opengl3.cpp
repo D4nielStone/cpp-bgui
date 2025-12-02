@@ -83,15 +83,15 @@ static std::string build_texture_cache_key(const bgui::texture& tex) {
 }
 
 /**
- * @brief Verifica se um buffer contém apenas zeros.
- * @param buffer O vetor de bytes a ser verificado.
- * @return true se todos os bytes forem 0, false caso contrário.
+ * @brief Verify if all bytes in the buffer are zero.
+ * @param buffer the buffer
+ * @return true if all the bytes in the buffer are zero, false otherwise.
  */
 static bool is_buffer_all_zeros(const std::vector<unsigned char>& buffer) {
     if (buffer.empty()) return true;
     
-    // Otimização: procura pelo primeiro byte que NÃO é zero.
-    // Se nenhum for encontrado, o buffer é todo zero.
+    // Optimization: look for the first byte that is NOT zero.
+    // If none is found, the buffer is all zeros.
     return std::find_if(buffer.begin(), buffer.end(), [](unsigned char c) {
         return c != 0;
     }) == buffer.end();

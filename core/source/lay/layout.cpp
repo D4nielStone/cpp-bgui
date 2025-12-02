@@ -10,23 +10,14 @@ layout::layout() : element() {
 
 void layout::update() {
     for(auto& elem : m_elements) elem->update();
-
-    if(!m_modals.empty()) {
-        m_modals.front()->update();
-        m_modals.front()->fit_to_content();
-        m_modals.front()->set_position(
-            get_x() + get_width()/2 - m_modals.front()->get_width()/2,
-            get_y() + get_height()/2 - m_modals.front()->get_height()/2
-        );
-    }
 }
 
 void layout::fit_to_content() {
     // fit based on absolute layout
-    int max_width = 0, max_height = 0;
+    unsigned int max_width = 0, max_height = 0;
     for(auto& elem : m_elements) {
-        max_width = std::max(max_width, elem->get_x() + elem->get_width());
-        max_height = std::max(max_height, elem->get_y() + elem->get_height());
+        max_width = std::max(max_width, elem->get_x() + elem->get_width() + m_padding[0]*2);
+        max_height = std::max(max_height, elem->get_y() + elem->get_height() + m_padding[1]*2);
     }
     set_size(max_width, max_height);
 }
@@ -35,23 +26,14 @@ std::vector<std::unique_ptr<element>> &layout::get_elements() {
         return m_elements;
     }
 
-std::queue<std::unique_ptr<layout>> &layout::get_modals() {
-        return m_modals;
-    }
-void layout::pop_modal()
-{
-    m_modals.pop();
-}
-
 void layout::get_requests(bgui::draw_data* data) {
+    // the background quad
     element::get_requests(data);
     // linear layouts get the draw call in addition order
     for (auto& elem : m_elements) {
-        // TODO: final position should not be stored directly in the element and draw requests
-        // shoulds be stored separately
-        elem->set_position(elem->get_x()+get_x(), elem->get_y()+get_y());
+        // get the requests from each element
         elem->get_requests(data);
+        // adjust the bounds to be relative to this layout
+        if(data->m_quad_requests.empty()) continue;
     }
-    if(!m_modals.empty())
-        m_modals.front()->get_requests(data);
 };

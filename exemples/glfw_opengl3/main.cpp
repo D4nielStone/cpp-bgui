@@ -17,14 +17,6 @@ int main() {
     root.add<bgui::text>("Start", 0.5f).set_cross_alignment(bgui::alignment::start);
     root.add<bgui::text>("End", 0.5f).set_cross_alignment(bgui::alignment::end);
     root.add<bgui::text>("Center", 0.5f).set_cross_alignment(bgui::alignment::center);
-    root.add<bgui::button>("BUTTON", 0.5f, [&](){
-        auto& modal = root.new_modal<bgui::linear>(bgui::orientation::vertical);
-        modal.set_visible(true);
-        modal.add<bgui::text>("This is a modal!", 0.5f);
-        modal.add<bgui::button>("Close", 0.5f, [&](){ 
-            root.pop_modal();
-        });
-    }).set_cross_alignment(bgui::alignment::center);
     bgui::apply_theme(bgui::dark_theme);
 
     while (!glfwWindowShouldClose(window)) {

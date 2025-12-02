@@ -6,7 +6,6 @@
 namespace bgui {
     class layout : public element {
     protected:
-        std::queue<std::unique_ptr<layout>> m_modals;
         std::vector<std::unique_ptr<element>> m_elements;
     public:
         layout();
@@ -29,14 +28,6 @@ namespace bgui {
             return ref;
         }
     
-        template<typename T, typename... Args>
-        T& new_modal(Args&&... args) {
-            auto m = std::make_unique<T>(std::forward<Args>(args)...);
-            T& ref = *m;
-            m_modals.push(std::move(m));
-            return ref;
-        }
-    
         bool remove(element* elem) {
             auto it = std::remove_if(m_elements.begin(), m_elements.end(),
                 [elem](const std::unique_ptr<element>& e) { return e.get() == elem; });
@@ -49,9 +40,7 @@ namespace bgui {
         void update() override;
         void get_requests(bgui::draw_data* calls);
         virtual void fit_to_content();
-        std::queue<std::unique_ptr<layout>> &get_modals();
         std::vector<std::unique_ptr<element>>& get_elements();
-        void pop_modal();
         bgui::layout* as_layout() override { return this; }
     };
 } // namespace bgui

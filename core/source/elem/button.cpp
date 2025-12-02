@@ -18,7 +18,7 @@ void bgui::button::update() {
 }
 
 void bgui::button::get_requests(bgui::draw_data* data) {
-    // TODO: should'nt modify position!!
+    // TODO: optimize: avoid re-updateing label position if not changed
     element::get_requests(data);
     switch(m_alignment) {
         case bgui::alignment::start:

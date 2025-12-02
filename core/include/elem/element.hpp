@@ -12,6 +12,7 @@ protected:
     bgui::orientation m_orientation = bgui::orientation::horizontal;
     bgui::alignment m_alignment = bgui::alignment::start, m_cross_alignment = bgui::alignment::start;
     bgui::vec<2, unsigned int> m_spacing_elements{0, 0};
+    element* m_parent {nullptr};
     bgui::material m_material;
     bool m_visible {true};
 
@@ -40,6 +41,7 @@ public:
     void set_orientation(const bgui::orientation& o);
     void set_spacing_elements(const unsigned int a, const unsigned int b);
     void set_visible(bool);
+    void set_parent(element* parent) { m_parent = parent; }
     // \brief getters
     int get_x() const;
     int get_y() const;
@@ -50,6 +52,7 @@ public:
     bgui::vec<2, unsigned int> get_extern_spacing() const;
     std::string get_shader_tag() const;
     bgui::material& get_material();
+    element* get_parent() const { return m_parent; }
 
     // \brief virtual functions
     virtual bgui::layout* as_layout() { return nullptr; }
