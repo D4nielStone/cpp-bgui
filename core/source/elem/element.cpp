@@ -8,19 +8,39 @@ element::element() : m_orientation(orientation::horizontal), m_alignment(alignme
     m_visible = false;
 }
 
-void element::set_extern_spacing(int x, int y) {
-    m_extern_spacing[0] = x;
-    m_extern_spacing[1] = y;
-}
-
-void element::set_padding(int x, int y) {
-    m_padding[0] = x;
-    m_padding[1] = y;
-}
 void element::set_intern_spacing(int x, int y) {
     m_intern_spacing[0] = x;
     m_intern_spacing[1] = y;
+    m_intern_spacing[2] = x;
+    m_intern_spacing[3] = y;
 }
+
+void element::set_margin(int left, int top, int right, int bottom) {
+    m_margin[0] = left;
+    m_margin[1] = top;
+    m_margin[2] = right;
+    m_margin[3] = bottom;
+}
+
+void element::set_margin(int x, int y) {
+    set_margin(x, y, x, y);
+}
+
+void element::set_padding(int left, int top, int right, int bottom) {
+    m_padding[0] = left;
+    m_padding[1] = top;
+    m_padding[2] = right;
+    m_padding[3] = bottom;
+}
+
+void element::set_padding(int x, int y) {
+    set_padding(x, y, x, y);
+}
+
+void element::set_min_width(float w) { m_min_width = w; }
+void element::set_max_width(float w) { m_max_width = w; }
+void element::set_min_height(float h) { m_min_height = h; }
+void element::set_max_height(float h) { m_max_height = h; }
 void element::set_position(int x, int y) {
     m_bounds[0] = x;
     m_bounds[1] = y;
@@ -100,22 +120,68 @@ bgui::material & element::get_material() {
 }
 
 int element::get_height() const {
-   return m_bounds[3];
+   float h = m_bounds[3];
+   switch (m_size_mode[1]) {
+       case bgui::mode::pixel:
+           break;
+       case bgui::mode::relative:
+           if (m_parent) h = (float)m_parent->get_size()[1] * m_bounds[3];
+           break;
+       case bgui::mode::wrap_content:
+           if (as_layout()) {
+               const_cast<bgui::layout*>(as_layout())->fit_to_content();
+               h = m_bounds[3];
+           }
+           break;
+       case bgui::mode::match_parent:
+           if (m_parent) {
+               int parent_h = m_parent->get_size()[1];
+               h = parent_h - (m_margin[1] + m_margin[3]) - (m_parent->m_padding[1] + m_parent->m_padding[3]);
+           }
+           break;
+   }
+   if (m_min_height > 0.f && h < m_min_height) h = m_min_height;
+   if (m_max_height > 0.f && h > m_max_height) h = m_max_height;
+   return (int)h;
 }
 
 bgui::vec2i element::get_size() const {
-    return vec2i{(int)m_bounds[2], (int)m_bounds[3]};
+    int w = (int)m_bounds[2];
+    int h = (int)m_bounds[3];
+    // width
+    switch (m_size_mode[0]) {
+        case bgui::mode::pixel:
+            break;
+        case bgui::mode::relative:
+            if (m_parent) w = (int)((float)m_parent->get_size()[0] * m_bounds[2]);
+            break;
+        case bgui::mode::wrap_content:
+            if (as_layout()) {
+                const_cast<bgui::layout*>(as_layout())->fit_to_content();
+                w = (int)m_bounds[2];
+            }
+            break;
+        case bgui::mode::match_parent:
+            if (m_parent) {
+                int parent_w = m_parent->get_size()[0];
+                w = parent_w - (int)(m_margin[0] + m_margin[2]) - (int)(m_parent->m_padding[0] + m_parent->m_padding[2]);
+            }
+            break;
+    }
+    if (m_min_width > 0.f && w < (int)m_min_width) w = (int)m_min_width;
+    if (m_max_width > 0.f && w > (int)m_max_width) w = (int)m_max_width;
+    return vec2i{w, h};
 }
 bgui::vec2i element::get_position() const {
     return vec2i{(int)m_bounds[0], (int)m_bounds[1]};
 }
-bgui::vec<2, unsigned int> element::get_extern_spacing() const
+bgui::vec<4, unsigned int> element::get_margin() const
 {
-    return m_extern_spacing;
+    return m_margin;
 }
 int element::get_width() const
 {
-    return m_bounds[2];
+    return get_size()[0];
 }
 
 void element::get_requests(bgui::draw_data* data) {

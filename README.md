@@ -7,7 +7,7 @@
 [![build without backend](https://github.com/D4nielStone/cpp-bgui/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/D4nielStone/cpp-bgui/actions/workflows/cmake-multi-platform.yml)
 [![Stars](https://img.shields.io/github/stars/D4nielStone/cpp-bgui?style=social)](https://github.com/D4nielStone/cpp-bgui/stargazers)
 
-| [Overview](#overview) – [Releases & Changelogs](#releases--changelogs) – [Usage](#usage) - [Back End(#back-end) |
+| [Overview](#overview) – [Releases & Changelogs](#releases--changelogs) – [Usage](#usage) - [Back end](#back-end) |
 |:--:|
 
 ---
@@ -110,7 +110,7 @@ int main() {
 }
 ```
 
-## Back End
+## Back end
 
 Bubble's GUI is library-agnostic, so if you want to create a system window or render the elements, you must use ***back ends***.
 You'll be able to set these options on the cmake configuration:
