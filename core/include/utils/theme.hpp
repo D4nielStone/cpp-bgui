@@ -4,8 +4,10 @@
 
 namespace bgui {
     enum class mode {
-        relative,
-        pixel
+        modular,
+        pixel,
+        wrap_content,
+        match_parent
     };
     enum class orientation {
         vertical,

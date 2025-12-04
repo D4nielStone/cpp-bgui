@@ -16,8 +16,8 @@ void layout::fit_to_content() {
     // fit based on absolute layout
     unsigned int max_width = 0, max_height = 0;
     for(auto& elem : m_elements) {
-        max_width = std::max(max_width, elem->get_x() + elem->get_width() + m_padding[0]*2);
-        max_height = std::max(max_height, elem->get_y() + elem->get_height() + m_padding[1]*2);
+        max_width = std::max(max_width, (unsigned int)(elem->get_x() + elem->get_width() + m_padding[0] + m_padding[2]));
+        max_height = std::max(max_height, (unsigned int)(elem->get_y() + elem->get_height() + m_padding[1] + m_padding[3]));
     }
     set_size(max_width, max_height);
 }
@@ -33,7 +33,7 @@ void layout::get_requests(bgui::draw_data* data) {
     for (auto& elem : m_elements) {
         // get the requests from each element
         elem->get_requests(data);
-        // adjust the bounds to be relative to this layout
+        // adjust the bounds to be modular to this layout
         if(data->m_quad_requests.empty()) continue;
     }
 };

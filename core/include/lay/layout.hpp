@@ -1,3 +1,9 @@
+/**
+ * @class Layout
+ * @file layout.hpp
+ * @brief A base layout class that can contain multiple child elements and manage their arrangement.
+ */
+
 #pragma once
 #include "elem/element.hpp"
 #include <algorithm>

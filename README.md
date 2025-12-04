@@ -73,8 +73,8 @@ int main() {
 
 ```cpp
 
-    auto& root = bgui::set_layout<bgui::relative>(bgui::orientation::horizontal); 
-    // Supported layouts: linear, absolute (base), relative, and more.
+    auto& root = bgui::set_layout<bgui::modular>(bgui::orientation::horizontal); 
+    // Supported layouts: linear, absolute (base), modular, and more.
 
     // Lateral panel: vertical linear layout
     auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
