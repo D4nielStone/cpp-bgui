@@ -1,3 +1,8 @@
+/**
+ * @class Layout
+ * @file layout.hpp
+ */
+
 #pragma once
 #include "elem/element.hpp"
 #include <algorithm>

@@ -1,19 +1,19 @@
 /**
- * @class Linear Layout
- * @file linear.hpp
+ * @class Modular Layout
+ * @file modular.hpp
  */
 
 #pragma once
 #include "layout.hpp"
 
 namespace bgui {
-    class linear : public layout {
+    class modular : public layout {
     public:
-        linear(const bgui::orientation& ori = bgui::orientation::horizontal);
-        ~linear() = default;
+        modular(const bgui::orientation& ori = bgui::orientation::horizontal);
+        ~modular() = default;
     
         void update() override;
         void fit_to_content() override;
         bgui::layout* as_layout() override { return this; }
     };
-}// namespace bgui
+}// namespace lay

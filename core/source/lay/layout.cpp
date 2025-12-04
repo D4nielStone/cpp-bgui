@@ -33,7 +33,7 @@ void layout::get_requests(bgui::draw_data* data) {
     for (auto& elem : m_elements) {
         // get the requests from each element
         elem->get_requests(data);
-        // adjust the bounds to be relative to this layout
+        // adjust the bounds to be modular to this layout
         if(data->m_quad_requests.empty()) continue;
     }
 };

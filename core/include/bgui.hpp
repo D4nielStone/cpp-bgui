@@ -10,7 +10,7 @@
          normal elements < modal.
         - [] Types of layouts to be supported:
             - [] Absolute layout (uses the x, y, width, height directly)
-            - [] Relative layout (percentage based positioning and sizing relative to parent)
+            - [] modular layout (percentage based positioning and sizing modular to parent)
             - [] Linear layout (horizontal/vertical)
             - [] Grid layout (organize elements in a grid with a `grid_size_rule` to define how the grid cells are sized)
         - [] Update the style of the elements base on the current theme
@@ -33,7 +33,7 @@
 #include "elem/button.hpp"
 #include "elem/text.hpp"
 #include "lay/layout.hpp"
-#include "lay/relative.hpp"
+#include "lay/modular.hpp"
 #include "lay/linear.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"

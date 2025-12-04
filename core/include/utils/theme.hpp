@@ -4,7 +4,7 @@
 
 namespace bgui {
     enum class mode {
-        relative,
+        modular,
         pixel
     };
     enum class orientation {

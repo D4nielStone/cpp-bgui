@@ -73,8 +73,8 @@ int main() {
 
 ```cpp
 
-    auto& root = bgui::set_layout<bgui::relative>(bgui::orientation::horizontal); 
-    // Supported layouts: linear, absolute (base), relative, and more.
+    auto& root = bgui::set_layout<bgui::modular>(bgui::orientation::horizontal); 
+    // Supported layouts: linear, absolute (base), modular, and more.
 
     // Lateral panel: vertical linear layout
     auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
@@ -82,7 +82,7 @@ int main() {
     // Cross alignment (horizontal)
     panel.set_cross_alignment(bgui::alignment::stretch);
     panel.set_width(300/*, bgui::pixel*/); // Pixel is default
-    panel.set_height(1.f, bgui::mode::relative);
+    panel.set_height(1.f, bgui::mode::modular);
 
     // Adding elements
     panel.add<bgui::text>("Hello World!", 0.5f);
