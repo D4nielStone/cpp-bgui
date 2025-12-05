@@ -10,8 +10,8 @@ layout::layout() : element() {
 
 void layout::update() {
     for(auto& elem : m_elements) {
-        elem->update();
         elem->update_size(processed_size());
+        elem->update();
     }
 }
 

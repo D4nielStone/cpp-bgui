@@ -11,18 +11,54 @@ linear::linear(const orientation& ori) : m_orientation(ori) {
 void linear::update() {
     if (m_elements.empty()) return;
 
-    // updates the logic and size of child elements
-    for(auto& elem : m_elements) {
-        // process the requested size based on the available size.
-        elem->update_size(processed_size() - vec2i{
-            get_padding()[0] + get_padding()[2],
-            get_padding()[1] + get_padding()[3]
-            });
-    }
+    vec2i avalaible_size = processed_size() - vec2i({
+        m_padding[0] + m_padding[2],
+        m_padding[1] + m_padding[3]
+    });
+    int m_stretch_count = 0;
+    float total_fixed_size = 0.f;
+
 
     const bool vertical = (m_orientation == orientation::vertical);
+    // compute available size along MAIN direction
     const int main_index = vertical ? 1 : 0;
     const int cross_index = vertical ? 0 : 1;
+
+    int stretch_count = 0;
+    float fixed_total = 0;
+
+    // PREPASS: measure non-stretch elements
+    for (auto& elem : m_elements) {
+        auto mode = elem->get_requested_mode()[main_index];
+
+        if (mode == mode::pixel || mode == mode::wrap_content) {
+            elem->update_size(avalaible_size);
+            fixed_total += elem->processed_size()[main_index];
+        }
+        else if (mode == mode::stretch || mode == mode::match_parent) {
+            stretch_count++;
+        }
+    }
+
+    // compute stretch size
+    float stretch_size = 0.f;
+    if (stretch_count > 0) {
+        stretch_size = (avalaible_size[main_index] - fixed_total) / stretch_count;
+        if (stretch_size < 0.f) stretch_size = 0.f;
+    }
+
+    // SECOND PASS: assign stretch sizes
+    for (auto& elem : m_elements) {
+        auto mode = elem->get_requested_mode()[main_index];
+
+        if (mode == mode::stretch || mode == mode::match_parent) {
+            if (vertical) {
+                elem->update_size({avalaible_size[0], (int)stretch_size});
+            } else {
+                elem->update_size({(int)stretch_size, avalaible_size[1]});
+            }
+        }
+    }
 
     // padding on main axis (start and end)
     int pad_main_start = (vertical ? m_padding[1] : m_padding[0]);
@@ -94,4 +130,42 @@ void linear::update() {
         // finally update the element. that function is mostly used by layouts.
         elem->update();
     }
+}
+
+float bgui::linear::content_height() {
+    if (m_elements.empty()) return 0.f;
+
+    const bool vertical = (m_orientation == orientation::vertical);
+    int total_height = 0;
+
+    for (auto& elem : m_elements) {
+        if (vertical) {
+            total_height += elem->get_margin()[1] + elem->get_margin()[3] +  elem->processed_height();
+        } else {
+            // In horizontal layout, consider only the largest height
+            total_height = std::max(total_height, elem->processed_height() + elem->get_margin()[1] + elem->get_margin()[3]);
+        }
+    }
+
+    return total_height;
+}
+
+
+float bgui::linear::content_width() {
+    if (m_elements.empty()) return 0.f;
+
+    const bool vertical = (m_orientation == orientation::vertical);
+    int total_width = 0;
+
+    for (auto& elem : m_elements) {
+        total_width += elem->processed_width();
+        if (!vertical) {
+            total_width += elem->get_margin()[0] + elem->get_margin()[2];
+        } else {
+            // In horizontal layout, consider only the largest height
+            total_width = std::max(total_width, elem->processed_height() + elem->get_margin()[0] + elem->get_margin()[2]);
+        }
+    }
+
+    return total_width;
 }

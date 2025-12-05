@@ -7,7 +7,8 @@ namespace bgui {
         percent,
         pixel,
         match_parent,
-        wrap_content
+        wrap_content,
+        stretch
     };
     enum class orientation {
         vertical,

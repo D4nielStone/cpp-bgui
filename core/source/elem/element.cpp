@@ -107,7 +107,9 @@ void element::update_size(const bgui::vec2i& available) {
             case bgui::mode::percent: return max * (std::clamp(m_requested_size[vertical], 0.f, 100.f)/100);
             case bgui::mode::match_parent: return max - get_margin()[vertical+2] - get_margin()[vertical];
             case bgui::mode::wrap_content: return vertical ? content_height() : content_width();
+            case bgui::mode::stretch: return max - get_margin()[vertical+2] - get_margin()[vertical];
         }
+        return 0.f;
     };
 
     float w = resolve(0, available[0]);

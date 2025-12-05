@@ -4,7 +4,6 @@
 
 bgui::button::button(const std::string &name, const float scale, const std::function<void()> &f) : 
     m_label(name, scale), m_function(f), m_label_alignment(bgui::alignment::center) {
-    set_padding(5, 5);
     request_width(mode::wrap_content);
     request_height(mode::wrap_content);
 }
@@ -23,8 +22,8 @@ void bgui::button::update() {
             break;
         case bgui::alignment::center:
             m_label.set_final_rect(
-                processed_x() + (processed_width() - m_label.processed_width()) / 2,
-                processed_y() + (processed_height() - m_label.processed_height()) / 2,
+                processed_x() + ((processed_width()) - m_label.processed_width()) / 2,
+                processed_y() + ((processed_height()) - m_label.processed_height()) / 2,
                 m_label.processed_width(),
                 m_label.processed_height()
             );
