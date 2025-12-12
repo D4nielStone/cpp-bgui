@@ -83,9 +83,14 @@ void element::set_visible(bool visible) {
 }
 
 void element::update() {
+    m_last_drag = {0, 0};
 }
 
+vec2i bgui::element::get_drag() const {
+    return m_last_drag;
+}
 void element::get_requests(bgui::draw_data* calls) {
+
     if (!m_visible) return;
     calls->m_quad_requests.push({
         m_material,

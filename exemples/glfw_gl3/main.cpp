@@ -27,6 +27,9 @@ int main() {
 
     // window widget
     auto& win = root.add<bgui::window>("Hello Bubble!");
+    root.add<bgui::window>("win2");
+    root.add<bgui::window>("win3");
+    root.add<bgui::window>("win4");
     auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
     context.request_height(bgui::mode::stretch);
     context.request_width(bgui::mode::match_parent);

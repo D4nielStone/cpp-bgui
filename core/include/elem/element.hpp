@@ -32,6 +32,7 @@ protected:
 
     vec2i m_min_size {10, 10};
     vec2i m_max_size {INT_MAX, INT_MAX};
+    vec2i m_last_drag{0, 0};
 
     // FINAL COMPUTED RECT (layout writes this)
     vec4i m_rect {0, 0, 0, 0}; // x, y, width, height
@@ -114,7 +115,8 @@ public:
     virtual float content_width(){return 0.f;};
     virtual float content_height(){return 0.f;};
     virtual void on_pressed() {};
-    virtual void on_dragged(const vec2i& mouse_delta) {};
+    virtual void on_drag(const vec2i& mouse_delta) {m_last_drag = mouse_delta;};
+    vec2i get_drag() const;
     virtual void on_clicked() {};
     virtual void on_released() {};
     virtual void on_mouse_hover() {};

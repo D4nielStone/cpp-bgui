@@ -51,6 +51,9 @@ bool bgui::shutdown_lib() {
 }
 
 bool update_inputs(bgui::layout &lay){
+    // global element for last capture
+    static bgui::element* g_mouse_captured = nullptr;
+
     auto m = bgui::get_mouse_position();
     float mx = m[0];
     float my = m[1];
@@ -69,6 +72,20 @@ bool update_inputs(bgui::layout &lay){
                 return true;
             }
         
+        // update the last input-captured element
+        if (g_mouse_captured) {
+            if (mouse_now) {
+                g_mouse_captured->on_pressed();
+                g_mouse_captured->on_drag(m - bgui::get_context().m_last_mouse_pos);
+            }
+            if (mouse_released) {
+                g_mouse_captured->on_released();
+                g_mouse_captured = nullptr; // release the capture
+            }
+            return true;
+        }
+
+        // inside test
         float x = elem->processed_x();
         float y = elem->processed_y();
         float w = elem->processed_width();
@@ -79,17 +96,22 @@ bool update_inputs(bgui::layout &lay){
             mx <= x + w &&
             my >= y &&
             my <= y + h;
-        if(inside) {
+
+        if (inside) {
             elem->on_mouse_hover();
+            if (mouse_click) {
+                g_mouse_captured = elem; // start capture
+                elem->on_clicked();
+                elem->on_pressed();
+            }
             if(mouse_now) {
                 elem->on_pressed();
-                elem->on_dragged(m - bgui::get_context().m_last_mouse_pos);
+                elem->on_drag(m - bgui::get_context().m_last_mouse_pos);
             }
-            if(mouse_click) {
-                elem->on_clicked();
-            }
-            else if(mouse_released) {
+            if(mouse_released) {
                 elem->on_released();
+                if (g_mouse_captured == elem)
+                    g_mouse_captured = nullptr; // release capture when mouse release
             }
             return true;
         }
