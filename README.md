@@ -1,6 +1,7 @@
-# Bubble GUI
+Bubble GUI
+===
 
-<p align="center"><b><i>"I moved mountains to align a button."</i></b></p>
+<p align="center"><b><i><q>I moved mountains to align a button.</i></b></p>
 <img width="1280" height="699" alt="image" src="https://github.com/user-attachments/assets/a296eca6-570a-47bc-a033-1389c798c8d6" />
 
 ---
