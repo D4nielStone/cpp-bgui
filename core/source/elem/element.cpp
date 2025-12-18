@@ -1,10 +1,15 @@
 #include "elem/element.hpp"
 #include <cstdlib>
+#include <iostream>
 #include "bgui.hpp"
 
 using namespace bgui;
 
-element::element() {
+element::element() : m_has_tag(false) {
+    std::cout << "[DEBUG] New element id:" + std::to_string(m_uid.m_uint) + "\n";
+}
+element::element(const char* tag) : m_has_tag(true) {
+    std::cout << "[DEBUG] New element id:" << m_uid.m_str << "\n";
 }
 
 // Margin
