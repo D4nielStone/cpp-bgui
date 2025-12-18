@@ -12,7 +12,7 @@ namespace bgui {
         unsigned int m_uint;
         const char* m_str;
         uid() : m_uint(s_nextid++) {}
-        uid(const char* s)  : m_str((std::string(s) + std::to_string(s_nextid++)).c_str()) {}
+        uid(const char* s)  : m_str(s+s_nextid++) {}
     };
     class layout;
     struct border {
