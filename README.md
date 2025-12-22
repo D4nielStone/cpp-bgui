@@ -85,10 +85,10 @@ int main() {
     // layout are invisible by default
     panel.set_visible(true);
 
-    auto& txt = panel.add<bgui::text>("Linear Layout Exemple", 0.35f);
+    auto& txt = panel.add<bgui::text>("Linear Layout Exemple", 0.5f);
     txt.request_width(bgui::mode::match_parent);
     txt.set_alignment(bgui::alignment::center);
-    auto& button = panel.add<bgui::button>("Button Exemple", 0.35f, [](){});
+    auto& button = panel.add<bgui::button>("Button Exemple", 0.5f, [](){});
     button.request_width(bgui::mode::match_parent);
 
     // window widget
@@ -101,15 +101,15 @@ int main() {
     context.request_width(bgui::mode::match_parent);
     context.set_padding(10, 10);
 
-    context.add<bgui::text>("This is a window widget exemple.", 0.35f);
-    auto& txt2 = context.add<bgui::text>("Centered text", 0.35f);
+    context.add<bgui::text>("This is a window widget exemple.", 0.5f);
+    auto& txt2 = context.add<bgui::text>("Centered text", 0.5f);
     txt2.set_alignment(bgui::alignment::center);
     txt2.request_width(bgui::mode::stretch);
-    auto& button2 = context.add<bgui::button>("Button inside window", 0.35f, [](){});
+    auto& button2 = context.add<bgui::button>("Button inside window", 0.5f, [](){});
     button2.request_width(bgui::mode::match_parent);
 
-    // Theme must be applyed in the end
-    bgui::apply_theme(bgui::dark_theme);
+    // style must be applyed in the end
+    bgui::apply_style(bgui::dark_style);
 ```
 
 #### Main Loop

@@ -9,7 +9,7 @@
 #include "lay/linear.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
-#include "utils/theme.hpp"
+#include "utils/style.hpp"
 #include <queue>
 #include <functional>
 
@@ -37,8 +37,8 @@ namespace bgui {
 
     void add_function(const std::function<void()>& f);
     layout& get_layout();
-    void apply_theme(const bgui::theme& gui_theme);
-    bgui::theme& get_theme();
+    void apply_style(const bgui::style& gui_style);
+    bgui::style& get_style();
     bgui::draw_data* get_draw_data();
     void set_up();
     bool shutdown_lib();

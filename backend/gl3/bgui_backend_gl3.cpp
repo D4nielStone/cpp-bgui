@@ -229,11 +229,11 @@ void bgui::shutdown_gl3() {
 // Render main
 void bgui::gl3_render(bgui::draw_data* data) {
     // basic clear
-    const auto& theme = bgui::get_theme();
-    glClearColor(theme.m_clear_color[0],
-                 theme.m_clear_color[1],
-                 theme.m_clear_color[2],
-                 theme.m_clear_color[3]);
+    const auto& style = bgui::get_style();
+    glClearColor(style.m_clear_color[0],
+                 style.m_clear_color[1],
+                 style.m_clear_color[2],
+                 style.m_clear_color[3]);
 
     const auto window_size = bgui::get_context_size();
     glViewport(0, 0, window_size[0], window_size[1]);

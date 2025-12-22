@@ -5,7 +5,8 @@ using namespace bgui;
 
 layout::layout() : element() {
     m_visible = false;
-    apply_theme(bgui::get_theme());
+    recives_input(false);
+    apply_style(bgui::get_style());
 };
 
 void layout::update() {

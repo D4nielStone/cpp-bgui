@@ -35,7 +35,7 @@ void linear::update() {
     for (auto& elem : m_elements) {
         auto mode = elem->get_requested_mode()[main];
 
-        if (mode == mode::pixel || mode == mode::wrap_content) {
+        if (mode == mode::pixel || mode == mode::wrap_content || mode == mode::same) {
             elem->update_size(available);
 
             fixed_main += elem->processed_size()[main];

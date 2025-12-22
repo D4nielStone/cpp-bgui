@@ -8,7 +8,8 @@ namespace bgui {
         pixel,
         match_parent,
         wrap_content,
-        stretch
+        stretch,
+        same
     };
     enum class orientation {
         vertical,
@@ -19,7 +20,7 @@ namespace bgui {
         center,
         end
     };
-    struct theme{
+    struct style{
         bgui::color m_clear_color = bgui::color(1.f);
         bgui::color m_text_color = bgui::color(1.f);
         bgui::color m_box_color = bgui::color(1.f);
@@ -29,7 +30,7 @@ namespace bgui {
         bgui::color m_button_hovered_color = bgui::color(1.f);
     };
     
-    inline const theme light_theme = {
+    inline const style light_style = {
         {0.94,0.94,0.94,1.0},
         {0.0,0.0,0.0,1.0},
         {0.92,0.92,0.92,1.0}, 
@@ -38,7 +39,7 @@ namespace bgui {
         {0.88,0.88,0.88,1.0}, 
         {0.88,0.88,0.88,1.0}
     };
-    inline const theme dark_theme = {
+    inline const style dark_style = {
         {0.06f, 0.06f, 0.06f, 1.f},
         {1.f, 1.f, 1.f, 1.f},
         {0.08f, 0.08f, 0.08f, 1.f},

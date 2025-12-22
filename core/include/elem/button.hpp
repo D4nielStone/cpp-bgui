@@ -20,6 +20,6 @@ namespace bgui {
         float content_height() override;
         void update() override;
         void get_requests(bgui::draw_data* calls) override;
-        void apply_theme(const bgui::theme& t) override;
+        void apply_style(const bgui::style& t) override;
     };
 } // namespace bgui

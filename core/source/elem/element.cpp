@@ -6,10 +6,9 @@
 using namespace bgui;
 
 element::element() : m_has_tag(false) {
-    std::cout << "[DEBUG] New element id:" + std::to_string(m_uid.m_uint) + "\n";
 }
+// TODO: chande id system type
 element::element(const char* tag) : m_has_tag(true), m_uid(tag) {
-    std::cout << "[DEBUG] New element id:" << m_uid.m_str << "\n";
 }
 
 // Margin
@@ -111,7 +110,9 @@ void element::get_requests(bgui::draw_data* calls) {
 
 void element::update_size(const bgui::vec2i& available) {
     // Step 1: resolve requested size
+    // padding removes available intern space
     auto resolve = [&](int vertical, float max) {
+        int nvertical = vertical ? 0 : 1;
         switch(m_requested_mode[vertical]) {
             case bgui::mode::pixel:   return m_requested_size[vertical];
             case bgui::mode::percent: return max * (std::clamp(m_requested_size[vertical], 0.f, 100.f)/100);
@@ -124,6 +125,11 @@ void element::update_size(const bgui::vec2i& available) {
 
     float w = resolve(0, available[0]);
     float h = resolve(1, available[1]);
+
+    if(m_requested_mode[0] == bgui::mode::same)
+        w = h;
+    if(m_requested_mode[1] == bgui::mode::same)
+        h = w;
 
     // Step 2: enforce min/max rules
     w = std::clamp((int)w, m_min_size[0], m_max_size[0]);

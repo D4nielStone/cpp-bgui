@@ -12,7 +12,7 @@ bgui::button::~button() {
 }
 
 void bgui::button::update() {
-    m_material.set("bg_color", m_theme.m_button_color);
+    m_material.set("bg_color", m_style.m_button_color);
 
     m_label.update_size(processed_size());
     switch(m_label_alignment) {
@@ -55,17 +55,19 @@ float bgui::button::content_width() {
     return m_label.processed_width() + get_padding()[0] + get_padding()[2];
 }
 
-void bgui::button::apply_theme(const bgui::theme &t) {
-    element::apply_theme(t);
-    m_label.apply_theme(t);
+void bgui::button::apply_style(const bgui::style &t) {
+    element::apply_style(t);
+    m_label.apply_style(t);
 }
 
 void bgui::button::on_released() {
 }
 void bgui::button::on_clicked() {
-    m_material.set("bg_color", bgui::get_theme().m_button_clicked_color);
+    if(get_style().m_button_clicked_color[3] != 0)
+        m_material.set("bg_color", bgui::get_style().m_button_clicked_color);
     bgui::add_function(m_function);
 }
 void bgui::button::on_mouse_hover() {
-    m_material.set("bg_color", bgui::get_theme().m_button_hovered_color);
+    if(get_style().m_button_hovered_color[3] != 0)
+        m_material.set("bg_color", bgui::get_style().m_button_hovered_color);
 }

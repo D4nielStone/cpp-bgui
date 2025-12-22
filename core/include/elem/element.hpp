@@ -3,7 +3,7 @@
 #include <memory>
 #include <limits.h>
 
-#include "utils/theme.hpp"
+#include "utils/style.hpp"
 #include "utils/draw.hpp"
 
 namespace bgui {
@@ -29,6 +29,7 @@ namespace bgui {
         layout* m_parent {nullptr};
         material m_material;
         bool m_visible {true};
+        bool m_recives_input{true};
 
         vec<2, mode> m_requested_mode {mode::pixel, mode::pixel};
         vec2  m_requested_size {0.f, 0.f};
@@ -36,7 +37,7 @@ namespace bgui {
         vec4i m_padding {0,0,0,0}; // left, top, right, bottom
         vec4i m_margin  {0,0,0,0}; // left, top, right, bottom
         border m_border;
-        theme m_theme;
+        style m_style;
 
         vec2i m_min_size {10, 10};
         vec2i m_max_size {INT_MAX, INT_MAX};
@@ -106,22 +107,31 @@ namespace bgui {
         vec4i get_padding() const { return m_padding; }
         border get_border() const { return m_border; }
 
-        // Theme / material
+        // style / material
         std::string get_shader_tag() const;
         material& get_material() { return m_material; }
+        style& get_style() {
+            return m_style;
+        }
 
         layout* get_parent() const { return m_parent; }
 
+        void recives_input(bool b) {
+            m_recives_input = b;
+        };
+        bool recives_input() const {
+            return m_recives_input;
+        }
         virtual layout* as_layout() { return nullptr; }
         void update_size(const vec2i& available_size);
         virtual void update();
-        virtual void apply_theme(const theme& theme){ 
-            m_theme = theme;
-            m_material.set("bg_color", m_theme.m_box_color);
+        virtual void apply_style(const style& style){ 
+            m_style = style;
+            m_material.set("bg_color", m_style.m_box_color);
             m_material.set("bordered", true);
             m_material.set("border_radius", 4.f);
             m_material.set("border_size", 1.f);
-            m_material.set("border_color", m_theme.m_button_border_color);
+            m_material.set("border_color", m_style.m_button_border_color);
          };
         virtual float content_width(){return 0.f;};
         virtual float content_height(){return 0.f;};

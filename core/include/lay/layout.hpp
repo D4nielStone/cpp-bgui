@@ -16,9 +16,9 @@ namespace bgui {
         layout();
         ~layout() = default;
     
-        void apply_theme(const bgui::theme& theme) override {
-            element::apply_theme(theme);
-            for(auto& e: m_elements) e->apply_theme(theme);
+        void apply_style(const bgui::style& style) override {
+            element::apply_style(style);
+            for(auto& e: m_elements) e->apply_style(style);
         };
     
         template<typename T, typename... Args>

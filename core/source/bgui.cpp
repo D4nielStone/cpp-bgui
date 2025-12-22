@@ -7,7 +7,7 @@
 static bool init_trigger = false;
 std::unique_ptr<bgui::layout> bgui::m_main_layout;
 static std::unique_ptr<bgui::draw_data> m_draw_data;
-bgui::theme m_theme;
+bgui::style m_style;
 static std::queue<std::function<void()>> s_functions;
 
 bgui::layout& bgui::get_layout() {
@@ -21,22 +21,22 @@ void bgui::set_up() {
         set_layout<bgui::layout>();
     if(!m_draw_data)
         m_draw_data = std::make_unique<bgui::draw_data>();
-    // apply default theme
-    m_theme = bgui::dark_theme;
-    m_main_layout->apply_theme(m_theme);
+    // apply default style
+    m_style = bgui::dark_style;
+    m_main_layout->apply_style(m_style);
 }
 
-void bgui::apply_theme(const bgui::theme& gui_theme) {
+void bgui::apply_style(const bgui::style& gui_style) {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
-    // set the theme and update params recursively accordingly
-    m_theme = gui_theme;
+    // set the style and update params recursively accordingly
+    m_style = gui_style;
 
-    m_main_layout->apply_theme(m_theme);
+    m_main_layout->apply_style(m_style);
 }
 
-bgui::theme& bgui::get_theme() {
+bgui::style& bgui::get_style() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
-    return m_theme;
+    return m_style;
 }
 bgui::draw_data* bgui::get_draw_data() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
@@ -98,6 +98,7 @@ bool update_inputs(bgui::layout &lay){
             my <= y + h;
 
         if (inside) {
+            if(!elem->recives_input()) return false;
             elem->on_mouse_hover();
             if (mouse_click) {
                 g_mouse_captured = elem; // start capture
