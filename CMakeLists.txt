@@ -13,6 +13,7 @@ option(BGUI_USE_VULKAN   "Enable Vulkan backend"   OFF)
 option(BGUI_USE_GLFW     "Enable GLFW backend"     ON)
 option(BGUI_USE_FREETYPE "Enable FreeType support" ON)
 option(BGUI_BUILD_EXAMPLES "Build examples"        ON)
+option(BGUI_TESTS         "Build tests"            ON)
 
 # --- User Message ---
 message(STATUS "OpenGL backend:   ${BGUI_USE_OPENGL}")
@@ -20,7 +21,6 @@ message(STATUS "Vulkan backend:   ${BGUI_USE_VULKAN}")
 message(STATUS "GLFW backend:     ${BGUI_USE_GLFW}")
 message(STATUS "FreeType support: ${BGUI_USE_FREETYPE}")
 message(STATUS "Build examples:   ${BGUI_BUILD_EXAMPLES}")
-
 
 add_subdirectory(core)
 add_subdirectory(backend)
@@ -32,6 +32,8 @@ target_link_libraries(bgui
         bgui_backend
 )
 
+enable_testing()
+
 target_include_directories(bgui
     INTERFACE
         ${PROJECT_SOURCE_DIR}/core/include
@@ -39,4 +41,7 @@ target_include_directories(bgui
 
 if(BGUI_BUILD_EXAMPLES)
     add_subdirectory(exemples)
+endif()
+if(BGUI_TESTS)
+    add_subdirectory(tests)
 endif()

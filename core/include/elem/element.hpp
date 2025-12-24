@@ -114,15 +114,26 @@ namespace bgui {
             return m_style;
         }
 
+        // hierarchy
         layout* get_parent() const { return m_parent; }
+        virtual layout* as_layout() { return nullptr; }
 
+        // input
         void recives_input(bool b) {
             m_recives_input = b;
         };
         bool recives_input() const {
             return m_recives_input;
         }
-        virtual layout* as_layout() { return nullptr; }
+        vec2i get_drag() const;
+        
+        // id
+        unsigned int get_id() const {
+            if(!m_has_tag)
+                return m_uid.m_uint;
+            else return static_cast<unsigned int>(*m_uid.m_str);
+        }
+
         void update_size(const vec2i& available_size);
         virtual void update();
         virtual void apply_style(const style& style){ 
@@ -137,7 +148,6 @@ namespace bgui {
         virtual float content_height(){return 0.f;};
         virtual void on_pressed() {};
         virtual void on_drag(const vec2i& mouse_delta) {m_last_drag = mouse_delta;};
-        vec2i get_drag() const;
         virtual void on_clicked() {};
         virtual void on_released() {};
         virtual void on_mouse_hover() {};
