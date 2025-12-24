@@ -22,3 +22,5 @@ jobs:
 
       - name: Run Tests
         run: ctest --test-dir ${{github.workspace}}/out/tests --output-on-failure
+      - name: Run Tests
+        run: ctest --test-dir ${{github.workspace}}/out --output-on-failure
