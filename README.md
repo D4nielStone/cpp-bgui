@@ -1,7 +1,10 @@
 Bubble GUI
 ===
 
-<p align="center"><b><i>"I moved mountains to align a button."</i></b></p>
+<p style="display: block; margin: center; font-weight: bold;">
+    <em><q>I moved mountains to align a button.</q></em>
+</p>
+
 <img width="1269" height="713" alt="image" src="https://github.com/user-attachments/assets/1e49c786-a744-4d42-8bf3-22f091e022e8" />
 
 ---
@@ -57,18 +60,28 @@ After initializing the library, you can set the main layout and add UI elements 
 #### GLFW and Opengl Preset
 
 ```cpp
-/* backends are included based on the cmake build settings */
+/** backends are included based on the cmake build settings.
+    EX: BGUI_USE_FREETYPE
+        BGUI_USE_GLFW
+        BGUI_USE_OPENGL
+*/
 #include <bgui.hpp>
-#include <iostream>
 
 int main() {
-    bgui::set_up();
-
-    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI Exemple");
-
-    bgui::set_up_freetype();
+    GLFWwindow* window = bgui::set_up_glfw(600, 400, "App");
     bgui::set_up_gl3();
-    [...]
+    bgui::set_up_freetype();
+
+    // your interface here [...]
+
+    while(!bgui::should_close_glfw()) {
+        bgui::glfw_update(bgui::get_context());
+        bgui::gl3_render(bgui::get_draw_data());
+        bgui::swap_glfw();
+    }
+    bgui::shutdown_gl3();
+    bgui::shutdown_glfw();
+    return 0;
 ```
 
 - Configure the layout as you want
@@ -110,27 +123,6 @@ int main() {
 
     // style must be applyed in the end
     bgui::apply_style(bgui::dark_style);
-```
-
-#### Main Loop
-
-```cpp
-    [...]
-    while (!glfwWindowShouldClose(window)) {
-        bgui::glfw_update(bgui::get_context());           // update events
-        bgui::update();                 // update layout
-        bgui::gl3_render(
-            bgui::get_draw_data()       // render the layout data
-        );
-        glfwSwapBuffers(window);
-    }
-
-    bgui::shutdown_lib();
-    bgui::shutdown_gl3();
-    bgui::shutdown_freetype();
-    bgui::shutdown_glfw();
-    return 0;
-}
 ```
 
 ## Back end
