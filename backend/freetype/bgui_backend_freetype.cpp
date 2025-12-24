@@ -20,7 +20,7 @@ void bgui::set_up_freetype() {
 
     std::cout << "[FREETYPE] Initialized.\n";
 
-    ft_search_system_fonts("NotoSans");
+    ft_search_system_fonts("Noto,Roboto,Serif");
 
 
     std::cout << "[FREETYPE] Total system fonts found: " << s_system_fonts.size() << "\n";
@@ -34,6 +34,12 @@ void bgui::set_up_freetype() {
     }
 }
 
+bgui::font& bgui::ft_load_system_font(const std::string& path) {
+    std::cout << "[FREETYPE] Loading system font: " << path << "\n";
+    return ft_load_font(path, s_system_fonts[path],
+                    bgui::font_manager::m_default_resolution);
+}
+
 void bgui::shutdown_freetype() {
     FT_Done_FreeType(s_ft);
     std::cout << "[FREETYPE] Shutdown.\n";
@@ -45,6 +51,26 @@ inline bool ends_with(const std::string &str, const std::string &suffix) {
            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+static std::vector<std::string> split_filters(const std::string& filters) {
+    std::vector<std::string> result;
+    std::string token;
+
+    for (char c : filters) {
+        if (c == ',') {
+            if (!token.empty())
+                result.push_back(token);
+            token.clear();
+        } else if (!std::isspace(static_cast<unsigned char>(c))) {
+            token += c;
+        }
+    }
+
+    if (!token.empty())
+        result.push_back(token);
+
+    return result;
+}
+
 // Scan system fonts
 void bgui::ft_search_system_fonts(const std::string& filter) {
 #ifdef _WIN32
@@ -53,23 +79,41 @@ void bgui::ft_search_system_fonts(const std::string& filter) {
     std::string folder = "/usr/share/fonts";
 #endif
 
-    std::cout << "[FREETYPE] Scanning fonts in: " << folder << (filter.empty() ? "" : " with filter: " + filter) << "\n";
+    auto filters = split_filters(filter);
+
+    std::cout << "[FREETYPE] Scanning fonts in: " << folder;
+    if (!filters.empty()) {
+        std::cout << " with filters: ";
+        for (auto& f : filters) std::cout << f << " ";
+    }
+    std::cout << "\n";
 
     for (const auto &entry : std::filesystem::recursive_directory_iterator(folder)) {
         if (!entry.is_regular_file()) continue;
 
         auto path = entry.path().string();
-        if (!filter.empty() && path.find(filter) == std::string::npos) continue;
-        if (!(ends_with(path, ".ttf") || ends_with(path, ".otf"))) continue;
+
+        // extensão
+        if (!(ends_with(path, ".ttf") || ends_with(path, ".otf")))
+            continue;
+
+        // filtros múltiplos (OR)
+        if (!filters.empty()) {
+            bool match = false;
+            for (const auto& f : filters) {
+                if (path.find(f) != std::string::npos) {
+                    match = true;
+                    break;
+                }
+            }
+            if (!match) continue;
+        }
 
         FT_Face face;
         if (!FT_New_Face(s_ft, path.c_str(), 0, &face)) {
             std::string family = face->family_name ? face->family_name : "(unknown)";
             std::string style  = face->style_name  ? face->style_name  : "(unknown)";
             s_system_fonts[family + "-" + style] = path;
-
-            // debug: TODO: add debug manager
-            // std::cout << "[FONT] Loaded: " << (family + "-" + style) << "\n";
             FT_Done_Face(face);
         }
     }

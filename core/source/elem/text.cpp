@@ -42,7 +42,10 @@ void bgui::text::update() {
 }
 void bgui::text::set_font(const std::string &path) {
     auto& i = bgui::font_manager::get_font_manager();
-    m_font = i.get_font(path);
+    if(path.find('#') == path.npos)
+        m_font = i.get_font(path + "#" + std::to_string((int)bgui::font_manager::m_default_resolution));
+    else
+        m_font = i.get_font(path);
 }
 
 float bgui::text::get_text_width() {
