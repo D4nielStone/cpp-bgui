@@ -19,3 +19,6 @@ jobs:
 
       - name: Build
         run: cmake --build out --config Release
+
+      - name: Run Tests
+        run: ctest --test-dir ${{github.workspace}}/out/tests --output-on-failure
