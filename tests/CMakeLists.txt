@@ -22,3 +22,5 @@ target_link_libraries(
     bgui
     GTest::gtest_main 
 )
+
+add_test(NAME ElementTest COMMAND all_tests)
