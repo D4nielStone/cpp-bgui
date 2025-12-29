@@ -5,6 +5,11 @@
 #include "utils/mat.hpp"
 
 namespace bgui {
+    enum class cursor {
+        arrow,
+        hand,
+        ibeam
+    };
     enum class input_key {
         none,
         mouse_left,
@@ -24,6 +29,7 @@ namespace bgui {
         std::unordered_map<input_key, input_action> m_input_map;
         std::string m_title{""};
         bool m_last_mouse_left = false;
+        cursor m_actual_cursor = cursor::arrow;
     };
     context& get_context();
     bgui::vec2i get_context_size();

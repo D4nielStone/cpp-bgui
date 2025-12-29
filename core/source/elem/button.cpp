@@ -1,4 +1,5 @@
 #include "elem/button.hpp"
+#include "os/os.hpp"
 #include "bgui.hpp"
 #include <iostream>
 
@@ -27,15 +28,21 @@ void bgui::button::update() {
 bgui::text &bgui::button::get_label() {
     return *m_label;
 }
+void bgui::button::on_pressed() {
+    bgui::get_context().m_actual_cursor = bgui::cursor::hand;
+}
 
 void bgui::button::on_released() {
+    bgui::get_context().m_actual_cursor = bgui::cursor::hand;
     bgui::add_function(m_function);
 }
 void bgui::button::on_clicked() {
+    bgui::get_context().m_actual_cursor = bgui::cursor::hand;
     if(get_style().m_button_clicked_color[3] != 0)
         m_material.set("bg_color", bgui::get_style().m_button_clicked_color);
 }
 void bgui::button::on_mouse_hover() {
+    bgui::get_context().m_actual_cursor = bgui::cursor::hand;
     if(get_style().m_button_hovered_color[3] != 0)
         m_material.set("bg_color", bgui::get_style().m_button_hovered_color);
 }

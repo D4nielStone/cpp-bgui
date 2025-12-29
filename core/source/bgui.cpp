@@ -134,8 +134,11 @@ void bgui::update() {
     }
 
     // update main layout and inputs
+    get_context().m_actual_cursor = cursor::arrow;
     bgui::m_main_layout->update_size(w_size);
     bgui::m_main_layout->update();
+
+    // reset cursor
 
     update_inputs(*bgui::m_main_layout);
 

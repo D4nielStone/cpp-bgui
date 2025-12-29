@@ -30,7 +30,7 @@ std::u32string utf8_to_utf32(const std::string& str) {
 }
 
 bgui::text::text(const std::string &buffer, float scale) : m_buffer(buffer),
-    m_font_name("Noto Serif-Medium#40"), m_scale(scale) {
+    m_font_name("Arial CE-Bold#40"), m_scale(scale) {
     set_font(m_font_name);
     m_material.m_use_tex = true;
     m_material.m_shader_tag = "ui::text";

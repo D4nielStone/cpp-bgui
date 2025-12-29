@@ -19,6 +19,7 @@ namespace bgui {
         ~input_area();
         
         void on_clicked() override;
+        void on_pressed() override;
         void on_released() override;
         void on_mouse_hover() override;
         void update() override;

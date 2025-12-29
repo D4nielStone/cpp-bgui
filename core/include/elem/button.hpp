@@ -15,6 +15,7 @@ namespace bgui {
         
         void set_function(const std::function<void()>& f);
         void on_clicked() override;
+        void on_pressed() override;
         void on_released() override;
         void on_mouse_hover() override;
         text& get_label();
