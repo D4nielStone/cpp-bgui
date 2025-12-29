@@ -9,11 +9,13 @@ namespace bgui {
     private:
         bool m_active, *m_ref;
         text *label{nullptr};
+        std::function<void(bool)> m_function;
     public:
         color m_active_color {0.5f, 0.5f, 0.5f, 1.f};
         /// @brief Simple constructor
         /// @param id Will be processed as a global variable and accessible anytime.
         checkbox(bool* ref, bool actv = false, const std::string& title = "", const float scale = 1.f);
+        checkbox(const std::string& title = "", const float scale = 1.f, bool actv = false);
         ~checkbox() = default;
         
         void on_clicked() override;
@@ -21,6 +23,7 @@ namespace bgui {
         void on_pressed() override;
         void on_update() override;
         void on_mouse_hover() override;
+        void set_on_change(const std::function<void(bool)>& f);
 
         text& get_label();
         bool checked() {
