@@ -14,7 +14,7 @@ namespace bgui {
         modular(const bgui::orientation& ori = bgui::orientation::horizontal);
         ~modular() = default;
     
-        void update() override;
+        void on_update() override;
         void set_orientation(const orientation& ori) { m_orientation = ori; };
         bgui::layout* as_layout() override { return this; }
     };

@@ -19,6 +19,6 @@ namespace bgui {
         void on_released() override;
         void on_mouse_hover() override;
         text& get_label();
-        void update() override;
+        void on_update() override;
     };
 } // namespace bgui

@@ -120,7 +120,7 @@ bool update_inputs(bgui::layout &lay){
     return false;
 }
 // Updates the main layout
-void bgui::update() {
+void bgui::on_update() {
     if(!init_trigger) throw std::runtime_error("BGUI::You must initialize the library.");
     bgui::vec2i w_size = bgui::get_context_size();
     // the main layout must to be resized based on the window size by default.
@@ -136,7 +136,7 @@ void bgui::update() {
     // update main layout and inputs
     get_context().m_actual_cursor = cursor::arrow;
     bgui::m_main_layout->update_size(w_size);
-    bgui::m_main_layout->update();
+    bgui::m_main_layout->on_update();
 
     // reset cursor
 

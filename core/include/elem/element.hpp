@@ -372,7 +372,7 @@ namespace bgui {
          * @brief Pure virtual update method called every frame or tick.
          * * Derived classes should override this for continuous logic.
          */
-        virtual void update();
+        virtual void on_update();
 
         /**
          * @brief Calculates the content width (excluding padding, margin, border).

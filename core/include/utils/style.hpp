@@ -26,6 +26,8 @@ namespace bgui {
         bgui::color m_box_color = bgui::color(1.f);
         bgui::color m_button_color = bgui::color(1.f);
         bgui::color m_button_border_color = bgui::color(1.f);
+        bgui::color m_cb_color = bgui::color(1.f);
+        bgui::color m_cb_border_color = bgui::color(1.f);
         bgui::color m_button_clicked_color = bgui::color(1.f);
         bgui::color m_button_hovered_color = bgui::color(1.f);
     };
@@ -45,6 +47,8 @@ namespace bgui {
         {0.08f, 0.08f, 0.08f, 1.f},
         {0.1f, 0.1f, 0.1f, 1.f},   // released
         {0.04f, 0.04f, 0.04f, 1.f},   // border
+        {0.1f, 0.1f, 0.1f, 1.f},   // cbreleased
+        {0.04f, 0.04f, 0.04f, 1.f},   // cbborder
         {0.12f, 0.12f, 0.12f, 1.f},   // pressed
         {0.12f, 0.12f, 0.12f, 1.f} // hovered
     };

@@ -43,5 +43,5 @@ namespace bgui {
     bgui::draw_data* get_draw_data();
     void set_up();
     bool shutdown_lib();
-    void update();
+    void on_update();
 };

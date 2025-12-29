@@ -19,10 +19,10 @@ void bgui::button::set_function(const std::function<void()>& f) {
     m_function = f;
 }
 
-void bgui::button::update() {
+void bgui::button::on_update() {
     m_material.set("bg_color", m_style.m_button_color);
     m_material.set("border_color", m_style.m_button_border_color);
-    linear::update();
+    linear::on_update();
 }
 
 bgui::text &bgui::button::get_label() {

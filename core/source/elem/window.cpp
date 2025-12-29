@@ -23,12 +23,12 @@ bgui::window::window(const char* title) : linear(bgui::orientation::vertical), m
     });
     m_header->set_visible(true);
 }
-void bgui::window::update() {
+void bgui::window::on_update() {
     // drag system (title)
     set_final_rect(
         processed_x()+m_title->is_drag()[0], 
         processed_y()+m_title->is_drag()[1],
         processed_width(), 
         processed_height());
-    linear::update();
+    linear::on_update();
 }

@@ -37,8 +37,8 @@ bgui::text::text(const std::string &buffer, float scale) : m_buffer(buffer),
 }
 bgui::text::~text() {
 }
-void bgui::text::update() {
-    element::update();
+void bgui::text::on_update() {
+    element::on_update();
 }
 void bgui::text::set_font(const std::string &path) {
     auto& i = bgui::font_manager::get_font_manager();

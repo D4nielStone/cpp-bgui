@@ -85,7 +85,7 @@ void element::set_visible(bool visible) {
     m_visible = visible;
 }
 
-void element::update() {
+void element::on_update() {
     m_last_drag = {0, 0};
 }
 

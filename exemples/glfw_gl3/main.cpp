@@ -45,7 +45,7 @@ int main() {
 
     while (!glfwWindowShouldClose(window)) {
         bgui::glfw_update(bgui::get_context());           // update events
-        bgui::update();                 // update layout
+        bgui::on_update();                 // update layout
         bgui::gl3_render(
             bgui::get_draw_data()       // render the layout data
         );

@@ -12,7 +12,7 @@ namespace bgui {
         window() = default;
         window(const char* title);
         ~window()=default;
-        void update() override;
+        void on_update() override;
         void set_title(const std::string& title) { m_title->set_buffer(title); }
         text& get_title() { return *m_title; }
     };

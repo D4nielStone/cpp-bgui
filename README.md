@@ -83,7 +83,7 @@ int main() {
         // update the context with glfw
         bgui::glfw_update(bgui::get_context());
         // update the layout
-        bgui::update();
+        bgui::on_update();
         // render with opengl3
         bgui::gl3_render(bgui::get_draw_data());
         bgui::swap_glfw();

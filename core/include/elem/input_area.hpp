@@ -22,7 +22,7 @@ namespace bgui {
         void on_pressed() override;
         void on_released() override;
         void on_mouse_hover() override;
-        void update() override;
+        void on_update() override;
         text& get_label();
         void get_requests(bgui::draw_data* calls) override;
         void apply_style(const bgui::style& t) override;

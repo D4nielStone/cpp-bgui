@@ -8,7 +8,7 @@ linear::linear(const orientation& ori) : m_orientation(ori) {
     m_visible = false;
 }
 
-void linear::update() {
+void linear::on_update() {
     if (m_elements.empty()) return;
 
     const bool vertical = (m_orientation == orientation::vertical);
@@ -156,7 +156,7 @@ void linear::update() {
         cursor_main += elem->processed_size()[main];
         cursor_main += elem->get_margin()[main + 2];
 
-        elem->update();
+        elem->on_update();
     }
 }
 

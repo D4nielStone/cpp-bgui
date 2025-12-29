@@ -18,7 +18,7 @@ namespace bgui {
         void set_alignment(const alignment& align) { m_self_alignment = align; };
         // sets to this text the font with `name`.
         void set_font(const std::string& name);
-        void update() override;
+        void on_update() override;
         float get_text_width();
         void set_buffer(const std::string& buffer) { m_buffer = buffer; };
         const std::string& get_buffer() const { return m_buffer; };

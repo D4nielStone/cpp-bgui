@@ -15,8 +15,8 @@ int main() {
     root->add<bgui::text>("Hello World!", 2.f);
 
     while (!glfwWindowShouldClose(window)) {
-        bgui::glfw_update();           // update events
-        bgui::update();                 // update layout
+        bgui::glfw_on_update();           // update events
+        bgui::on_update();                 // update layout
         bgui::vulkan_render(
             bgui::get_draw_data()       // render the layout data
         );

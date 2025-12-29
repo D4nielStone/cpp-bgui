@@ -39,7 +39,7 @@ bgui::text& bgui::input_area::get_label() {
     return *m_text;
 }
 
-void bgui::input_area::update() {
+void bgui::input_area::on_update() {
     if(m_input_buffer.empty()) {
         m_text->set_buffer(m_placeholder);
         m_text->get_material().set("text_color", color{0.5, 0.5, 0.5, 1});
@@ -48,7 +48,7 @@ void bgui::input_area::update() {
         m_text->set_buffer(m_input_buffer);
         m_text->get_material().set("text_color", m_style.m_text_color);
     }
-    linear::update();
+    linear::on_update();
 }
 
 void bgui::input_area::get_requests(bgui::draw_data* data) {

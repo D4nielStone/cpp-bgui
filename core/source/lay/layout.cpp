@@ -9,10 +9,10 @@ layout::layout() : element() {
     apply_style(bgui::get_style());
 };
 
-void layout::update() {
+void layout::on_update() {
     for(auto& elem : m_elements) {
         elem->update_size(processed_size());
-        elem->update();
+        elem->on_update();
     }
 }
 

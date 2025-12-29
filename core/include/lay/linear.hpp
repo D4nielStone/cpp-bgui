@@ -16,7 +16,7 @@ namespace bgui {
         linear(const bgui::orientation& ori = bgui::orientation::horizontal);
         ~linear() = default;
     
-        void update() override;
+        void on_update() override;
         float content_height() override;
         float content_width() override;
         void set_orientation(const orientation& ori) { m_orientation = ori; };
