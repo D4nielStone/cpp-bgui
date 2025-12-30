@@ -34,7 +34,7 @@
  * Adopters may modify this file to suit their platform. Adopters are
  * encouraged to submit platform specific modifications to the Khronos
  * group so that they can be included in future versions of this file.
- * Please submit changes by filing pull requests or issues on
+ * Please submit changes by filing pull requires or issues on
  * the EGL Registry repository linked above.
  *
  *
