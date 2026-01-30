@@ -108,7 +108,7 @@ void linear::on_update() {
 
     int cursor_main = pad_main_start;
 
-    switch (computed_style.layout.align) {
+    switch (computed_style.layout.align.x) {
         case alignment::start:
             break;
         case alignment::center:
@@ -127,7 +127,7 @@ void linear::on_update() {
         int cross_pos = pad_cross_start + elem->computed_style.layout.margin[cross];
         int cross_size = elem->processed_size()[cross];
 
-        switch (computed_style.layout.cross_align) {
+        switch (computed_style.layout.align.y) {
             case alignment::start:
                 break;
 

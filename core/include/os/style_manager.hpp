@@ -11,7 +11,6 @@ namespace bgui {
         apply_optional(out.limit_max, in.limit_max);
         apply_optional(out.size,       in.size);
         apply_optional(out.align,      in.align);
-        apply_optional(out.cross_align,      in.cross_align);
         apply_optional(out.ori,      in.ori);
     }
     inline void merge(

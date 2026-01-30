@@ -72,22 +72,20 @@ namespace bgui {
         while (std::getline(file, line)) {
             line = trim(line);
 
-            // Ignora comentários e linhas vazias
-            if (line.empty() || line[0] == '#')
+            //Ignore coments and empty lines
+            if (line.empty() || line[0] == '#' || line[0] == ';')
                 continue;
 
-            // BASE
-            if (line == "base") {
-                current_section = section_type::Base;
-                current_block = &theme.base;
-                continue;
-            }
-
-            // [type.xxx] ou [class.xxx]
+            // [base] or [type.xxx] or [class.xxx]
             if (line.front() == '[' && line.back() == ']') {
                 std::string header = line.substr(1, line.size() - 2);
-
-                if (header.rfind("type.", 0) == 0) {
+             
+                if (header == "base") {
+                    current_section = section_type::Base;
+                    current_block = &theme.base;
+                    continue;
+                }
+                else if (header.rfind("type.", 0) == 0) {
                     std::string name = header.substr(5);
                     current_section = section_type::Type;
                     current_block = &theme.types[name];
@@ -101,7 +99,6 @@ namespace bgui {
                 continue;
             }
 
-            // propriedade = valor
             auto eq = line.find('=');
             if (eq == std::string::npos || !current_block)
                 continue;
@@ -109,7 +106,6 @@ namespace bgui {
             std::string key = trim(line.substr(0, eq));
             std::string value_str = trim(line.substr(eq + 1));
 
-            // separa valores por vírgula
             value values = split(value_str, ',');
 
             current_block->properties[key] = values;

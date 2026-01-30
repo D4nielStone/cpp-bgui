@@ -18,13 +18,12 @@ namespace bgui {
     }
     struct layout_style {
         std::optional<vec<2, mode>> size_mode;
+        std::optional<vec<2, alignment>> align;
         std::optional<vec4i> margin;
         std::optional<vec4i> padding;
         std::optional<vec2i> limit_min;
         std::optional<vec2i> limit_max;
         std::optional<vec2> size;
-        std::optional<alignment> align;
-        std::optional<alignment> cross_align;
         std::optional<orientation> ori;
 
 
@@ -101,13 +100,12 @@ namespace bgui {
     };
     struct computed_layout_style {
         vec<2, mode> size_mode {mode::pixel, mode::pixel};
+        vec<2, alignment> align {alignment::start, alignment::start};
         vec2 size {0.f, 0.f};
         vec2i limit_min {15, 15};
         vec2i limit_max {INT_MAX, INT_MAX};
         vec4i padding {0, 0};
         vec4i margin {0, 0};
-        alignment align {alignment::start};
-        alignment cross_align {alignment::start};
         orientation ori {orientation::horizontal};
     };
 
@@ -116,7 +114,7 @@ namespace bgui {
         color border {1.f, 1.f, 1.f, 1.f};
         color text {0.f, 0.f, 0.f, 0.f};
 
-        std::string font = "default";
+        std::string font = "Arial";
         float border_radius {2.f}, border_size{2.f};
         bool visible {true};
     };

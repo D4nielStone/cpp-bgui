@@ -367,7 +367,7 @@ TEST(LinearTest, CrossAxisCenterAlignment) {
     layout.style.layout.require_size(200, 400);
     layout.style.layout.set_padding(0, 0);
     layout.style.layout.require_mode(mode::pixel, mode::pixel);
-    layout.style.layout.cross_align = (alignment::center);
+    layout.style.layout.align = (alignment::start, alignment::center);
     layout.compute_style();
     layout.process_required_size({200, 400});
     
