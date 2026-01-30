@@ -786,17 +786,17 @@ TEST(DeclarativeStyleTest, InputStateResolution) {
     elem.classes = {"button"};
     
     // Normal state
-    elem.set_state(input_state::normal);
+    elem.set_state(state::normal);
     elem.compute_style();
     EXPECT_FLOAT_EQ(elem.computed_style.visual.background.r, 0.5f);
     
     // Hover state
-    elem.set_state(input_state::hover);
+    elem.set_state(state::hover);
     elem.compute_style();
     EXPECT_FLOAT_EQ(elem.computed_style.visual.background.r, 0.7f);
     
     // Active state
-    elem.set_state(input_state::pressed);
+    elem.set_state(state::pressed);
     elem.compute_style();
     EXPECT_FLOAT_EQ(elem.computed_style.visual.background.r, 0.3f);
 }

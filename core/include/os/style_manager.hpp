@@ -17,7 +17,7 @@ namespace bgui {
     inline void merge(
         computed_visual_style& out,
         const visual_style& in,
-        input_state state
+        state state
     ) {
         out.background = in.background.resolve(state, out.background);
         out.border     = in.border.resolve(state, out.border);
@@ -43,7 +43,7 @@ namespace bgui {
     inline void merge(
         computed_style& out,
         const style& in,
-        input_state state
+        state state
     ) {
         merge(out.visual, in.visual, state);
         merge(out.layout, in.layout);
@@ -63,24 +63,15 @@ namespace bgui {
             const std::string& type,
             const std::vector<std::string>& classes,
             const std::string& id,
-            input_state state
+            state state
         );  
 
         void apply_theme(const theme& t) {
-            m_types.clear();
-            m_ids.clear();
-            m_classes.clear();
-            for (auto& [type, style] : t.types)
-                set_type(type, style);
-
-            for (auto& [cls, style] : t.classes)
-                set_class(cls, style);
-            
-            set_default(t.base);
+            m_theme = t;
         }
 
         style& get_global() {
-            return m_default;
+            return m_theme.base;
         }
 
         // singleton
@@ -94,10 +85,6 @@ namespace bgui {
         style_manager() = default;
         ~style_manager() = default;
 
-        style m_default;
-
-        std::unordered_map<std::string, style> m_types;
-        std::unordered_map<std::string, style> m_classes;
-        std::unordered_map<std::string, style> m_ids;
+        theme m_theme;
     };
 }

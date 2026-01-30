@@ -18,7 +18,7 @@ namespace bgui {
         release,
         repeat
     };
-    enum class input_state {
+    enum class state {
         normal,
         hover,
         pressed,

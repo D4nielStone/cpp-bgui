@@ -39,7 +39,7 @@ namespace bgui {
         // FINAL COMPUTED RECT (layout writes this)
         // x, y, width, height - The final position and dimensions calculated by the layout.
         vec4i m_rect {0, 0, 0, 0};
-        input_state m_state;
+        state m_state;
     public:
         void mark_style_dirty();
         // The input state of the element
@@ -50,10 +50,10 @@ namespace bgui {
         bgui::style style;                // inline style
         bgui::computed_style computed_style;       // final style
 
-        input_state get_state() const {
+        state get_state() const {
             return m_state;
         }
-        void set_state(const input_state s) {
+        void set_state(const state s) {
             m_state = s;
             mark_style_dirty();
         }
@@ -234,7 +234,7 @@ namespace bgui {
          * @brief Callback invoked when the element is initially pressed (mouse down).
          */
         virtual void on_pressed() {
-            set_state(input_state::pressed);
+            set_state(state::pressed);
         };
 
         /**
@@ -247,21 +247,21 @@ namespace bgui {
          * @brief Callback invoked when the element is clicked (pressed and released).
          */
         virtual void on_clicked() {
-            set_state(input_state::pressed);
+            set_state(state::pressed);
         };
 
         /**
          * @brief Callback invoked when the press is released (mouse up).
          */
         virtual void on_released() {
-            set_state(input_state::normal);
+            set_state(state::normal);
         };
 
         /**
          * @brief Callback invoked when the mouse cursor hovers over the element.
          */
         virtual void on_mouse_hover() {
-            set_state(input_state::hover);
+            set_state(state::hover);
         };
 
         virtual void calc_content_size() {};

@@ -8,8 +8,8 @@ namespace bgui {
         style base;
         std::unordered_map<std::string, style> types;
         std::unordered_map<std::string, style> classes;
+        std::unordered_map<std::string, style> ids;
     };
 
-    // Dark theme based on old dark_style color scheme
     bgui::theme dark_theme();
 }

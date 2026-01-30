@@ -65,11 +65,11 @@ namespace bgui {
         std::optional<color> focused;
         std::optional<color> disabled;
 
-        color resolve(input_state state, const color& fallback) const {
-            if (state == input_state::hover    && hover)    return *hover;
-            if (state == input_state::pressed  && pressed)  return *pressed;
-            if (state == input_state::focused  && focused)  return *focused;
-            if (state == input_state::disabled && disabled) return *disabled;
+        color resolve(state state, const color& fallback) const {
+            if (state == state::hover    && hover)    return *hover;
+            if (state == state::pressed  && pressed)  return *pressed;
+            if (state == state::focused  && focused)  return *focused;
+            if (state == state::disabled && disabled) return *disabled;
             if (normal) return *normal;
             return fallback;
         }
