@@ -64,7 +64,7 @@ namespace bgui {
         fs::path theme_path = resolve_path(filename);
         std::ifstream file(theme_path.c_str());
         if(!file) {
-            std::cerr << "Error parsing file " << theme_path.c_str() << ".\n";
+            std::cerr << "[Theme] Could not fint the theme file " << theme_path.c_str() << ".\n";
             return theme;
         }
         std::string line;
