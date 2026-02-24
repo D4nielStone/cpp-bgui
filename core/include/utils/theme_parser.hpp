@@ -46,8 +46,7 @@ namespace bgui {
             out.push_back(trim(item));
         return out;
     }
-
-    theme_data parse_theme(const std::string& filename) {
+    static theme_data parse_theme_stream(std::istream& in) {
         theme_data theme;
 
         enum class section_type {
@@ -60,30 +59,23 @@ namespace bgui {
 
         section_type current_section = section_type::None;
         style_block* current_block = nullptr;
-        
-        fs::path theme_path = resolve_path(filename);
-        std::ifstream file(theme_path.c_str());
-        if(!file) {
-            std::cerr << "[Theme] Could not fint the theme file " << theme_path.c_str() << ".\n";
-            return theme;
-        }
+
         std::string line;
 
-        while (std::getline(file, line)) {
+        while (std::getline(in, line)) {
             line = trim(line);
 
-            //Ignore coments and empty lines
+            // Ignore comments and empty lines
             if (line.empty() || line[0] == '#' || line[0] == ';')
                 continue;
 
-            // [base] or [type.xxx] or [class.xxx]
+            // Section headers
             if (line.front() == '[' && line.back() == ']') {
                 std::string header = line.substr(1, line.size() - 2);
-             
+
                 if (header == "base") {
                     current_section = section_type::Base;
                     current_block = &theme.base;
-                    continue;
                 }
                 else if (header.rfind("type.", 0) == 0) {
                     std::string name = header.substr(5);
@@ -94,6 +86,15 @@ namespace bgui {
                     std::string name = header.substr(6);
                     current_section = section_type::Class;
                     current_block = &theme.classes[name];
+                }
+                else if (header.rfind("id.", 0) == 0) {
+                    std::string name = header.substr(3);
+                    current_section = section_type::Id;
+                    current_block = &theme.ids[name];
+                }
+                else {
+                    current_section = section_type::None;
+                    current_block = nullptr;
                 }
 
                 continue;
@@ -107,10 +108,21 @@ namespace bgui {
             std::string value_str = trim(line.substr(eq + 1));
 
             value values = split(value_str, ',');
-
             current_block->properties[key] = values;
         }
 
         return theme;
+    }
+    theme_data parse_theme(const std::string& filename) {
+        fs::path theme_path = resolve_path(filename);
+        std::ifstream file(theme_path.c_str());
+
+        if (!file) {
+            std::cerr << "[Theme] Could not find the theme file "
+                    << theme_path.c_str() << ".\n";
+            return {};
+        }
+
+        return parse_theme_stream(file);
     }
 }
