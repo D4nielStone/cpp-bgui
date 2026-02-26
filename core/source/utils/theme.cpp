@@ -44,8 +44,8 @@ visual.background.normal = 0.08, 0.08, 0.08, 1.0
 visual.background.normal  = 0.10, 0.10, 0.10, 1.0
 visual.background.hover   = 0.12, 0.12, 0.12, 1.0
 visual.background.pressed = 0.12, 0.12, 0.12, 1.0
-visual.border.normal      = 0.04, 0.04, 0.04, 1.0
-visual.border.radius      = 4
+visual.border.normal      = 0.08, 0.08, 0.08, 1.0
+visual.border.radius      = 10
 visual.border.size        = 1
 layout.padding            = 5, 5, 5, 5
 layout.mode               = stretch, wrap_content
@@ -73,10 +73,10 @@ layout.mode               = stretch, wrap_content
 [type.checkbox]
 visual.background.normal = 0.10, 0.10, 0.10, 1.0
 visual.background.hover  = 0.12, 0.12, 0.12, 1.0
-visual.border.normal     = 0.04, 0.04, 0.04, 1.0
-visual.border.radius     = 4
+visual.border.normal     = 0.08, 0.08, 0.08, 1.0
+visual.border.radius     = 10
 visual.border.size       = 1
-layout.padding           = 5, 2
+layout.padding           = 2, 2
 layout.mode              = stretch, wrap_content
 
 
@@ -119,9 +119,11 @@ layout.mode = stretch, wrap_content
 
 [class.checkbox-box]
 visual.background.pressed = 0.5, 0.5, 0.5, 1.0
-visual.border.radius      = 4
+visual.border.normal      = 0.08, 0.08, 0.08, 1.0
+visual.border.radius      = 10
 visual.border.size        = 2
 layout.margin             = 5, 5
+layout.limit_min          = 12, 12
 layout.mode               = same, match_parent
 
 

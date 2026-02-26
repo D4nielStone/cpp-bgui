@@ -151,6 +151,14 @@ namespace bgui {
                 else
                     std::cerr << "[ThemeConverter] Invalid size value.\n";
             }
+            else if (key == "layout.limit_min") {
+                if (val.size() == 1)
+                    out.layout.limit_min = {to_int(val[0]), to_int(val[0])};
+                else if(val.size() == 2)
+                    out.layout.limit_min = {to_int(val[0]), to_int(val[1])};
+                else
+                    std::cerr << "[ThemeConverter] Invalid size value.\n";
+            }
         }
 
         return out;
