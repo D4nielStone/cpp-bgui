@@ -7,10 +7,8 @@
 namespace bgui {
     class text : public element {
     private:
-        std::string m_buffer;
-        std::string m_font_name;
+        std::string m_buffer, m_last_font;
         float m_scale;
-        bgui::font m_font;
     public:
         text(const std::string& buffer, float scale);
         ~text();

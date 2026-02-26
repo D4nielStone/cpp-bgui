@@ -49,6 +49,7 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         bgui::glfw_update(bgui::get_context());
         bgui::on_update();
+        bgui::load_font_queue();
         bgui::gl3_render(bgui::get_draw_data());
         glfwSwapBuffers(window);
     }

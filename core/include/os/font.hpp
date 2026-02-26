@@ -17,7 +17,7 @@ namespace bgui {
 
     // \brief Represents a font with its character glyphs and texture atlas.
     struct font {      
-        bgui::texture atlas;
+        bgui::texture atlas{};
         std::unordered_map<char32_t, bgui::character> chs{};
         unsigned int resolution = 0;
         float ascent = 0.0f;
@@ -25,10 +25,12 @@ namespace bgui {
         float line_gap = 0.0f;
     };
 
-    struct font_manager {
+    class font_manager {
+    public:
+        std::queue<std::string> m_font_queue;
         std::unordered_map<std::string, font> m_fonts;
         static constexpr float m_default_resolution = 40.f;
-        static font_manager& get_font_manager();
+        static font_manager& get_instance();
         font_manager();
         ~font_manager();
         font& get_font(const std::string& name);

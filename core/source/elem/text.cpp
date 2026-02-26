@@ -29,10 +29,9 @@ std::u32string utf8_to_utf32(const std::string& str) {
     return result;
 }
 
-bgui::text::text(const std::string &buffer, float scale) : m_buffer(buffer),
-    m_font_name("default"), m_scale(scale) {
+bgui::text::text(const std::string &buffer, float scale) : m_buffer(buffer), m_scale(scale) {
     type = "text";
-    set_font(m_font_name);
+    set_font(computed_style.visual.font);
     m_material.m_use_tex = true;
     m_material.m_shader_tag = "ui::text";
 }
@@ -40,14 +39,19 @@ bgui::text::~text() {
 }
 void bgui::text::on_update() {
     element::on_update();
+    // If the style changes, update the font.
+    if(m_last_font != computed_style.visual.font) {
+        set_font(computed_style.visual.font);
+        m_last_font = computed_style.visual.font;
+    }
 }
 void bgui::text::set_font(const std::string &path) {
-    auto& i = bgui::font_manager::get_font_manager();
-    m_font = i.get_font(path);
+    // 1: update the queue
+    font_manager::get_instance().m_font_queue.push(path);
 }
 
 float bgui::text::get_text_width() {
-    const auto& chs = m_font.chs;
+    const auto& chs = bgui::font_manager::get_instance().get_font(computed_style.visual.font).chs;
     if (chs.empty()) return 0.0f;
 
     float line_x = 0.f;
@@ -73,11 +77,11 @@ float bgui::text::get_text_width() {
     return max_line_width;
 }
 void bgui::text::get_requires(bgui::draw_data* data) {
-    const auto& chs = m_font.chs;
+    const auto& chs = bgui::font_manager::get_instance().get_font(computed_style.visual.font).chs;
     if (chs.empty()) return;
-    float ascent = m_font.ascent * m_scale;
-    float descent = m_font.descent * m_scale;
-    float line_gap = m_font.line_gap * m_scale;
+    float ascent = bgui::font_manager::get_instance().get_font(computed_style.visual.font).ascent * m_scale;
+    float descent = bgui::font_manager::get_instance().get_font(computed_style.visual.font).descent * m_scale;
+    float line_gap = bgui::font_manager::get_instance().get_font(computed_style.visual.font).line_gap * m_scale;
 
     float line_y = ascent;
     float line_x = 0.f;
@@ -85,7 +89,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     int line_count = 1;
     int total_width = get_text_width();
 
-    m_material.m_texture = m_font.atlas;
+    m_material.m_texture = bgui::font_manager::get_instance().get_font(computed_style.visual.font).atlas;
 
     for (char32_t ca : utf8_to_utf32(m_buffer)) {
         if (ca == U'\n') {

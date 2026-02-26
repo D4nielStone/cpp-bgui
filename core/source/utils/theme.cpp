@@ -7,8 +7,9 @@ std::string dtstr = R"(
 # BASE (default)
 # =========================
 [base]
-visual.background.normal = 0.06, 0.06, 0.06, 1.0
+visual.background.normal = 0
 visual.text.normal       = 1.0, 1.0, 1.0, 1.0
+visual.font              = default
 visual.border.normal     = 0.04, 0.04, 0.04, 1.0
 
 
@@ -86,7 +87,8 @@ layout.mode              = stretch, wrap_content
 [type.text]
 visual.background.normal = 0.0
 visual.border.normal     = 0.0
-visual.text.normal       = 1.0 1.0 1.0 1.0
+visual.text.normal       = 1.0, 1.0, 1.0, 1.0
+visual.font              = Ubuntu Regular
 layout.mode              = wrap_content, wrap_content
 layout.align             = center
 

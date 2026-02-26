@@ -20,7 +20,7 @@ namespace bgui {
     ) {
         out.background = in.background.resolve(state, out.background);
         out.border     = in.border.resolve(state, out.border);
-        out.text       = in.text.resolve(state, out.text);
+        out.text       = in.text.resolve(state::normal, out.text);
 
         apply_optional(out.border_radius, in.border_radius);
         apply_optional(out.border_size, in.border_size);

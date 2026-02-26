@@ -664,14 +664,14 @@ TEST(DeclarativeStyleTest, DefaultStyleApplication) {
     auto& sm = style_manager::get_instance();
     
     style default_style;
-    default_style.visual.font = std::make_optional("Arial");
+    default_style.visual.font = std::make_optional("default");
     default_style.visual.text.normal = {0.9f, 0.9f, 0.9f, 1.f};
     sm.set_default(default_style);
     
     element elem;
     elem.compute_style();
     
-    EXPECT_EQ(elem.computed_style.visual.font, "Arial");
+    EXPECT_EQ(elem.computed_style.visual.font, "default");
     EXPECT_FLOAT_EQ(elem.computed_style.visual.text.r, 0.9f);
 }
 
@@ -849,13 +849,13 @@ TEST(DeclarativeStyleTest, GlobalComputedStyleCaching) {
     auto& sm = style_manager::get_instance();
     
     theme app_theme;
-    app_theme.base.visual.font = std::make_optional("Arial");
+    app_theme.base.visual.font = std::make_optional("default");
     app_theme.base.visual.text.normal = {1.f, 1.f, 1.f, 1.f};
     sm.apply_theme(app_theme);
     
     auto global = sm.get_global();
     
-    EXPECT_EQ(global.visual.font, "Arial");
+    EXPECT_EQ(global.visual.font, "default");
     EXPECT_FLOAT_EQ(global.visual.text.normal->r, 1.f);
 }
 

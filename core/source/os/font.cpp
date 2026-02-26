@@ -5,7 +5,7 @@
     
 static bgui::font_manager instance;
 
-bgui::font_manager & bgui::font_manager::get_font_manager() {
+bgui::font_manager & bgui::font_manager::get_instance() {
     return instance;
 }
 bgui::font_manager::font_manager() {
@@ -24,9 +24,12 @@ bgui::font &bgui::font_manager::get_font(const std::string& name) {
     if(name == "default") {
         if(!m_fonts.empty())
             return m_fonts.begin()->second;
-        else throw std::runtime_error("Font " + name + " not found. Have you added it to the backend?");
     }
     if(has_font(name))
         return m_fonts[name];
+    std::cerr << "[FONT] Font " << name << " not found. Have you added it to the backend?" << std::endl;
+    
+    if(!m_fonts.empty())
+        return m_fonts.begin()->second;
     else throw std::runtime_error("Font " + name + " not found. Have you added it to the backend?");
 }

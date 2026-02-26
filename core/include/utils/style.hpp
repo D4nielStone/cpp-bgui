@@ -114,7 +114,7 @@ namespace bgui {
         color border {1.f, 1.f, 1.f, 1.f};
         color text {0.f, 0.f, 0.f, 0.f};
 
-        std::string font = "Arial";
+        std::string font = "default";
         float border_radius {2.f}, border_size{2.f};
         bool visible {true};
     };
