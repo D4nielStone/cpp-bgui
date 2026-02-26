@@ -145,10 +145,12 @@ TEST(LinearTest, EmptyLayoutContentSize) {
 
     linear layout(orientation::vertical);
     layout.style.layout.set_padding(10, 20);
+    layout.process_required_size({100, 100});
     layout.compute_style();
 
-    EXPECT_FLOAT_EQ(layout.content_width(), 20.0f);  // left + right padding
-    EXPECT_FLOAT_EQ(layout.content_height(), 40.0f); // top + bottom padding
+    // Content size should be 0 becuse exclude the padding, margin etc.
+    EXPECT_FLOAT_EQ(layout.content_width(), 0.0f);
+    EXPECT_FLOAT_EQ(layout.content_height(), 0.0f);
 }
 
 // Test: Vertical layout with fixed size elements
@@ -384,7 +386,6 @@ TEST(LinearTest, ContentWidthVertical) {
     bgui::set_up();
     linear layout(orientation::vertical);
     layout.style.layout.set_padding(5, 10);
-    layout.compute_style();
     
     auto& elem1 = layout.add<mock_element>(100, 50);
     auto& elem2 = layout.add<mock_element>(150, 50);
@@ -393,9 +394,10 @@ TEST(LinearTest, ContentWidthVertical) {
     elem1.process_required_size({100, 50});
     elem2.process_required_size({150, 50});
     elem3.process_required_size({80, 50});
+    layout.on_update();
     
-    // Width should be max element width + padding: 150 + 5 + 5 = 160
-    EXPECT_FLOAT_EQ(layout.content_width(), 160.0f);
+    // Width should be max element width: 150
+    EXPECT_FLOAT_EQ(layout.content_width(), 150.0f);
 }
 
 // Test: Content height calculation for horizontal layout
@@ -403,7 +405,6 @@ TEST(LinearTest, ContentHeightHorizontal) {
     bgui::set_up();
     linear layout(orientation::horizontal);
     layout.style.layout.set_padding(5, 10);
-    layout.compute_style();
     
     auto& elem1 = layout.add<mock_element>(50, 100);
     auto& elem2 = layout.add<mock_element>(50, 150);
@@ -412,9 +413,10 @@ TEST(LinearTest, ContentHeightHorizontal) {
     elem1.process_required_size({50, 100});
     elem2.process_required_size({50, 150});
     elem3.process_required_size({50, 80});
+    layout.on_update();
     
-    // Height should be max element height + padding: 150 + 10 + 10 = 170
-    EXPECT_FLOAT_EQ(layout.content_height(), 170.0f);
+    // Height should be max element height: 150
+    EXPECT_FLOAT_EQ(layout.content_height(), 150.0f);
 }
 
 // Test: Percent mode
