@@ -42,13 +42,18 @@ int main() {
         .set_on_change([&cb](bool checked){
             cb.set_enable(checked);
         });
-    auto& txt2 = context.add<bgui::text>("Another text", 0.35f);
+    auto& txt2 = context.add<bgui::text>("FPS: ", 0.35f);
     auto& button2 = context.add<bgui::button>("Button inside window", 0.35f, [](){});
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         bgui::glfw_update(bgui::get_context());
         bgui::on_update();
+
+        // Display fps in the title
+        int fps = bgui::get_fps();
+        txt2.set_buffer("FPS: " + std::to_string(fps));
+        
         bgui::load_font_queue();
         bgui::gl3_render(bgui::get_draw_data());
         glfwSwapBuffers(window);

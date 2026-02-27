@@ -1,5 +1,6 @@
 #include "elem/window.hpp"
 #include "elem/button.hpp"
+#include "os/os.hpp"
 
 bgui::window::window(const char* title) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr) {
     type = "window";

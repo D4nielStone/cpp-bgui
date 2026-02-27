@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iostream>
 #include "os/os.hpp"
+#include <chrono>
 
 static bgui::context s_window_io;
 
@@ -34,4 +35,21 @@ bgui::mat4 bgui::get_projection() {
 bool bgui::get_pressed(const bgui::input_key& k) {
     if(bgui::get_context().m_input_map[k] == bgui::input_action::press) return true;
     return false;
+}
+
+int bgui::get_fps() {
+    static int frame_count = 0;
+    static auto last_time = std::chrono::high_resolution_clock::now();
+    frame_count++;
+    static int fps = 0;
+    auto current_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = current_time - last_time;
+
+    if (elapsed.count() >= 1.0f) {
+        fps = frame_count / elapsed.count();
+        frame_count = 0;
+        last_time = current_time;
+        std::cout << fps << " FPS" << std::endl;
+    }
+    return fps;
 }
