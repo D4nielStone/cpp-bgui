@@ -49,7 +49,6 @@ int bgui::get_fps() {
         fps = frame_count / elapsed.count();
         frame_count = 0;
         last_time = current_time;
-        std::cout << fps << " FPS" << std::endl;
     }
     return fps;
 }
