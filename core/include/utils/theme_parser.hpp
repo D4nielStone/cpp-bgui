@@ -119,7 +119,7 @@ namespace bgui {
 
         if (!file) {
             std::cerr << "[Theme] Could not find the theme file "
-                    << theme_path.c_str() << ".\n";
+                    << theme_path.string() << ".\n";
             return {};
         }
 
