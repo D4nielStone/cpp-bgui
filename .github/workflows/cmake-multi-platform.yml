@@ -21,6 +21,6 @@ jobs:
 
       - name: Build
         run: cmake --build out --config Debug
-
+      
       - name: Run Tests
-        run: ctest --test-dir out --output-on-failure -C Debug
+        run: ctest --test-dir out --output-on-failure -C Debug -V
