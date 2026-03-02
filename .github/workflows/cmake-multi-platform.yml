@@ -23,4 +23,4 @@ jobs:
         run: cmake --build out --config Debug
       
       - name: Run Tests
-        run: ctest --test-dir out --output-on-failure -C Release
+        run: ctest --test-dir out --output-on-failure -C Release -V
