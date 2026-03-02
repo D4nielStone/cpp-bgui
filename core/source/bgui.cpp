@@ -16,7 +16,7 @@ bgui::layout& bgui::get_layout() {
 }
 
 void bgui::set_up() {
-    std::cout << "[BGUI] Setting-up the library.\n";
+    //std::cout << "[BGUI] Setting-up the library.\n";
     init_trigger = true;
     // Create the default layout
     if(!s_main_layout)
