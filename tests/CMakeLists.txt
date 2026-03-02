@@ -24,3 +24,14 @@ target_link_libraries(
 )
 
 add_test(NAME AllTests COMMAND all_tests)
+
+if(WIN32)
+  # On Windows, do not link pthreads
+  set(THREADS_PREFER_PTHREAD_FLAG OFF)
+  find_package(Threads REQUIRED)
+  target_link_libraries(your_target PRIVATE Threads::Threads)
+else()
+  # On Unix-like systems, you may need pthreads
+  find_package(Threads REQUIRED)
+  target_link_libraries(all_tests PRIVATE Threads::Threads)
+endif()
