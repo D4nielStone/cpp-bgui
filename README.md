@@ -59,7 +59,7 @@ After initializing the library, you can set the main layout and add UI elements 
 
 ```cpp
 /** backends are included based on the cmake build settings.
-    EX: BGUI_USE_FREETYPE
+    e.g.: BGUI_USE_FREETYPE
         BGUI_USE_GLFW
         BGUI_USE_OPENGL
 */
