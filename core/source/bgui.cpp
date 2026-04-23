@@ -26,7 +26,6 @@ void bgui::set_up() {
         s_draw_data = std::make_unique<bgui::draw_data>();
     // Set up default theme
     auto& sm = style_manager::get_instance();
-    sm.apply_theme(dark_theme());
 }
 
 void bgui::cascade_style() {
