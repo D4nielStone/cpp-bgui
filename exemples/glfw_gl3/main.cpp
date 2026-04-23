@@ -4,6 +4,8 @@
 int main() {
     // Setup
     bgui::set_up();
+    sm.apply_theme(dark_theme());
+    
     GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Exemple");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
