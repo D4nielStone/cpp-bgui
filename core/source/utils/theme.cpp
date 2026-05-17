@@ -88,7 +88,7 @@ layout.mode              = stretch, wrap_content
 visual.background.normal = 0.0
 visual.border.normal     = 0.0
 visual.text.normal       = 1.0, 1.0, 1.0, 1.0
-visual.font              = Ubuntu Regular
+visual.font              = default
 layout.mode              = wrap_content, wrap_content
 layout.align             = center
 
