@@ -38,7 +38,7 @@ namespace bgui {
 
         // 3. id
         if (!id.empty()) {
-            if (auto it = m_theme.ids.find(id); it != m_theme.types.end())
+            if (auto it = m_theme.ids.find(id); it != m_theme.ids.end())
                 merge(cs, it->second, state);
         }
     }
