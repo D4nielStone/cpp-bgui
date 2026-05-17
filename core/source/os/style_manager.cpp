@@ -32,7 +32,7 @@ namespace bgui {
 
         // 2. classes
         for (auto& c : classes) {
-            if (auto it = m_theme.classes.find(c); it != m_theme.types.end())
+            if (auto it = m_theme.classes.find(c); it != m_theme.classes.end())
                 merge(cs, it->second, state);
         }
 
