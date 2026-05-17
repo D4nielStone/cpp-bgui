@@ -4,7 +4,8 @@
 int main() {
     // Setup
     bgui::set_up();
-    sm.apply_theme(dark_theme());
+    auto& sm = bgui::style_manager::get_instance();
+    sm.apply_theme(bgui::dark_theme());
     
     GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Exemple");
     bgui::set_up_gl3();
@@ -36,6 +37,7 @@ int main() {
     auto& txt = panel.add<bgui::text>("Linear Layout Exemple", 0.35f);
     auto& button = panel.add<bgui::button>("Button Exemple", 0.35f, [](){});
     auto& win = root.add<bgui::window>("Hello Bubble!");
+    
     auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
     context.id = "window_ctx";
     context.add<bgui::text>("This is a window widget exemple.", 0.35f);
