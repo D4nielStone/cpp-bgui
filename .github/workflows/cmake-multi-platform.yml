@@ -29,6 +29,8 @@ jobs:
         run: >
           cmake -S . -B out
           -DBGUI_USE_OPENGL=OFF
+          -DBGUI_USE_OPENGL=OFF
+          -DBGUI_USE_VULKAN=OFF
           -DBGUI_USE_GLFW=OFF
           -DBGUI_BUILD_EXAMPLES=OFF
           -DBGUI_USE_FREETYPE=OFF
