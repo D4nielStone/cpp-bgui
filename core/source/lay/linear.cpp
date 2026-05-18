@@ -35,10 +35,15 @@ void linear::on_update() {
         auto mreq = elem->computed_style.layout.size_mode[main];
 
         if (mreq == mode::pixel || mreq == mode::wrap_content || mreq == mode::same) {
-            elem->process_required_size(available);
+            int margin_main_start = elem->computed_style.layout.margin[main];
+            int margin_main_end = elem->computed_style.layout.margin[main + 2];
+            vec2i elem_available = available;
+            elem_available[main] -= margin_main_start + margin_main_end;
+            elem_available[main] = std::max(0, elem_available[main]);
+            elem->process_required_size(elem_available);
             fixed_main += elem->processed_size()[main];
-            fixed_main += elem->computed_style.layout.margin[main];
-            fixed_main += elem->computed_style.layout.margin[main + 2];
+            fixed_main += margin_main_start;
+            fixed_main += margin_main_end;
         } else {
             stretch_count++;
         }

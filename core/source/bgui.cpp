@@ -9,6 +9,7 @@ static bool init_trigger = false;
 std::unique_ptr<bgui::layout> bgui::s_main_layout;
 static std::unique_ptr<bgui::draw_data> s_draw_data;
 static std::queue<std::function<void()>> s_functions;
+static bgui::element* s_keyboard_focused = nullptr;
 
 bgui::layout& bgui::get_layout() {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
@@ -98,11 +99,20 @@ bool update_inputs(bgui::layout &lay){
             my >= y &&
             my <= y + h;
 
-        if (inside) {
+            if (inside) {
             if(!elem->recives_input()) return false;
             elem->on_mouse_hover();
             if (mouse_click) {
                 g_mouse_captured = elem; // start capture
+                if (elem->type == "inputarea") {
+                    if (s_keyboard_focused && s_keyboard_focused != elem) {
+                        s_keyboard_focused->set_state(bgui::state::normal);
+                    }
+                    s_keyboard_focused = elem;
+                } else if (s_keyboard_focused) {
+                    s_keyboard_focused->set_state(bgui::state::normal);
+                    s_keyboard_focused = nullptr;
+                }
                 elem->on_clicked();
                 elem->on_pressed();
             }
@@ -117,6 +127,10 @@ bool update_inputs(bgui::layout &lay){
             }
             return true;
         }
+    }
+    if (mouse_click && s_keyboard_focused) {
+        s_keyboard_focused->set_state(bgui::state::normal);
+        s_keyboard_focused = nullptr;
     }
     return false;
 }
@@ -143,6 +157,10 @@ void bgui::on_update() {
 
     // reset cursor
     update_inputs(*bgui::s_main_layout);
+
+    if (!s_keyboard_focused) {
+        bgui::get_context().m_char_buffer.clear();
+    }
 
     bgui::get_context().m_last_mouse_left = bgui::get_pressed(bgui::input_key::mouse_left);
     bgui::get_context().m_last_mouse_pos = bgui::get_mouse_position();

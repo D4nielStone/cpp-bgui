@@ -10,7 +10,9 @@ namespace bgui {
         none,
         mouse_left,
         mouse_right,
-        mouse_middle
+        mouse_middle,
+        backspace,
+        enter
     };
     enum class input_action {
         none,
