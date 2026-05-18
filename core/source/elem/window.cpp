@@ -25,5 +25,6 @@ void bgui::window::on_update() {
         processed_y()+m_title->is_drag()[1],
         processed_width(), 
         processed_height());
+    element::on_update();
     linear::on_update();
 }

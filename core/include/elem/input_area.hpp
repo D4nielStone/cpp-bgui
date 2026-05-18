@@ -25,8 +25,8 @@ namespace bgui {
         void on_update() override;
         text& get_label();
         void get_requires(bgui::draw_data* calls) override;
-        std::string &get_buffer() {
-            return m_input_buffer.empty() ? m_input_buffer : m_placeholder;
-        }
+        void set_buffer(const std::string& buffer) { m_input_buffer = buffer; }
+        std::string& get_buffer() { return m_input_buffer; }
+        const std::string& get_buffer() const { return m_input_buffer; }
     };
 } // namespace bgui

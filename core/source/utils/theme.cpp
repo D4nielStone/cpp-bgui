@@ -7,7 +7,7 @@ std::string dtstr = R"(
 # BASE (default)
 # =========================
 [base]
-visual.background.normal = 0
+visual.background.normal = 0.1, 0.1, 0.1, 1.0
 visual.text.normal       = 1.0, 1.0, 1.0, 1.0
 visual.font              = default
 visual.border.normal     = 0.04, 0.04, 0.04, 1.0
@@ -62,7 +62,6 @@ visual.background.pressed = 0.12, 0.12, 0.12, 1.0
 visual.border.normal      = 0.04, 0.04, 0.04, 1.0
 visual.border.radius      = 4
 visual.border.size        = 1
-layout.padding            = 5, 5, 5, 5
 layout.mode               = stretch, wrap_content
 
 
@@ -115,7 +114,8 @@ visual.border.normal     = 0.0
 
 [class.inputarea-txt]
 layout.mode = stretch, wrap_content
-
+layout.align = start, start
+layout.margin = 5, 5
 
 [class.checkbox-box]
 visual.background.pressed = 0.5, 0.5, 0.5, 1.0
@@ -213,7 +213,7 @@ visual.background.pressed = 0.82, 0.82, 0.82, 1.0
 visual.border.normal      = 0.76, 0.76, 0.76, 1.0
 visual.border.radius      = 4
 visual.border.size        = 1
-layout.padding            = 5, 5, 5, 5
+layout.padding            = 0
 layout.mode               = stretch, wrap_content
 
 
@@ -266,7 +266,8 @@ visual.border.normal     = 1.0, 1.0, 1.0, 1.0
 
 [class.inputarea-txt]
 layout.mode = stretch, wrap_content
-
+layout.align = start, start
+layout.margin = 5, 5
 
 [class.checkbox-box]
 visual.background.pressed = 0.25, 0.25, 0.25, 1.0
