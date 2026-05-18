@@ -21,5 +21,6 @@ namespace bgui {
     std::string read_file(const std::string& path);
     bgui::mat4 get_projection();
     bool get_pressed(const input_key&);
+    float get_time();
     int get_fps();
 } // namespace bgui

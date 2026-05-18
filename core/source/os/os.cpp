@@ -37,6 +37,14 @@ bool bgui::get_pressed(const bgui::input_key& k) {
     return false;
 }
 
+float bgui::get_time() {
+    using namespace std::chrono;
+    static auto start_time = high_resolution_clock::now();
+    auto now = high_resolution_clock::now();
+    duration<float> elapsed = now - start_time;
+    return elapsed.count();
+}
+
 int bgui::get_fps() {
     static int frame_count = 0;
     static auto last_time = std::chrono::high_resolution_clock::now();
