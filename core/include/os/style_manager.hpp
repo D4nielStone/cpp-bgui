@@ -67,10 +67,22 @@ namespace bgui {
 
         void apply_theme(const theme& t) {
             m_theme = t;
+            m_theme_changed = true;
+        }
+
+        bool has_theme_changed() const {
+            return m_theme_changed;
+        }
+
+        void clear_theme_changed_flag() {
+            m_theme_changed = false;
         }
 
         style& get_global() {
             return m_theme.base;
+        }
+        theme& get_theme() {
+            return m_theme;
         }
 
         // singleton
@@ -85,5 +97,6 @@ namespace bgui {
         ~style_manager() = default;
 
         theme m_theme;
+        bool m_theme_changed = false;
     };
 }

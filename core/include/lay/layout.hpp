@@ -27,6 +27,14 @@ namespace bgui {
             }
         }
         void cascade_style() {
+            auto& sm = style_manager::get_instance();
+            
+            // If theme changed, mark all styles as dirty
+            if (sm.has_theme_changed()) {
+                mark_style_dirty();
+                sm.clear_theme_changed_flag();
+            }
+            
             compute_style();
             // compute children style
             for (auto& elem : get_elements()) {
