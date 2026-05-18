@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # --- Backend options ---
-option(BGUI_USE_OPENGL   "Enable OpenGL backend"   OFF)
-option(BGUI_USE_VULKAN   "Enable Vulkan backend"   ON)
+option(BGUI_USE_OPENGL   "Enable OpenGL backend"   ON)
+option(BGUI_USE_VULKAN   "Enable Vulkan backend"   OFF)
 option(BGUI_USE_GLFW     "Enable GLFW backend"     ON)
 option(BGUI_USE_FREETYPE "Enable FreeType support" ON)
 option(BGUI_BUILD_EXAMPLES "Build examples"        ON)

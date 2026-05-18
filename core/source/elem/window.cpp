@@ -11,8 +11,6 @@ bgui::window::window(const char* title) : linear(bgui::orientation::vertical), m
     // testing the header:
     m_header = &add<bgui::linear>(bgui::orientation::horizontal);
     m_header->add_class("window-header");
-    // TODO: switch to icon image later
-    m_header->add<bgui::button>(" V ", 0.35f, [](){}).add_class("window-button");
     m_title = &m_header->add<bgui::text>(title, 0.35f);
     m_title->add_class("window-label");
     // TODO: switch to image button later
