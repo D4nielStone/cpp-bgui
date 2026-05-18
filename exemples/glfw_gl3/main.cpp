@@ -7,7 +7,7 @@ int main() {
     auto& sm = bgui::style_manager::get_instance();
     sm.apply_theme(bgui::dark_theme());
     
-    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Exemple");
+    GLFWwindow* window = bgui::set_up_glfw(1000, 500, "BGUI GLFW & gl3 Exemple");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
     
@@ -59,6 +59,7 @@ int main() {
         txt2.set_buffer("FPS: " + std::to_string(fps));
         
         bgui::load_font_queue();
+        bgui::gl3_clear();
         bgui::gl3_render(bgui::get_draw_data());
         glfwSwapBuffers(window);
     }
