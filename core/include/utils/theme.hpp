@@ -12,4 +12,5 @@ namespace bgui {
     };
 
     bgui::theme dark_theme();
+    bgui::theme light_theme();
 }
