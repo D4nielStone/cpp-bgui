@@ -19,14 +19,14 @@ visual.border.normal     = 0.04, 0.04, 0.04, 1.0
 
 [type.linear]
 visual.background.normal = 0.08, 0.08, 0.08, 1.0
-visual.border.normal     = 0.10, 0.10, 0.10, 1.0
+visual.border.normal     = 0.07, 0.07, 0.07, 1.0
 visual.visible           = false
 layout.padding           = 5, 2
 
 
 [type.window]
 visual.background.normal = 0.08, 0.08, 0.08, 1.0
-visual.border.normal     = 0.10, 0.10, 0.10, 1.0
+visual.border.normal     = 0.07, 0.07, 0.07, 1.0
 visual.visible           = true
 layout.padding           = 0, 0
 layout.size              = 400, 300
