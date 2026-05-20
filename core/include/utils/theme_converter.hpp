@@ -38,6 +38,8 @@ namespace bgui {
     static bgui::state to_state(const std::string& s) {
         if (s == "normal")  return bgui::state::normal;
         if (s == "hover")   return bgui::state::hover;
+        if (s == "focused")   return bgui::state::focused;
+        if (s == "disabled")   return bgui::state::disabled;
         if (s == "pressed") return bgui::state::pressed;
 
         return bgui::state::normal;
