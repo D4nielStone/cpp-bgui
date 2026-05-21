@@ -57,11 +57,13 @@ layout.mode               = stretch, wrap_content
 
 [type.inputarea]
 visual.background.normal  = 0.10, 0.10, 0.10, 1.0
+visual.background.focused   = 0.12, 0.12, 0.12, 1.0
 visual.background.hover   = 0.12, 0.12, 0.12, 1.0
 visual.background.pressed = 0.12, 0.12, 0.12, 1.0
 visual.border.normal      = 0.06, 0.06, 0.06, 1.0
 visual.border.radius      = 4
 visual.border.size        = 1
+layout.padding            = 0
 layout.mode               = stretch, wrap_content
 
 
@@ -208,6 +210,7 @@ layout.mode               = stretch, wrap_content
 
 [type.inputarea]
 visual.background.normal  = 0.94, 0.94, 0.94, 1.0
+visual.background.focused   = 0.12, 0.12, 0.12, 1.0
 visual.background.hover   = 0.88, 0.88, 0.88, 1.0
 visual.background.pressed = 0.82, 0.82, 0.82, 1.0
 visual.border.normal      = 0.76, 0.76, 0.76, 1.0
