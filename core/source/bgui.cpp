@@ -106,11 +106,11 @@ bool update_inputs(bgui::layout &lay){
                 g_mouse_captured = elem; // start capture
                 if (elem->type == "inputarea") {
                     if (s_keyboard_focused && s_keyboard_focused != elem) {
-                        s_keyboard_focused->set_state(bgui::state::normal);
+                        s_keyboard_focused->set_style_state(bgui::state::normal);
                     }
                     s_keyboard_focused = elem;
                 } else if (s_keyboard_focused) {
-                    s_keyboard_focused->set_state(bgui::state::normal);
+                    s_keyboard_focused->set_style_state(bgui::state::normal);
                     s_keyboard_focused = nullptr;
                 }
                 elem->on_clicked();
@@ -129,7 +129,7 @@ bool update_inputs(bgui::layout &lay){
         }
     }
     if (mouse_click && s_keyboard_focused) {
-        s_keyboard_focused->set_state(bgui::state::normal);
+        s_keyboard_focused->set_style_state(bgui::state::normal);
         s_keyboard_focused = nullptr;
     }
     return false;

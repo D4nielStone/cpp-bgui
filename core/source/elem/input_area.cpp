@@ -2,8 +2,8 @@
 #include "os/os.hpp"
 #include "bgui.hpp"
 
-bgui::input_area::input_area(const std::string& buffer, const float scale, const std::string& placeholder) :
-    linear(), m_placeholder(placeholder), m_input_buffer(buffer) {
+bgui::input_area::input_area(const std::string& buffer, const float scale, std::function<void(const std::string)> action, const std::string& placeholder) :
+    linear(), m_placeholder(placeholder), m_input_buffer(buffer), m_enter_func(action) {
     type = "inputarea";
     recives_input(true);
     m_text = &add<text>(m_input_buffer.empty() ? m_placeholder : m_input_buffer, scale);
@@ -21,7 +21,7 @@ void bgui::input_area::on_pressed() {
 
 void bgui::input_area::on_clicked() {
     element::on_clicked();
-    set_state(state::focused);
+    set_style_state(state::focused);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
@@ -40,7 +40,7 @@ bgui::text& bgui::input_area::get_label() {
 }
 
 void bgui::input_area::on_update() {
-    if(get_state() == state::focused) {
+    if(get_style_state() == state::focused) {
         auto& ctx = bgui::get_context();
         if(!ctx.m_char_buffer.empty()) {
             m_input_buffer += ctx.m_char_buffer;
@@ -64,8 +64,16 @@ void bgui::input_area::on_update() {
         m_text->set_buffer(m_input_buffer);
         m_text->computed_style.visual.text.a = 1.f;
     }
+    // on enter func
+    if(bgui::get_pressed(bgui::input_key::enter)) {
+        bgui::add_function([&](){
+            m_enter_func(get_buffer());
+            set_buffer("");
+        });
+    }
+
     linear::on_update();
-    set_state(state::focused);
+    set_style_state(state::focused);
 }
 
 void bgui::input_area::get_requires(bgui::draw_data* data) {

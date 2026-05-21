@@ -11,11 +11,12 @@ namespace bgui {
         text* m_text;
         std::string m_placeholder, m_input_buffer;
     public:
+        std::function<void(const std::string)> m_enter_func;
         /// \brief Contructor.
         /// \param buffer The initial text to inject on the buffer.
         /// \param scale The scale of the text.
         /// \param placeholder The message to display when the buffer is empty.
-        explicit input_area(const std::string& buffer, const float scale, const std::string& placeholder = "");
+        explicit input_area(const std::string& buffer, const float scale, std::function<void(const std::string)> action, const std::string& placeholder = "");
         ~input_area();
         
         void on_clicked() override;

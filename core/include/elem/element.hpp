@@ -50,10 +50,10 @@ namespace bgui {
         bgui::style style;                // inline style
         bgui::computed_style computed_style;       // final style
 
-        state get_state() const {
+        state get_style_state() const {
             return m_state;
         }
-        void set_state(const state s) {
+        void set_style_state(const state s) {
             m_state = s;
             mark_style_dirty();
         }
@@ -234,7 +234,7 @@ namespace bgui {
          * @brief Callback invoked when the element is initially pressed (mouse down).
          */
         virtual void on_pressed() {
-            set_state(state::pressed);
+            set_style_state(state::pressed);
         };
 
         /**
@@ -247,21 +247,21 @@ namespace bgui {
          * @brief Callback invoked when the element is clicked (pressed and released).
          */
         virtual void on_clicked() {
-            set_state(state::pressed);
+            set_style_state(state::pressed);
         };
 
         /**
          * @brief Callback invoked when the press is released (mouse up).
          */
         virtual void on_released() {
-            set_state(state::normal);
+            set_style_state(state::normal);
         };
 
         /**
          * @brief Callback invoked when the mouse cursor hovers over the element.
          */
         virtual void on_mouse_hover() {
-            set_state(state::hover);
+            set_style_state(state::hover);
         };
 
         virtual void calc_content_size() {};
