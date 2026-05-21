@@ -26,10 +26,12 @@ void bgui::input_area::on_clicked() {
 }
 
 void bgui::input_area::on_released() {
+    element::on_released();
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
 void bgui::input_area::on_mouse_hover() {
+    element::on_mouse_hover();
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 

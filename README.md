@@ -3,7 +3,7 @@ Bubble GUI
 
 <p align="center"><b><em><q>I moved mountains to align a button.</q></em></b></p>
 
-<img width="1280" height="702" alt="image" src="https://github.com/user-attachments/assets/fb3a447c-1f02-41c3-9ee7-ff3a64190d07" />
+<img width="1130" height="658" alt="image" src="https://github.com/user-attachments/assets/68ed3ca3-d366-4221-ab91-b9a03aa4a81e" />
 
 ---
 
@@ -59,7 +59,7 @@ After initializing the library, you can set the main layout and add UI elements 
 
 ```cpp
 /** backends are included based on the cmake build settings.
-    e.g.: BGUI_USE_FREETYPE
+    EX: BGUI_USE_FREETYPE
         BGUI_USE_GLFW
         BGUI_USE_OPENGL
 */
