@@ -54,9 +54,7 @@ int main() {
     auto& button2 = context.add<bgui::button>("Button inside window", 0.35f, [](){});
     //auto& ia = context.add<bgui::input_area>("", 0.35f, "Input area exemple");
 
-    // Main loop
-    while (!glfwWindowShouldClose(window)) {
-        bgui::glfw_update(bgui::get_context());
+    bgui::get_context().m_refresh_func = [&](){
         bgui::on_update();
 
         // Display fps in the title
@@ -67,6 +65,10 @@ int main() {
         bgui::gl3_clear();
         bgui::gl3_render(bgui::get_draw_data());
         glfwSwapBuffers(window);
+    };
+
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
     }
 
     // Cleanup

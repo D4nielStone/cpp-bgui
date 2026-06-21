@@ -4,6 +4,7 @@
 #include "utils/vec.hpp"
 #include "utils/mat.hpp"
 #include "utils/enums.hpp"
+#include <functional>
 
 namespace bgui {
     struct context {
@@ -15,6 +16,7 @@ namespace bgui {
         std::string m_title{""};
         bool m_last_mouse_left = false;
         cursor m_actual_cursor = cursor::arrow;
+        std::function<void()> m_refresh_func;
     };
     context& get_context();
     bgui::vec2i get_context_size();
