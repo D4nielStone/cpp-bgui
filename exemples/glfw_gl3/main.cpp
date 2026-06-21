@@ -52,7 +52,7 @@ int main() {
         });
     auto& txt2 = context.add<bgui::text>("FPS: ", 0.35f);
     auto& button2 = context.add<bgui::button>("Button inside window", 0.35f, [](){});
-    auto& ia = context.add<bgui::input_area>("", 0.35f, "Input area exemple");
+    //auto& ia = context.add<bgui::input_area>("", 0.35f, "Input area exemple");
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
