@@ -56,7 +56,7 @@ void linear::on_update() {
     }
 
     for (auto& elem : m_elements) {
-        if(!elem->is_enabled()) continue;
+        if(!elem->is_enabled() || elem->type == "window") continue;
         vec2i final_available = elem->processed_size();
 
         for (int axis = 0; axis < 2; ++axis) {
@@ -125,7 +125,7 @@ void linear::on_update() {
     }
 
     for (auto& elem : m_elements) {
-        if(!elem->is_enabled()) continue;
+        if(!elem->is_enabled() || elem->type == "window") continue;
 
         cursor_main += elem->computed_style.layout.margin[main];
 
