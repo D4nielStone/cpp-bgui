@@ -7,6 +7,7 @@ bgui::window::window(const char* title) : linear(bgui::orientation::vertical), m
     // window widget experiment
     //TODO:: add parse init config for window
     set_position(20, 20);
+    set_flex(false);
 
     // testing the header:
     m_header = &add<bgui::linear>(bgui::orientation::horizontal);
@@ -25,6 +26,6 @@ void bgui::window::on_update() {
         processed_y()+m_title->is_drag()[1],
         processed_width(), 
         processed_height());
-    element::on_update();
+    m_title->on_drag({0, 0});
     linear::on_update();
 }

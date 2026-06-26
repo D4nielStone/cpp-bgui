@@ -11,9 +11,11 @@ linear::linear(const orientation& ori) : m_orientation(ori), layout() {
 
 void linear::on_update() {
     element::on_update();
-    calc_content_size();
 
-    if (m_elements.empty()) return;
+    for(auto& [lay, elems] : m_elements) {
+    calc_content_size(lay);
+
+    if (m_elements[lay].empty()) return;
 
     const bool vertical = (m_orientation == orientation::vertical);
     const int main = vertical ? 1 : 0;
@@ -31,7 +33,7 @@ void linear::on_update() {
     float fixed_main = 0.f;
     int stretch_count = 0;
 
-    for (auto& elem : m_elements) {
+    for (auto& elem : m_elements[lay]) {
         auto mreq = elem->computed_style.layout.size_mode[main];
 
         if (mreq == mode::pixel || mreq == mode::wrap_content || mreq == mode::same) {
@@ -55,8 +57,12 @@ void linear::on_update() {
         if (stretch_size < 0.f) stretch_size = 0.f;
     }
 
-    for (auto& elem : m_elements) {
-        if(!elem->is_enabled() || elem->type == "window") continue;
+    for (auto& elem : m_elements[lay]) {
+        if(!elem->is_flex()) {
+            elem->on_update();
+            continue;
+        }
+        if(!elem->is_enabled()) continue;
         vec2i final_available = elem->processed_size();
 
         for (int axis = 0; axis < 2; ++axis) {
@@ -99,7 +105,11 @@ void linear::on_update() {
     }
 
     int content_main = 0;
-    for (auto& elem : m_elements) {
+    for (auto& elem : m_elements[lay]) {
+        if(!elem->is_flex()) {
+            elem->on_update();
+            continue;
+        }
         if(!elem->is_enabled()) continue;
         content_main += elem->computed_style.layout.margin[main];
         content_main += elem->processed_size()[main];
@@ -124,8 +134,12 @@ void linear::on_update() {
             break;
     }
 
-    for (auto& elem : m_elements) {
-        if(!elem->is_enabled() || elem->type == "window") continue;
+    for (auto& elem : m_elements[lay]) {
+        if(!elem->is_flex()) {
+            elem->on_update();
+            continue;
+        }
+        if(!elem->is_enabled()) continue;
 
         cursor_main += elem->computed_style.layout.margin[main];
 
@@ -168,12 +182,12 @@ void linear::on_update() {
 
         cursor_main += elem->processed_size()[main];
         cursor_main += elem->computed_style.layout.margin[main + 2];
-
-        elem->on_update();
+            elem->on_update();
+    }
     }
 }
 
-void linear::calc_content_size() {
+void linear::calc_content_size(const layer& lay) {
     if(!is_style_dirty()) return;
     const bool vertical = (m_orientation == orientation::vertical);
 
@@ -186,7 +200,7 @@ void linear::calc_content_size() {
     const int pad_right  = computed_style.layout.padding.z;
     const int pad_bottom = computed_style.layout.padding.w;
 
-    if (m_elements.empty()) {
+    if (m_elements[lay].empty()) {
         m_content_size = {
             pad_left + pad_right,
             pad_top + pad_bottom
@@ -194,7 +208,7 @@ void linear::calc_content_size() {
         return;
     }
 
-    for (auto& elem : m_elements) {
+    for (auto& elem : m_elements[lay]) {
         if (!elem->is_enabled())
             continue;
 

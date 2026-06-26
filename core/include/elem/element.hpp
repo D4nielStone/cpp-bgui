@@ -3,6 +3,7 @@
 #include <memory>
 #include <limits.h>
 
+#include "lay/layer.hpp"
 #include "utils/style.hpp"
 #include "utils/draw.hpp"
 #include "utils/border.hpp"
@@ -40,7 +41,10 @@ namespace bgui {
         // x, y, width, height - The final position and dimensions calculated by the layout.
         vec4i m_rect {0, 0, 0, 0};
         state m_state;
+        bool m_flex = true;
     public:
+        void set_flex(bool f) {m_flex = f;}
+        bool is_flex() const {return m_flex;}
         void mark_style_dirty();
         // The input state of the element
         std::string type;                 // "button", "text", "linear"
@@ -264,7 +268,7 @@ namespace bgui {
             set_style_state(state::hover);
         };
 
-        virtual void calc_content_size() {};
+        virtual void calc_content_size(const layer& lay) {};
 
         /**
          * @brief Gets the minimum required size for the element's content.

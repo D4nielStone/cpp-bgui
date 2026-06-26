@@ -15,7 +15,7 @@ namespace bgui {
         ~linear() = default;
     
         void on_update() override;
-        void calc_content_size() override;
+        void calc_content_size(const layer& lay) override;
         
         bgui::layout* as_layout() override { return this; }
     };

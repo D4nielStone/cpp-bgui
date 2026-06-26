@@ -64,68 +64,70 @@ bool update_inputs(bgui::layout &lay){
     bool mouse_click = (mouse_now && !bgui::get_context().m_last_mouse_left);
     bool mouse_released = (!mouse_now && bgui::get_context().m_last_mouse_left);
     
-    const auto& elements = lay.get_elements();   
+    for(size_t i = lay.get_elements().size(); i-- > 0; ) {
+        // iterate through elements in reverse order to prioritize topmost elements
+        auto& elements = lay.get_elements()[static_cast<bgui::layer>(i)];
+        for (size_t i = elements.size(); i-- > 0; ) {
+            auto elem = elements[i].get();
 
-    for (size_t i = elements.size(); i-- > 0; ) {
-        auto elem = elements[i].get();
-
-        if (auto* cast = elem->as_layout())
-            if(update_inputs(*cast)) {
+            if (auto* cast = elem->as_layout())
+                if(update_inputs(*cast)) {
+                    return true;
+                }
+            
+            // update the last input-captured element
+            if (g_mouse_captured) {
+                if (mouse_now) {
+                    g_mouse_captured->on_pressed();
+                    g_mouse_captured->on_drag(m - bgui::get_context().m_last_mouse_pos);
+                }
+                if (mouse_released) {
+                    g_mouse_captured->on_released();
+                    g_mouse_captured = nullptr; // release the capture
+                }
                 return true;
             }
-        
-        // update the last input-captured element
-        if (g_mouse_captured) {
-            if (mouse_now) {
-                g_mouse_captured->on_pressed();
-                g_mouse_captured->on_drag(m - bgui::get_context().m_last_mouse_pos);
-            }
-            if (mouse_released) {
-                g_mouse_captured->on_released();
-                g_mouse_captured = nullptr; // release the capture
-            }
-            return true;
-        }
 
-        // inside test
-        float x = elem->processed_x();
-        float y = elem->processed_y();
-        float w = elem->processed_width();
-        float h = elem->processed_height();
+            // inside test
+            float x = elem->processed_x();
+            float y = elem->processed_y();
+            float w = elem->processed_width();
+            float h = elem->processed_height();
 
-        bool inside =
-            mx >= x &&
-            mx <= x + w &&
-            my >= y &&
-            my <= y + h;
+            bool inside =
+                mx >= x &&
+                mx <= x + w &&
+                my >= y &&
+                my <= y + h;
 
-            if (inside) {
-            if(!elem->recives_input()) return false;
-            elem->on_mouse_hover();
-            if (mouse_click) {
-                g_mouse_captured = elem; // start capture
-                if (elem->type == "inputarea") {
-                    if (s_keyboard_focused && s_keyboard_focused != elem) {
+                if (inside) {
+                if(!elem->recives_input()) return false;
+                elem->on_mouse_hover();
+                if (mouse_click) {
+                    g_mouse_captured = elem; // start capture
+                    if (elem->type == "inputarea") {
+                        if (s_keyboard_focused && s_keyboard_focused != elem) {
+                            s_keyboard_focused->set_style_state(bgui::state::normal);
+                        }
+                        s_keyboard_focused = elem;
+                    } else if (s_keyboard_focused) {
                         s_keyboard_focused->set_style_state(bgui::state::normal);
+                        s_keyboard_focused = nullptr;
                     }
-                    s_keyboard_focused = elem;
-                } else if (s_keyboard_focused) {
-                    s_keyboard_focused->set_style_state(bgui::state::normal);
-                    s_keyboard_focused = nullptr;
+                    elem->on_clicked();
+                    elem->on_pressed();
                 }
-                elem->on_clicked();
-                elem->on_pressed();
+                if(mouse_now) {
+                    elem->on_pressed();
+                    elem->on_drag(m - bgui::get_context().m_last_mouse_pos);
+                }
+                if(mouse_released) {
+                    elem->on_released();
+                    if (g_mouse_captured == elem)
+                        g_mouse_captured = nullptr; // release capture when mouse release
+                }
+                return true;
             }
-            if(mouse_now) {
-                elem->on_pressed();
-                elem->on_drag(m - bgui::get_context().m_last_mouse_pos);
-            }
-            if(mouse_released) {
-                elem->on_released();
-                if (g_mouse_captured == elem)
-                    g_mouse_captured = nullptr; // release capture when mouse release
-            }
-            return true;
         }
     }
     if (mouse_click && s_keyboard_focused) {

@@ -46,7 +46,6 @@ void element::set_enable(bool b){
 
 void element::on_update() {
     set_style_state(state::normal);
-    m_last_drag = {0, 0};
 }
 
 vec2i bgui::element::is_drag() const {

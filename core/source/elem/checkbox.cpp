@@ -46,7 +46,7 @@ void bgui::checkbox::on_clicked() {
 
 void bgui::checkbox::set_on_change(const std::function<void(bool)>& f) {
     m_function = f;
-    auto& box = get_elements()[0];
+    auto& box = get_elements()[layer::base][0];
     m_active ? box->set_style_state(state::pressed) : box->set_style_state(state::normal);
 }
 
@@ -65,7 +65,7 @@ void bgui::checkbox::on_mouse_hover() {
 
 void bgui::checkbox::on_update() {
     linear::on_update();
-    auto& box = get_elements()[0];
+    auto& box = get_elements()[layer::base][0];
     m_active ? box->set_style_state(state::pressed) : box->set_style_state(state::normal);
 }
 
