@@ -245,7 +245,7 @@ namespace bgui {
          * @brief Callback invoked when the mouse is moved while pressed over the element.
          * @param mouse_delta The change in mouse position since the last frame.
          */
-        virtual void on_drag(const vec2i& mouse_delta) {m_last_drag = mouse_delta;};
+        virtual void set_drag(const vec2i& mouse_delta) {m_last_drag = mouse_delta;};
 
         /**
          * @brief Callback invoked when the element is clicked (pressed and released).

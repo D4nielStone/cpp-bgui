@@ -77,6 +77,20 @@ namespace bgui {
         void on_update() override;
         void get_requires(bgui::draw_data* calls);
         std::map<layer, std::vector<std::unique_ptr<element>>>& get_elements();
+    
+        std::vector<element*> get_elements_by_class(const std::string& cls) {
+            for(auto& [lay, elems] : get_elements()) {
+                std::vector<element*> result;
+                for(auto& elem : elems) {
+                    if(!elem) continue;
+                    if(elem->has_class(cls)) {
+                        result.push_back(elem.get());
+                    }
+                }
+                return result;
+            }
+            return {};
+        }
         bgui::layout* as_layout() override { return this; }
     };
 } // namespace bgui

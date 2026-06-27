@@ -2,12 +2,11 @@
 #include "elem/button.hpp"
 #include "os/os.hpp"
 
-bgui::window::window(const char* title) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr) {
+bgui::window::window(const char* title, bool floating) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr) {
     type = "window";
     // window widget experiment
     //TODO:: add parse init config for window
     set_position(20, 20);
-    set_flex(false);
 
     // testing the header:
     m_header = &add<bgui::linear>(bgui::orientation::horizontal);
@@ -18,14 +17,23 @@ bgui::window::window(const char* title) : linear(bgui::orientation::vertical), m
     m_header->add<bgui::button>(" X ", 0.35f, [this](){
         m_parent->remove(this);
     }).add_class("window-button");
+    set_floating(floating);
 }
 void bgui::window::on_update() {
     // drag system (title)
-    set_final_rect(
-        processed_x()+m_title->is_drag()[0], 
-        processed_y()+m_title->is_drag()[1],
-        processed_width(), 
-        processed_height());
-    m_title->on_drag({0, 0});
+    if(is_floating()) {
+        if(m_title->is_drag()[0] || m_title->is_drag()[1]) {
+            set_position(processed_x()+m_title->is_drag()[0], processed_y()+m_title->is_drag()[1]);
+        }
+    }
+    m_title->set_drag({0, 0});
     linear::on_update();
+}
+void bgui::window::set_floating(bool floating) {
+    m_floating = floating;
+    set_flex(!floating);
+    if(m_header) {
+        auto* elem = m_header->get_elements_by_class("window-button")[0];
+        elem->set_enable(floating);
+    }
 }

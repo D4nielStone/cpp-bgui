@@ -79,7 +79,7 @@ bool update_inputs(bgui::layout &lay){
             if (g_mouse_captured) {
                 if (mouse_now) {
                     g_mouse_captured->on_pressed();
-                    g_mouse_captured->on_drag(m - bgui::get_context().m_last_mouse_pos);
+                    g_mouse_captured->set_drag(m - bgui::get_context().m_last_mouse_pos);
                 }
                 if (mouse_released) {
                     g_mouse_captured->on_released();
@@ -119,7 +119,7 @@ bool update_inputs(bgui::layout &lay){
                 }
                 if(mouse_now) {
                     elem->on_pressed();
-                    elem->on_drag(m - bgui::get_context().m_last_mouse_pos);
+                    elem->set_drag(m - bgui::get_context().m_last_mouse_pos);
                 }
                 if(mouse_released) {
                     elem->on_released();

@@ -40,7 +40,6 @@ bgui::text& bgui::input_area::get_label() {
 }
 
 void bgui::input_area::on_update() {
-    if(get_style_state() == state::focused) {
         auto& ctx = bgui::get_context();
         if(!ctx.m_char_buffer.empty()) {
             m_input_buffer += ctx.m_char_buffer;
@@ -54,7 +53,6 @@ void bgui::input_area::on_update() {
             }
             ctx.m_input_map[bgui::input_key::backspace] = bgui::input_action::none;
         }
-    }
 
     if(m_input_buffer.empty()) {
         m_text->set_buffer(m_placeholder);
@@ -73,7 +71,6 @@ void bgui::input_area::on_update() {
     }
 
     linear::on_update();
-    set_style_state(state::focused);
 }
 
 void bgui::input_area::get_requires(bgui::draw_data* data) {
