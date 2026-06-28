@@ -7,7 +7,15 @@
 #include <functional>
 
 namespace bgui {
+    struct drag_info {
+        bool dragging;
+        vec2 mouse_screen;
+        vec2 start_mouse_screen;
+        vec2 start_window_pos;
+        vec2 offset;
+    };
     struct context {
+        drag_info m_draginfo;
         bgui::vec2i m_size{800, 600};
         bgui::vec2i m_mouse_position{0, 0};
         bgui::vec2i m_last_mouse_pos{0, 0};
