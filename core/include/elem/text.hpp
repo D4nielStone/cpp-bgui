@@ -15,7 +15,7 @@ namespace bgui {
         // sets to this text the font with `name`.
         void set_font(const std::string& name);
         void on_update() override;
-        float get_text_width();
+        float get_text_width(const std::string& t);
         void set_buffer(const std::string& buffer) { m_buffer = buffer; };
         const std::string& get_buffer() const { return m_buffer; };
         void get_requires(bgui::draw_data *calls) override;
