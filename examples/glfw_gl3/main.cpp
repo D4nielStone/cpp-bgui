@@ -7,7 +7,7 @@ int main() {
     auto& sm = bgui::style_manager::get_instance();
     sm.apply_theme(bgui::dark_theme());
     
-    GLFWwindow* window = bgui::set_up_glfw(1000, 500, "BGUI GLFW & gl3 Example");
+    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Example");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
     

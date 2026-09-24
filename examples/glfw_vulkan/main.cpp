@@ -9,15 +9,13 @@ int main() {
     bgui::set_up();
     auto& sm = bgui::style_manager::get_instance();
     sm.apply_theme(bgui::dark_theme());
-    
-    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Example");
-    bgui::set_up_vulkan();
-    bgui::set_up_freetype();
-    
+    bgui::set_font_antialiasing(true);
+
     // Build UI declaratively
     bgui::layout& root = bgui::get_layout();
 
-    bgui::style_manager::get_instance().set_id("panel", {
+    auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
+    panel.style = {
         .layout = {
             .size_mode = std::make_optional<bgui::vec<2UL, bgui::mode>>({bgui::mode::pixel, bgui::mode::match_parent}),
             .size = std::make_optional<bgui::vec<2UL, float>>({300.f, 1.f})
@@ -25,32 +23,36 @@ int main() {
         .visual = {
             .visible = true
         }
-    });
-    bgui::style_manager::get_instance().set_id("window_ctx", {
+    };
+    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.4f);
+    auto& button = panel.add<bgui::button>("Button Example", 0.4f, [](){});
+    auto& win = root.add<bgui::window>("Hello Bubble!");
+    
+    auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
+    context.style = {
         .layout = {
             .size_mode = std::make_optional<bgui::vec<2UL, bgui::mode>>({bgui::mode::match_parent, bgui::mode::match_parent})
         },
         .visual = {
             .visible = false
         }
+    };
+    context.add<bgui::text>("This is a window widget example.", 0.4f);
+    auto& cb = context.add<bgui::checkbox>("Switch theme", 0.4f, false);
+    cb.set_on_change([&sm](bool checked){
+        if(checked) {
+            sm.apply_theme(bgui::dark_theme());
+        } else {
+            sm.apply_theme(bgui::light_theme());
+        }
     });
-
-    auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
-    panel.id = "panel";
-    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.35f);
-    auto& button = panel.add<bgui::button>("Button Example", 0.35f, [](){});
-    auto& win = root.add<bgui::window>("Hello Bubble!");
-    
-    auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
-    context.id = "window_ctx";
-    context.add<bgui::text>("This is a window widget example.", 0.35f);
-    auto& cb = context.add<bgui::checkbox>("Checkbox Example", 0.35f);
-    context.add<bgui::checkbox>("Allow the checkbox above", 0.35f, true)
+    context.add<bgui::checkbox>("Allow the checkbox above", 0.4f, true)
         .set_on_change([&cb](bool checked){
             cb.set_enable(checked);
         });
-    auto& txt2 = context.add<bgui::text>("FPS: ", 0.35f);
-    auto& button2 = context.add<bgui::button>("Button inside window", 0.35f, [](){});
+    auto& txt2 = context.add<bgui::text>("FPS: ", 0.4f);
+    auto& button2 = context.add<bgui::button>("Button inside window", 0.4f, [](){});
+    auto& ia = context.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -62,7 +64,7 @@ int main() {
         txt2.set_buffer("FPS: " + std::to_string(fps));
         
         bgui::load_font_queue();
-        bgui::vulkan_render(bgui::get_draw_data(), 0.08f, 0.08f, 0.08f, 1.0f);
+        bgui::vulkan_render(bgui::get_draw_data());
         glfwPollEvents();
     }
 
