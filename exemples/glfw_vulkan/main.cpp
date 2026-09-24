@@ -3,13 +3,12 @@
 
 int main() {
     // Setup
+    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "cpp-bgui Vulkan Example");
+    bgui::set_up_vulkan(window);
+    bgui::set_up_freetype();
     bgui::set_up();
     auto& sm = bgui::style_manager::get_instance();
     sm.apply_theme(bgui::dark_theme());
-    
-    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Exemple");
-    bgui::set_up_vulkan();
-    bgui::set_up_freetype();
     
     // Build UI declaratively
     bgui::layout& root = bgui::get_layout();
@@ -59,8 +58,8 @@ int main() {
         txt2.set_buffer("FPS: " + std::to_string(fps));
         
         bgui::load_font_queue();
-        bgui::vulkan_render(bgui::get_draw_data());
-        glfwSwapBuffers(window);
+        bgui::vulkan_render(bgui::get_draw_data(), 0.08f, 0.08f, 0.08f, 1.0f);
+        glfwPollEvents();
     }
 
     // Cleanup

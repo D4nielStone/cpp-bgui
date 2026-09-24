@@ -180,4 +180,8 @@ BGUI_USE_FREETYPE
 BGUI_USE_VULKAN
 ```
 
+Detailed backend documentation is available in
+[`backend/README.md`](backend/README.md), with a separate README for GLFW,
+OpenGL 3, FreeType, Vulkan and the Null backend.
+
 ---
