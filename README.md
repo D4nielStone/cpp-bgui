@@ -82,6 +82,8 @@ int main() {
     while(!bgui::should_close_glfw()) {
         // update the context with glfw
         bgui::glfw_update(bgui::get_context());
+        // load fonts requested by text widgets before building draw data
+        bgui::load_font_queue();
         // update the layout
         bgui::on_update();
         // render with opengl3
@@ -108,10 +110,10 @@ int main() {
     // layout are invisible by default
     panel.set_visible(true);
 
-    auto& txt = panel.add<bgui::text>("Linear Layout Exemple", 0.35f);
+    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.35f);
     txt.require_width(bgui::mode::match_parent);
     txt.set_alignment(bgui::alignment::center);
-    auto& button = panel.add<bgui::button>("Button Exemple", 0.35f, [](){});
+    auto& button = panel.add<bgui::button>("Button Example", 0.35f, [](){});
     button.require_width(bgui::mode::match_parent);
 
     // window widget
@@ -124,7 +126,7 @@ int main() {
     context.require_width(bgui::mode::match_parent);
     context.style.layout.set_padding(10, 10);
 
-    context.add<bgui::text>("This is a window widget exemple.", 0.35f);
+    context.add<bgui::text>("This is a window widget example.", 0.35f);
     auto& txt2 = context.add<bgui::text>("Centered text", 0.35f);
     txt2.set_alignment(bgui::alignment::center);
     txt2.require_width(bgui::mode::stretch);
@@ -138,19 +140,11 @@ int main() {
 ### Font families and styles
 
 The FreeType backend keeps loaded fonts in a resolution-aware cache and lets
-applications select a face by family and style:
+applications select a discovered system face by its family/style name:
 
 ```cpp
-auto& regular = bgui::ft_load_system_font(
-    "DejaVu Sans",
-    bgui::font_style::regular,
-    40
-);
-auto& bold_italic = bgui::ft_load_system_font(
-    "DejaVu Sans",
-    bgui::font_style::bold_italic,
-    40
-);
+auto& regular = bgui::ft_load_system_font("DejaVu Sans Regular");
+auto& bold_italic = bgui::ft_load_system_font("DejaVu Sans Bold Italic");
 ```
 
 Supported styles include `regular`, `bold`, `italic`, `bold_italic`, `light`,
@@ -159,6 +153,8 @@ metadata in `bgui::font`, and repeated requests reuse the cached atlas.
 
 The first successfully loaded face is registered as the deterministic
 `"default"` fallback used by text widgets and by unresolved font requests.
+Font requests queued by text widgets are processed with
+`bgui::load_font_queue()` before `bgui::on_update()`.
 Applications can observe successful loads without owning font memory:
 
 ```cpp

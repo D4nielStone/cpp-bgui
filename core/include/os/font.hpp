@@ -49,7 +49,7 @@ namespace bgui {
         std::unordered_map<std::string, font> m_fonts;
         std::function<void(const font&)> m_on_font_loaded;
         std::unordered_map<unsigned int, std::string> m_default_font_keys;
-        static constexpr float m_default_resolution = 40.f;
+        static constexpr unsigned int m_default_resolution = 40;
         static font_manager& get_instance();
         font_manager();
         ~font_manager() = default;

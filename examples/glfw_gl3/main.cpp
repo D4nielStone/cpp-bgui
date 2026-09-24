@@ -7,7 +7,7 @@ int main() {
     auto& sm = bgui::style_manager::get_instance();
     sm.apply_theme(bgui::dark_theme());
     
-    GLFWwindow* window = bgui::set_up_glfw(1000, 500, "BGUI GLFW & gl3 Exemple");
+    GLFWwindow* window = bgui::set_up_glfw(1000, 500, "BGUI GLFW & gl3 Example");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
     
@@ -24,8 +24,8 @@ int main() {
             .visible = true
         }
     };
-    auto& txt = panel.add<bgui::text>("Linear Layout Exemple", 0.4f);
-    auto& button = panel.add<bgui::button>("Button Exemple", 0.4f, [](){});
+    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.4f);
+    auto& button = panel.add<bgui::button>("Button Example", 0.4f, [](){});
     auto& win = root.add<bgui::window>("Hello Bubble!");
     
     auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
@@ -37,7 +37,7 @@ int main() {
             .visible = false
         }
     };
-    context.add<bgui::text>("This is a window widget exemple.", 0.4f);
+    context.add<bgui::text>("This is a window widget example.", 0.4f);
     auto& cb = context.add<bgui::checkbox>("Switch theme", 0.4f, false);
     cb.set_on_change([&sm](bool checked){
         if(checked) {
@@ -52,10 +52,11 @@ int main() {
         });
     auto& txt2 = context.add<bgui::text>("FPS: ", 0.4f);
     auto& button2 = context.add<bgui::button>("Button inside window", 0.4f, [](){});
-    auto& ia = context.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area exemple");
+    auto& ia = context.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
 
     bgui::get_context().m_refresh_func = [&](){
         bgui::glfw_update(bgui::get_context());
+        bgui::load_font_queue();
         bgui::on_update();
 
         // Display fps in the title

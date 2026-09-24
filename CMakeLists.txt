@@ -50,7 +50,7 @@ target_include_directories(bgui
 )
 
 if(BGUI_BUILD_EXAMPLES)
-    add_subdirectory(exemples)
+    add_subdirectory(examples)
 endif()
 if(BGUI_TESTS)
     enable_testing()
