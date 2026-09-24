@@ -3,6 +3,7 @@
 #include "elem/button.hpp"
 #include "elem/checkbox.hpp"
 #include "elem/text.hpp"
+#include "elem/image.hpp"
 #include "elem/window.hpp"
 #include "elem/input_area.hpp"
 #include "lay/layout.hpp"

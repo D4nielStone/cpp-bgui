@@ -135,6 +135,40 @@ int main() {
     bgui::cascade_style(bgui::dark_style);
 ```
 
+### Font families and styles
+
+The FreeType backend keeps loaded fonts in a resolution-aware cache and lets
+applications select a face by family and style:
+
+```cpp
+auto& regular = bgui::ft_load_system_font(
+    "DejaVu Sans",
+    bgui::font_style::regular,
+    40
+);
+auto& bold_italic = bgui::ft_load_system_font(
+    "DejaVu Sans",
+    bgui::font_style::bold_italic,
+    40
+);
+```
+
+Supported styles include `regular`, `bold`, `italic`, `bold_italic`, `light`,
+`semibold`, `black` and `thin`. Loaded faces retain their family and style
+metadata in `bgui::font`, and repeated requests reuse the cached atlas.
+
+The first successfully loaded face is registered as the deterministic
+`"default"` fallback used by text widgets and by unresolved font requests.
+Applications can observe successful loads without owning font memory:
+
+```cpp
+bgui::font_manager::get_instance().set_font_loaded_callback(
+    [](const bgui::font& loaded) {
+        std::cout << loaded.family << " / " << loaded.style << '\n';
+    }
+);
+```
+
 ## Back end
 
 Bubble's GUI is library-agnostic, so if you want to create a system window or render the elements, you must use ***back ends***.

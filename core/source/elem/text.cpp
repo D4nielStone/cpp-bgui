@@ -55,7 +55,6 @@ void bgui::text::on_update() {
     }
 }
 void bgui::text::set_font(const std::string &path) {
-    // 1: update the queue
     font_manager::get_instance().m_font_queue.push(path);
 }
 
