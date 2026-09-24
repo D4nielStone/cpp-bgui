@@ -7,7 +7,7 @@ int main() {
     auto& sm = bgui::style_manager::get_instance();
     sm.apply_theme(bgui::dark_theme());
     
-    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Exemple");
+    GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Example");
     bgui::set_up_vulkan();
     bgui::set_up_freetype();
     
@@ -34,14 +34,14 @@ int main() {
 
     auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
     panel.id = "panel";
-    auto& txt = panel.add<bgui::text>("Linear Layout Exemple", 0.35f);
-    auto& button = panel.add<bgui::button>("Button Exemple", 0.35f, [](){});
+    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.35f);
+    auto& button = panel.add<bgui::button>("Button Example", 0.35f, [](){});
     auto& win = root.add<bgui::window>("Hello Bubble!");
     
     auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
     context.id = "window_ctx";
-    context.add<bgui::text>("This is a window widget exemple.", 0.35f);
-    auto& cb = context.add<bgui::checkbox>("Checkbox Exemple", 0.35f);
+    context.add<bgui::text>("This is a window widget example.", 0.35f);
+    auto& cb = context.add<bgui::checkbox>("Checkbox Example", 0.35f);
     context.add<bgui::checkbox>("Allow the checkbox above", 0.35f, true)
         .set_on_change([&cb](bool checked){
             cb.set_enable(checked);
