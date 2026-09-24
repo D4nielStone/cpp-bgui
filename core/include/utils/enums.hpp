@@ -12,7 +12,10 @@ namespace bgui {
         mouse_right,
         mouse_middle,
         backspace,
-        enter
+        enter,
+        left,
+        right,
+        escape
     };
     enum class input_action {
         none,

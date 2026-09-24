@@ -10,8 +10,6 @@ linear::linear(const orientation& ori) : m_orientation(ori), layout() {
 }
 
 void linear::on_update() {
-    element::on_update();
-
     for(auto& [lay, elems] : m_elements) {
     calc_content_size(lay);
 

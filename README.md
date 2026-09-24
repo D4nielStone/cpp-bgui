@@ -165,6 +165,31 @@ bgui::font_manager::get_instance().set_font_loaded_callback(
 );
 ```
 
+### Runtime themes
+
+Theme files are stored in `assets/themes` and loaded at runtime. The built-in
+helpers load `dark.theme` and `light.theme`, while applications can load a
+custom file with:
+
+```cpp
+auto custom_theme = bgui::load_theme("assets/themes/custom.theme");
+bgui::style_manager::get_instance().apply_theme(custom_theme);
+```
+
+When building with CMake, the `assets` directory is copied to the build
+directory. Files can be edited or replaced without recompiling the library.
+
+The complete interface scale can be changed at runtime. A value of `1.0f`
+keeps the default size, while `1.5f` enlarges layout metrics, borders and
+text:
+
+```cpp
+bgui::set_global_scale(1.5f);
+```
+
+The scale must be greater than zero and can be queried with
+`bgui::get_global_scale()`.
+
 ## Back end
 
 Bubble's GUI is library-agnostic, so if you want to create a system window or render the elements, you must use ***back ends***.

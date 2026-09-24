@@ -11,6 +11,7 @@ namespace bgui {
         std::unordered_map<std::string, style> ids;
     };
 
+    bgui::theme load_theme(const std::string& filename);
     bgui::theme dark_theme();
     bgui::theme light_theme();
 }

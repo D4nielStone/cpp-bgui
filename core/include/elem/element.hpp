@@ -40,7 +40,7 @@ namespace bgui {
         // FINAL COMPUTED RECT (layout writes this)
         // x, y, width, height - The final position and dimensions calculated by the layout.
         vec4i m_rect {0, 0, 0, 0};
-        state m_state;
+        state m_state{state::normal};
         bool m_flex = true;
     public:
         void set_flex(bool f) {m_flex = f;}

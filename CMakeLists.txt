@@ -37,6 +37,8 @@ message(STATUS "Build tests:   ${BGUI_TESTS}")
 add_subdirectory(core)
 add_subdirectory(backend)
 
+file(COPY ${PROJECT_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+
 add_library(bgui INTERFACE)
 target_link_libraries(bgui
     INTERFACE

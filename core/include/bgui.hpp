@@ -45,4 +45,6 @@ namespace bgui {
     void set_up();
     bool shutdown_lib();
     void on_update();
+    void set_global_scale(float scale);
+    float get_global_scale();
 };

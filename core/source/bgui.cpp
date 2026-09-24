@@ -10,6 +10,29 @@ std::unique_ptr<bgui::layout> bgui::s_main_layout;
 static std::unique_ptr<bgui::draw_data> s_draw_data;
 static std::queue<std::function<void()>> s_functions;
 static bgui::element* s_keyboard_focused = nullptr;
+static float s_global_scale = 1.f;
+
+static void set_keyboard_focus(bgui::element* element) {
+    if (s_keyboard_focused == element) {
+        if (auto* input = dynamic_cast<bgui::input_area*>(element)) {
+            input->set_focused(true);
+        }
+        return;
+    }
+
+    if (auto* input = dynamic_cast<bgui::input_area*>(s_keyboard_focused)) {
+        input->set_focused(false);
+    } else if (s_keyboard_focused) {
+        s_keyboard_focused->set_style_state(bgui::state::normal);
+    }
+
+    s_keyboard_focused = element;
+    if (auto* input = dynamic_cast<bgui::input_area*>(element)) {
+        input->set_focused(true);
+    } else if (element) {
+        element->set_style_state(bgui::state::focused);
+    }
+}
 
 bgui::layout& bgui::get_layout() {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
@@ -63,6 +86,10 @@ bool update_inputs(bgui::layout &lay){
     bool mouse_now = bgui::get_pressed(bgui::input_key::mouse_left);
     bool mouse_click = (mouse_now && !bgui::get_context().m_last_mouse_left);
     bool mouse_released = (!mouse_now && bgui::get_context().m_last_mouse_left);
+
+    if (bgui::get_pressed(bgui::input_key::escape) && s_keyboard_focused) {
+        set_keyboard_focus(nullptr);
+    }
     
     for(size_t i = lay.get_elements().size(); i-- > 0; ) {
         // iterate through elements in reverse order to prioritize topmost elements
@@ -101,18 +128,25 @@ bool update_inputs(bgui::layout &lay){
                 my <= y + h;
 
                 if (inside) {
-                if(!elem->recives_input()) return false;
+                if(!elem->recives_input()) {
+                    // A non-interactive child bubbles the hit to its
+                    // interactive parent, but a front-most sibling blocks
+                    // elements behind it from receiving the click.
+                    if (elem->get_parent() && elem->get_parent()->recives_input()) {
+                        return false;
+                    }
+                    if (mouse_click && s_keyboard_focused) {
+                        set_keyboard_focus(nullptr);
+                    }
+                    return true;
+                }
                 elem->on_mouse_hover();
                 if (mouse_click) {
                     g_mouse_captured = elem; // start capture
                     if (elem->type == "inputarea") {
-                        if (s_keyboard_focused && s_keyboard_focused != elem) {
-                            s_keyboard_focused->set_style_state(bgui::state::normal);
-                        }
-                        s_keyboard_focused = elem;
-                    } else if (s_keyboard_focused) {
-                        s_keyboard_focused->set_style_state(bgui::state::normal);
-                        s_keyboard_focused = nullptr;
+                        set_keyboard_focus(elem);
+                    } else {
+                        set_keyboard_focus(nullptr);
                     }
                     elem->on_clicked();
                     elem->on_pressed();
@@ -131,8 +165,7 @@ bool update_inputs(bgui::layout &lay){
         }
     }
     if (mouse_click && s_keyboard_focused) {
-        s_keyboard_focused->set_style_state(bgui::state::normal);
-        s_keyboard_focused = nullptr;
+        set_keyboard_focus(nullptr);
     }
     return false;
 }
@@ -152,13 +185,11 @@ void bgui::on_update() {
     // cascade style
     cascade_style();
 
-    // update main layout and inputs
-    get_context().m_actual_cursor = cursor::arrow;
+    // Resolve mouse focus before updating keyboard-driven elements.
     bgui::s_main_layout->process_required_size(w_size);
-    bgui::s_main_layout->on_update();
-
-    // reset cursor
+    get_context().m_actual_cursor = cursor::arrow;
     update_inputs(*bgui::s_main_layout);
+    bgui::s_main_layout->on_update();
 
     if (!s_keyboard_focused) {
         bgui::get_context().m_char_buffer.clear();
@@ -175,4 +206,18 @@ void bgui::on_update() {
 void bgui::add_function(const std::function<void()>& f) {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
     s_functions.push(f);
+}
+
+void bgui::set_global_scale(float scale) {
+    if (scale <= 0.f) {
+        throw std::invalid_argument("[BGUI] Global scale must be greater than zero.");
+    }
+    s_global_scale = scale;
+    if (s_main_layout) {
+        s_main_layout->mark_style_dirty();
+    }
+}
+
+float bgui::get_global_scale() {
+    return s_global_scale;
 }

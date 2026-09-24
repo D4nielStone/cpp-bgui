@@ -45,10 +45,9 @@ namespace bgui {
             for (auto& [lay, elems] : get_elements()) {
                 for(auto& elem : elems) {
                     if(!elem->is_enabled()) continue;
-                        if (elem->is_style_dirty()) {
-                            if(elem->as_layout()) {
-                                elem->as_layout()->cascade_style();
-                            } else
+                    if (elem->as_layout()) {
+                        elem->as_layout()->cascade_style();
+                    } else if (elem->is_style_dirty()) {
                         elem->compute_style();
                     }
                 }

@@ -45,7 +45,6 @@ void element::set_enable(bool b){
 }
 
 void element::on_update() {
-    set_style_state(state::normal);
 }
 
 vec2i bgui::element::is_drag() const {
@@ -69,6 +68,27 @@ void element::compute_style() {
     if(get_parent())
         bgui::merge(computed_style.visual, get_parent()->style.visual, m_state);
     bgui::merge(computed_style, style, m_state);
+
+    const float scale = bgui::get_global_scale();
+    for (size_t axis = 0; axis < 2; ++axis) {
+        if (computed_style.layout.size_mode[axis] == bgui::mode::pixel) {
+            computed_style.layout.size[axis] *= scale;
+        }
+        computed_style.layout.limit_min[axis] =
+            static_cast<int>(computed_style.layout.limit_min[axis] * scale);
+        if (computed_style.layout.limit_max[axis] != INT_MAX) {
+            computed_style.layout.limit_max[axis] =
+                static_cast<int>(computed_style.layout.limit_max[axis] * scale);
+        }
+    }
+    for (size_t edge = 0; edge < 4; ++edge) {
+        computed_style.layout.padding[edge] =
+            static_cast<int>(computed_style.layout.padding[edge] * scale);
+        computed_style.layout.margin[edge] =
+            static_cast<int>(computed_style.layout.margin[edge] * scale);
+    }
+    computed_style.visual.border_radius *= scale;
+    computed_style.visual.border_size *= scale;
 
     clear_style_dirty();
 }

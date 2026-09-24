@@ -61,6 +61,7 @@ void bgui::text::set_font(const std::string &path) {
 float bgui::text::get_text_width(const std::string& t) {
     const auto& chs = bgui::font_manager::get_instance().get_font(computed_style.visual.font).chs;
     if (chs.empty()) return 0.0f;
+    const float scale = m_scale * bgui::get_global_scale();
 
     float line_x = 0.f;
     float max_line_width = 0.0f;
@@ -76,7 +77,7 @@ float bgui::text::get_text_width(const std::string& t) {
         if (it == chs.end()) continue;
         const auto& ch = it->second;
 
-        line_x += ch.advance * m_scale;
+        line_x += ch.advance * scale;
     }
 
     // Garante que a última linha (que não termina em '\n') também seja considerada
@@ -90,9 +91,10 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     const auto& chs = font.chs;
     if (chs.empty()) return;
 
-    float ascent   = font.ascent * m_scale;
-    float descent  = font.descent * m_scale;
-    float line_gap = font.line_gap * m_scale;
+    const float scale = m_scale * bgui::get_global_scale();
+    float ascent   = font.ascent * scale;
+    float descent  = font.descent * scale;
+    float line_gap = font.line_gap * scale;
 
     float line_y = ascent;
     float line_x = 0.f;
@@ -115,7 +117,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         if (ca != U'\n') {
             auto it_measure = chs.find(ca);
             if (it_measure != chs.end()) {
-                advance_this_char = it_measure->second.advance * m_scale;
+                advance_this_char = it_measure->second.advance * scale;
             }
         }
 
@@ -152,11 +154,11 @@ void bgui::text::get_requires(bgui::draw_data* data) {
                 break;
         }
 
-        float xpos = originx + line_x + m_scale * ch.bearing[0];
-        float ypos = processed_y() + line_y - (ch.bearing[1] * m_scale - ch.size[1] * m_scale);
+        float xpos = originx + line_x + scale * ch.bearing[0];
+        float ypos = processed_y() + line_y - (ch.bearing[1] * scale - ch.size[1] * scale);
 
-        float w = m_scale * ch.size[0];
-        float h = m_scale * ch.size[1];
+        float w = scale * ch.size[0];
+        float h = scale * ch.size[1];
 
         set_properties();
         data->m_quad_requires.push({
@@ -165,7 +167,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             ch.uv_min, ch.uv_max,
         });
 
-        line_x += ch.advance * m_scale;
+        line_x += ch.advance * scale;
     }
 
     max_line_width = std::max(max_line_width, line_x);
