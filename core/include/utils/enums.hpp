@@ -16,6 +16,12 @@ namespace bgui {
         left,
         right,
         escape
+        ,q, w, e, r, t, y, u, i, o, p
+        ,a, s, d, f, g, h, j, k, l
+        ,z, x, c, v, b, n, m
+        ,up, down, left_shift, right_shift
+        ,left_control, right_control, left_alt, right_alt
+        ,delete_key, f5, keypad_enter
     };
     enum class input_action {
         none,
