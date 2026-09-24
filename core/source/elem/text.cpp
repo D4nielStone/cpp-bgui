@@ -54,6 +54,49 @@ void bgui::text::on_update() {
         m_last_font = computed_style.visual.font;
     }
 }
+
+void bgui::text::calc_content_size(const layer&) {
+    const auto& font = bgui::font_manager::get_instance().get_font(computed_style.visual.font);
+    if (font.chs.empty()) {
+        set_content_size({0, 0});
+        return;
+    }
+
+    const float scale = m_scale * bgui::get_global_scale();
+    const float line_height = (font.ascent + font.descent + font.line_gap) * scale;
+    const float wrap_width = 500.f * bgui::get_global_scale();
+    float line_width = 0.f;
+    float max_width = 0.f;
+    int line_count = 1;
+
+    for (char32_t character : utf8_to_utf32(m_buffer)) {
+        if (character == U'\n') {
+            max_width = std::max(max_width, line_width);
+            line_width = 0.f;
+            ++line_count;
+            continue;
+        }
+
+        const auto glyph = font.chs.find(character);
+        if (glyph == font.chs.end()) {
+            continue;
+        }
+
+        const float advance = glyph->second.advance * scale;
+        if (line_width + advance > wrap_width && line_width > 0.f) {
+            max_width = std::max(max_width, line_width);
+            line_width = 0.f;
+            ++line_count;
+        }
+        line_width += advance;
+    }
+
+    max_width = std::max(max_width, line_width);
+    set_content_size({
+        static_cast<int>(max_width),
+        static_cast<int>(line_count * line_height)
+    });
+}
 void bgui::text::set_font(const std::string &path) {
     font_manager::get_instance().m_font_queue.push(path);
 }

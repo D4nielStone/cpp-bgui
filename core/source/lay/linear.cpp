@@ -11,6 +11,11 @@ linear::linear(const orientation& ori) : m_orientation(ori), layout() {
 
 void linear::on_update() {
     for(auto& [lay, elems] : m_elements) {
+    for (auto& elem : m_elements[lay]) {
+        if (elem->is_enabled()) {
+            elem->calc_content_size(lay);
+        }
+    }
     calc_content_size(lay);
 
     if (m_elements[lay].empty()) return;
@@ -186,7 +191,6 @@ void linear::on_update() {
 }
 
 void linear::calc_content_size(const layer& lay) {
-    if(!is_style_dirty()) return;
     const bool vertical = (m_orientation == orientation::vertical);
 
     int content_w = 0;

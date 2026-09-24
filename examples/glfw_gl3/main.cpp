@@ -10,6 +10,7 @@ int main() {
     GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Example");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
+    bgui::set_global_scale(0.9f);
     
     // Build UI declaratively
     bgui::layout& root = bgui::get_layout();
