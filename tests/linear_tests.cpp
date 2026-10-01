@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "bgui.hpp"
+#include "os/os.hpp"
 
 using namespace bgui;
 
