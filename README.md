@@ -71,24 +71,22 @@ int main() {
     bgui::set_up_gl3();
     bgui::set_up_freetype();
 
-    // initialize the library
-    bgui::set_up();
-    // your interface here [...]
-    // initialize the library
-    bgui::set_up();
+    {
+        bgui::scoped_interface ui;
 
-    // Build interface here [...]
+        // Build interface here [...]
 
-    while(!bgui::should_close_glfw()) {
-        // update the context with glfw
-        bgui::glfw_update(bgui::get_context());
-        // load fonts requested by text widgets before building draw data
-        bgui::load_font_queue();
-        // update the layout
-        bgui::on_update();
-        // render with opengl3
-        bgui::gl3_render(bgui::get_draw_data());
-        bgui::swap_glfw();
+        while(!bgui::should_close_glfw()) {
+            // update the context with glfw
+            bgui::glfw_update(bgui::get_context());
+            // load fonts requested by text widgets before building draw data
+            bgui::load_font_queue();
+            // update the layout
+            bgui::on_update();
+            // render with opengl3
+            bgui::gl3_render(bgui::get_draw_data());
+            bgui::swap_glfw();
+        }
     }
     bgui::shutdown_gl3();
     bgui::shutdown_glfw();

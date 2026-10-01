@@ -15,6 +15,7 @@ namespace bgui {
     class layout : public element {
     protected:
         std::map<bgui::layer, std::vector<std::unique_ptr<element>>> m_elements;
+        bool m_resizable{false};
     public:
         layout();
         ~layout() = default;
@@ -76,6 +77,8 @@ namespace bgui {
         void on_update() override;
         void get_requires(bgui::draw_data* calls);
         std::map<layer, std::vector<std::unique_ptr<element>>>& get_elements();
+        void set_resizable(bool enabled);
+        bool is_resizable() const { return m_resizable; }
     
         std::vector<element*> get_elements_by_class(const std::string& cls) {
             for(auto& [lay, elems] : get_elements()) {

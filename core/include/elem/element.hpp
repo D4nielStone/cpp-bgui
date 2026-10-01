@@ -268,6 +268,14 @@ namespace bgui {
             set_style_state(state::hover);
         };
 
+        /**
+         * @brief Callback invoked when the mouse cursor leaves the element.
+         */
+        virtual void on_mouse_leave() {
+            if (m_state == state::hover)
+                set_style_state(state::normal);
+        };
+
         virtual void calc_content_size(const layer& lay) {};
 
         /**

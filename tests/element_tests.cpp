@@ -45,3 +45,14 @@ TEST(ElementTest, UpdateSizeCalculation) {
 	EXPECT_EQ(elem.processed_width(), 200);
 	EXPECT_EQ(elem.processed_height(), 75);
 }
+
+TEST(ElementTest, ScopedInterfaceInitializesAndShutsDown) {
+	EXPECT_THROW(bgui::get_layout(), std::runtime_error);
+
+	{
+		bgui::scoped_interface interface;
+		EXPECT_NO_THROW(bgui::get_layout());
+	}
+
+	EXPECT_THROW(bgui::get_layout(), std::runtime_error);
+}

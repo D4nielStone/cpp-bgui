@@ -102,6 +102,11 @@ void element::set_properties() {
     m_material.set("text_color", computed_style.visual.text);
 }
 void element::get_requires(bgui::draw_data* calls) {
+    // Input events can change the state after the frame style cascade.
+    // Resolve the element again before creating its draw command.
+    if (is_style_dirty())
+        compute_style();
+
     set_properties();
     if (!computed_style.visual.visible) return;
     calls->m_quad_requires.push({

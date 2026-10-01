@@ -12,6 +12,15 @@ static std::queue<std::function<void()>> s_functions;
 static bgui::element* s_keyboard_focused = nullptr;
 static float s_global_scale = 1.f;
 
+static void shutdown_interface() noexcept {
+    init_trigger = false;
+    s_keyboard_focused = nullptr;
+    bgui::s_main_layout.reset();
+    s_draw_data.reset();
+    std::queue<std::function<void()>> empty;
+    s_functions.swap(empty);
+}
+
 static void set_keyboard_focus(bgui::element* element) {
     if (s_keyboard_focused == element) {
         if (auto* input = dynamic_cast<bgui::input_area*>(element)) {
@@ -52,6 +61,22 @@ void bgui::set_up() {
     auto& sm = style_manager::get_instance();
 }
 
+bgui::scoped_interface::scoped_interface() {
+    if (init_trigger)
+        throw std::runtime_error("[BGUI] The library is already initialized.");
+    try {
+        bgui::set_up();
+    } catch (...) {
+        shutdown_interface();
+        throw;
+    }
+}
+
+bgui::scoped_interface::~scoped_interface() noexcept {
+    if (init_trigger)
+        shutdown_interface();
+}
+
 void bgui::cascade_style() {
     if(!init_trigger)
         throw std::runtime_error("[BGUI] You must initialize the library.");
@@ -69,9 +94,7 @@ bgui::draw_data* bgui::get_draw_data() {
 }
 bool bgui::shutdown_lib() {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
-    init_trigger = false;
-    bgui::s_main_layout.reset();
-    s_draw_data.reset();
+    shutdown_interface();
     return true;
 }
 
@@ -120,6 +143,11 @@ bool update_inputs(bgui::layout &lay){
             float y = elem->processed_y();
             float w = elem->processed_width();
             float h = elem->processed_height();
+
+            if (elem != g_mouse_captured &&
+                elem->get_style_state() == bgui::state::hover) {
+                elem->on_mouse_leave();
+            }
 
             bool inside =
                 mx >= x &&

@@ -1,8 +1,11 @@
 #include "elem/window.hpp"
 #include "elem/button.hpp"
+#include "bgui.hpp"
+#include "os/asset_manager.hpp"
 #include "os/os.hpp"
+#include <algorithm>
 
-bgui::window::window(const char* title, bool floating) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr) {
+bgui::window::window(const char* title, bool floating) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr), m_icon(nullptr) {
     type = "window";
     // window widget experiment
     //TODO:: add parse init config for window
@@ -11,6 +14,9 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     // testing the header:
     m_header = &add<bgui::linear>(bgui::orientation::horizontal);
     m_header->add_class("window-header");
+    m_icon = &m_header->add<bgui::image>();
+    m_icon->set_size(1.f, 1.f);
+    set_icon("bubble.png");
     m_title = &m_header->add<bgui::text>(title, 0.35f);
     m_title->add_class("window-label");
     // TODO: switch to image button later
@@ -18,6 +24,7 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
         m_parent->remove(this);
     }).add_class("window-button");
     set_floating(floating);
+    set_resizable(true);
 }
 void bgui::window::on_update() {
     // drag system (title)
@@ -28,6 +35,22 @@ void bgui::window::on_update() {
     }
     m_title->set_drag({0, 0});
     linear::on_update();
+
+    const int header_height = m_header->processed_height();
+    const float scale = bgui::get_global_scale();
+    if (header_height > 0 && scale > 0.f && header_height != m_icon_height) {
+        const int icon_width = std::max(1, static_cast<int>(header_height * m_icon_aspect_ratio));
+        m_icon->set_size(icon_width / scale, header_height / scale);
+        m_icon_height = header_height;
+    }
+}
+
+void bgui::window::set_icon(const std::string& path) {
+    const auto& texture = bgui::asset_manager::get_instance().load_texture(path);
+    m_icon->set_texture(texture);
+    if (texture.m_size.y > 0.f)
+        m_icon_aspect_ratio = texture.m_size.x / texture.m_size.y;
+    m_icon_height = 0;
 }
 void bgui::window::set_floating(bool floating) {
     m_floating = floating;

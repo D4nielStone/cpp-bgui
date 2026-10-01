@@ -1,152 +1,168 @@
-# =========================
-# BASE (default)
-# =========================
+=========================
+BASE
+=========================
+
 [base]
-visual.background.normal = 0.1, 0.1, 0.1, 1.0
-visual.text.normal       = 1.0, 1.0, 1.0, 1.0
-visual.font              = default
-visual.border.normal     = 0.04, 0.04, 0.04, 1.0
+visual.background.normal = 0.10, 0.10, 0.10, 1.0
+visual.text.normal = 0.85, 0.85, 0.85, 1.0
+visual.font = default
+visual.border.normal = 0.13, 0.13, 0.13, 1.0
 
-
-# =========================
-# TYPES
-# =========================
+=========================
+TYPES
+=========================
 
 [type.linear]
-visual.background.normal = 0.08, 0.08, 0.08, 1.0
-visual.border.normal     = 0.07, 0.07, 0.07, 1.0
-visual.visible           = false
-layout.padding           = 5, 2
-
+visual.background.normal = 0.10, 0.10, 0.10, 1.0
+visual.border.normal = 0.12, 0.12, 0.12, 1.0
+visual.visible = false
+layout.padding = 5, 2
 
 [type.window]
-visual.background.normal = 0.08, 0.08, 0.08, 1.0
-visual.border.normal     = 0.07, 0.07, 0.07, 1.0
-visual.visible           = true
-layout.padding           = 0, 0
-layout.size              = 400, 300
 
+Painel padrão mais escuro
+
+visual.background.normal = 0.094, 0.094, 0.094, 1.0
+visual.border.normal = 0.13, 0.13, 0.13, 1.0
+visual.visible = true
+layout.padding = 0, 0
+layout.size = 400, 300
 
 [type.element]
-visual.background.normal = 0.08, 0.08, 0.08, 1.0
+visual.background.normal = 0.094, 0.094, 0.094, 1.0
 
-
-# =========================
-# BUTTON
-# =========================
+=========================
+BUTTON
+=========================
 
 [type.button]
-visual.background.normal  = 0.10, 0.10, 0.10, 1.0
-visual.background.hover   = 0.12, 0.12, 0.12, 1.0
-visual.background.pressed = 0.12, 0.12, 0.12, 1.0
-visual.border.normal      = 0.08, 0.08, 0.08, 1.0
-visual.border.radius      = 10
-visual.border.size        = 1
-layout.padding            = 5, 5, 5, 5
-layout.mode               = stretch, wrap_content
+visual.background.normal = 0.135, 0.135, 0.135, 1.0
+visual.background.hover = 0.17, 0.17, 0.17, 1.0
+visual.background.pressed = 0.19, 0.19, 0.19, 1.0
 
+Borda mais escura
 
-# =========================
-# INPUT AREA
-# =========================
+visual.border.normal = 0.17, 0.17, 0.17, 1.0
+visual.border.radius = 3
+visual.border.size = 1
+
+layout.padding = 5, 5, 5, 5
+layout.mode = stretch, wrap_content
+
+=========================
+INPUT AREA
+=========================
 
 [type.inputarea]
-visual.background.normal  = 0.10, 0.10, 0.10, 1.0
-visual.background.focused   = 0.12, 0.12, 0.12, 1.0
-visual.background.hover   = 0.12, 0.12, 0.12, 1.0
-visual.background.pressed = 0.12, 0.12, 0.12, 1.0
-visual.border.normal      = 0.12, 0.12, 0.12, 1.0
-visual.border.focused     = 0.32, 0.32, 0.32, 1.0
-visual.border.radius      = 6
-visual.border.size        = 1
-layout.padding            = 0
-layout.mode               = stretch, wrap_content
+visual.background.normal = 0.13, 0.13, 0.13, 1.0
+visual.background.focused = 0.13, 0.13, 0.13, 1.0
+visual.background.hover = 0.15, 0.15, 0.15, 1.0
+visual.background.pressed = 0.17, 0.17, 0.17, 1.0
 
+visual.border.normal = 0.17, 0.17, 0.17, 1.0
+visual.border.focused = 0.00, 0.47, 0.80, 1.0
 
-# =========================
-# CHECKBOX
-# =========================
+visual.border.radius = 2
+visual.border.size = 1
+
+layout.padding = 0
+layout.mode = stretch, wrap_content
+
+=========================
+CHECKBOX
+=========================
 
 [type.checkbox]
-visual.background.normal = 0.10, 0.10, 0.10, 1.0
-visual.background.hover  = 0.12, 0.12, 0.12, 1.0
-visual.border.normal     = 0.08, 0.08, 0.08, 1.0
-visual.border.radius     = 10
-visual.border.size       = 1
-layout.padding           = 2, 2
-layout.mode              = stretch, wrap_content
+visual.background.normal = 0.13, 0.13, 0.13, 1.0
+visual.background.hover = 0.17, 0.17, 0.17, 1.0
 
+visual.border.normal = 0.22, 0.22, 0.22, 1.0
+visual.border.radius = 2
+visual.border.size = 1
 
-# =========================
-# TEXT
-# =========================
+layout.padding = 2, 2
+layout.mode = stretch, wrap_content
+
+=========================
+TEXT
+=========================
 
 [type.text]
 visual.background.normal = 0.0
-visual.border.normal     = 0.0
-visual.text.normal       = 1.0, 1.0, 1.0, 1.0
-visual.font              = default
-layout.mode              = wrap_content, wrap_content
-layout.align             = center
+visual.border.normal = 0.0
+visual.text.normal = 0.85, 0.85, 0.85, 1.0
+visual.font = default
 
+layout.mode = wrap_content, wrap_content
+layout.align = center
 
-# =========================
-# CLASSES
-# =========================
+=========================
+CLASSES
+=========================
 
 [class.window-header]
-layout.mode               = stretch, wrap_content
-layout.padding            = 0, 0
-visual.background.normal  = 0.07, 0.07, 0.07, 1.0
-visual.border.normal      = 0.0
-visual.visible            = true
+layout.mode = stretch, wrap_content
+layout.padding = 0, 0
 
+Cabeçalho ligeiramente diferente do painel
+
+visual.background.normal = 0.105, 0.105, 0.105, 1.0
+visual.border.normal = 0.12, 0.12, 0.12, 1.0
+visual.visible = true
 
 [class.window-button]
-layout.mode              = wrap_content, wrap_content
-layout.padding           = 0
-layout.margin            = 0
-visual.background.normal = 0.0
-visual.border.normal     = 0.0
+layout.mode = wrap_content, wrap_content
+layout.padding = 0
+layout.margin = 0
 
+visual.background.normal = 0.0
+visual.border.normal = 0.0
 
 [class.inputarea-txt]
 layout.mode = stretch, wrap_content
 layout.align = start, start
 layout.margin = 5, 5
 
-[class.checkbox-box]
-visual.background.pressed = 0.5, 0.5, 0.5, 1.0
-visual.border.normal      = 0.08, 0.08, 0.08, 1.0
-visual.border.radius      = 10
-visual.border.size        = 2
-layout.margin             = 5, 5
-layout.limit_min          = 12, 12
-layout.mode               = same, match_parent
+=========================
+CHECKBOX BOX
+=========================
 
+[class.checkbox-box]
+visual.background.normal = 0.13, 0.13, 0.13, 1.0
+visual.background.hover = 0.17, 0.17, 0.17, 1.0
+visual.background.pressed = 0.00, 0.47, 0.80, 1.0
+
+visual.border.normal = 0.22, 0.22, 0.22, 1.0
+visual.border.radius = 2
+visual.border.size = 1
+
+layout.margin = 5, 5
+layout.limit_min = 12, 12
+layout.mode = same, match_parent
 
 [class.checkbox-txt]
-layout.mode   = stretch, wrap_content
-layout.align  = end
+layout.mode = stretch, wrap_content
+layout.align = end
 layout.margin = 1, 1
-
 
 [class.window-label]
 visual.background.normal = 0.0
-visual.border.normal     = 0.0
-layout.align             = center
-layout.mode              = stretch, wrap_content
+visual.border.normal = 0.0
+layout.align = center
+layout.mode = stretch, wrap_content
 
-
-# =========================
-# ACCENT CLASSES
-# =========================
+=========================
+ACCENT
+=========================
 
 [class.primary]
-visual.background.normal = 0.2, 0.35, 0.8, 1.0
-visual.background.hover  = 0.3, 0.5, 0.9, 1.0
+visual.background.normal = 0.00, 0.47, 0.80, 1.0
+visual.background.hover = 0.10, 0.55, 0.88, 1.0
 
+=========================
+DANGER
+=========================
 
 [class.danger]
-visual.background.normal = 0.8, 0.2, 0.2, 1.0
-visual.background.hover  = 0.9, 0.3, 0.3, 1.0
+visual.background.normal = 0.75, 0.23, 0.23, 1.0
+visual.background.hover = 0.88, 0.30, 0.30, 1.0

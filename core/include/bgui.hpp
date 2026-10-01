@@ -45,6 +45,18 @@ namespace bgui {
     bgui::draw_data* get_draw_data();
     void set_up();
     bool shutdown_lib();
+
+    class scoped_interface {
+    public:
+        scoped_interface();
+        ~scoped_interface() noexcept;
+
+        scoped_interface(const scoped_interface&) = delete;
+        scoped_interface& operator=(const scoped_interface&) = delete;
+        scoped_interface(scoped_interface&&) = delete;
+        scoped_interface& operator=(scoped_interface&&) = delete;
+    };
+
     void on_update();
     void set_global_scale(float scale);
     float get_global_scale();

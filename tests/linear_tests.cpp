@@ -81,3 +81,42 @@ TEST(LinearTest, PaddingAffectsLayout) {
 	EXPECT_EQ(child.processed_x(), 10);
 	EXPECT_EQ(child.processed_y(), 20);
 }
+
+TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
+	linear panel(orientation::vertical);
+	panel.style.layout.require_size(200, 160);
+	panel.style.layout.require_mode(mode::pixel, mode::pixel);
+	panel.style.layout.limit_min = {40, 40};
+	panel.compute_style();
+	panel.process_required_size({200, 160});
+
+	EXPECT_FALSE(panel.is_resizable());
+	panel.set_resizable(true);
+	EXPECT_TRUE(panel.is_resizable());
+	panel.on_update();
+
+	element* bottom_right = nullptr;
+	for (auto& [lay, elements] : panel.get_elements()) {
+		for (auto& elem : elements) {
+			if (elem->has_class("resize-right") && elem->has_class("resize-bottom"))
+				bottom_right = elem.get();
+		}
+	}
+	ASSERT_NE(bottom_right, nullptr);
+	bottom_right->set_drag({20, 10});
+	bottom_right->on_update();
+
+	ASSERT_TRUE(panel.style.layout.size.has_value());
+	EXPECT_FLOAT_EQ((*panel.style.layout.size)[0], 220.f);
+	EXPECT_FLOAT_EQ((*panel.style.layout.size)[1], 170.f);
+
+	panel.set_resizable(false);
+	EXPECT_FALSE(panel.is_resizable());
+	bool has_resize_handle = false;
+	for (auto& [lay, elements] : panel.get_elements()) {
+		for (auto& elem : elements) {
+			has_resize_handle = has_resize_handle || elem->type == "resize_handle";
+		}
+	}
+	EXPECT_FALSE(has_resize_handle);
+}

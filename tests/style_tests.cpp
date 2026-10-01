@@ -19,6 +19,43 @@ TEST(StyleVisualTest, StyleManagerIsSingleton) {
 	EXPECT_EQ(&first, &second);
 }
 
+TEST(StyleVisualTest, StateColorUpdatesAfterInteraction) {
+	bgui::set_up();
+	auto& manager = style_manager::get_instance();
+
+	style button_style;
+	button_style.visual.background.normal = {0.1f, 0.1f, 0.1f, 1.f};
+	button_style.visual.background.hover = {0.2f, 0.2f, 0.2f, 1.f};
+	button_style.visual.background.pressed = {0.3f, 0.3f, 0.3f, 1.f};
+	manager.set_type("button", button_style);
+
+	element test_button;
+	test_button.type = "button";
+	test_button.compute_style();
+	EXPECT_FLOAT_EQ(test_button.computed_style.visual.background.r, 0.1f);
+
+	test_button.on_mouse_hover();
+	test_button.get_requires(bgui::get_draw_data());
+	EXPECT_FLOAT_EQ(test_button.computed_style.visual.background.r, 0.2f);
+	while (!bgui::get_draw_data()->m_quad_requires.empty())
+		bgui::get_draw_data()->m_quad_requires.pop();
+
+	test_button.on_mouse_leave();
+	test_button.get_requires(bgui::get_draw_data());
+	EXPECT_FLOAT_EQ(test_button.computed_style.visual.background.r, 0.1f);
+	while (!bgui::get_draw_data()->m_quad_requires.empty())
+		bgui::get_draw_data()->m_quad_requires.pop();
+
+	test_button.on_mouse_hover();
+	test_button.on_pressed();
+	test_button.get_requires(bgui::get_draw_data());
+	EXPECT_FLOAT_EQ(test_button.computed_style.visual.background.r, 0.3f);
+
+	test_button.on_released();
+	test_button.get_requires(bgui::get_draw_data());
+	EXPECT_FLOAT_EQ(test_button.computed_style.visual.background.r, 0.1f);
+}
+
 TEST(DeclarativeStyleTest, InlineStyleOverridesClassStyle) {
 	bgui::set_up();
 	auto& manager = style_manager::get_instance();

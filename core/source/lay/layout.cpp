@@ -1,5 +1,6 @@
 #include "lay/layout.hpp"
 #include "bgui.hpp"
+#include "utils/resize_module.hpp"
 
 using namespace bgui;
 
@@ -20,6 +21,12 @@ void layout::on_update() {
 
 std::map<layer, std::vector<std::unique_ptr<element>>> &layout::get_elements() {
         return m_elements;
+}
+
+void layout::set_resizable(bool enabled) {
+    if (m_resizable == enabled) return;
+    m_resizable = enabled;
+    resize_module::configure(*this, enabled);
 }
 
 void layout::get_requires(bgui::draw_data* data) {
