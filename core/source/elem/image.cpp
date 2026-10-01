@@ -1,4 +1,6 @@
 #include "elem/image.hpp"
+#include "os/asset_manager.hpp"
+#include "bgui.hpp"
 
 namespace bgui {
     image::image() {
@@ -6,17 +8,47 @@ namespace bgui {
         m_material.m_use_tex = true;
         m_material.m_shader_tag = "ui::image";
         recives_input(false);
+        style.layout.require_mode(mode::wrap_content, mode::wrap_content);
     }
 
-    image::image(const texture& texture)
-        : image() {
+    image::image(const texture& texture, std::function<void(const std::string&)> on_click) : image() {
+        m_on_click = on_click;
         set_texture(texture);
+    }
+
+    image::image(const std::string& texture_path, std::function<void(const std::string&)> on_click) : image() {
+        m_on_click = on_click;
+        set_texture(asset_manager::get_instance().load_texture(texture_path));
     }
 
     void image::set_texture(const texture& texture) {
         m_texture = texture;
         m_material.m_texture = m_texture;
         mark_style_dirty();
+    }
+
+    void image::set_size(const float width, const float height) {
+        style.layout.require_size(width, height);
+        style.layout.require_mode(mode::pixel, mode::pixel);
+        mark_style_dirty();
+    }
+
+    void image::set_size_mode(const mode width_mode, const mode height_mode) {
+        style.layout.require_mode(width_mode, height_mode);
+        mark_style_dirty();
+    }
+
+    void image::use_natural_size() {
+        style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+        mark_style_dirty();
+    }
+
+    void image::calc_content_size(const layer&) {
+        const float scale = bgui::get_global_scale();
+        set_content_size(vec2i{
+            static_cast<int>(m_texture.m_size[0] * scale),
+            static_cast<int>(m_texture.m_size[1] * scale)
+        });
     }
 
     void image::set_external_texture(
@@ -35,6 +67,7 @@ namespace bgui {
     }
 
     void image::get_requires(draw_data* calls) {
+        // Do not enqueue an image until it has valid pixel data or an external texture ID.
         if (m_texture.m_id == 0 && m_texture.m_buffer.empty())
             return;
 

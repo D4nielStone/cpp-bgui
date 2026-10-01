@@ -25,10 +25,12 @@ int main() {
             .visible = true
         }
     };
-    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.4f);
-    auto& button = panel.add<bgui::button>("Button Example", 0.4f, [](){});
+    panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
+    panel.add<bgui::image>("assets/bubble.png", [](const std::string& path){
+        std::cout << "Image clicked: " << path << std::endl;
+    });
+    panel.add<bgui::button>("Button Example", 0.4f, [](){});
     auto& win = root.add<bgui::window>("Hello Bubble!");
-    
     auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
     context.style = {
         .layout = {
@@ -51,9 +53,9 @@ int main() {
         .set_on_change([&cb](bool checked){
             cb.set_enable(checked);
         });
-    auto& txt2 = context.add<bgui::text>("FPS: ", 0.4f);
-    auto& button2 = context.add<bgui::button>("Button inside window", 0.4f, [](){});
-    auto& ia = context.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
+    context.add<bgui::text>("FPS: ", 0.4f);
+    context.add<bgui::button>("Button inside window", 0.4f, [](){});
+    context.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
 
     bgui::get_context().m_refresh_func = [&](){
         bgui::glfw_update(bgui::get_context());
@@ -62,7 +64,6 @@ int main() {
 
         // Display fps in the title
         int fps = bgui::get_fps();
-        txt2.set_buffer("FPS: " + std::to_string(fps));
         bgui::gl3_clear();
         bgui::gl3_render(bgui::get_draw_data());
         glfwSwapBuffers(window);

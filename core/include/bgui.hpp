@@ -1,5 +1,6 @@
 #pragma once
 #include "os/font.hpp"
+#include "os/asset_manager.hpp"
 #include "elem/element.hpp"
 #include "elem/button.hpp"
 #include "elem/checkbox.hpp"

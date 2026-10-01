@@ -1,4 +1,5 @@
 #include "os/font.hpp"
+#include "os/asset_manager.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <limits>
@@ -44,49 +45,24 @@ void bgui::font_manager::set_default_font(
     if (name.empty() || resolution == 0)
         throw std::invalid_argument("Default font name and resolution are required.");
 
-    const auto key = make_key(name, resolution);
-    if (m_fonts.find(key) == m_fonts.end())
-        throw std::runtime_error("Cannot set an unloaded font as the default.");
-
-    m_default_font_keys[resolution] = key;
+    bgui::asset_manager::get_instance().set_default_font(name, resolution);
 }
 
 bool bgui::font_manager::has_font(
     const std::string& name,
     const unsigned int resolution
 ) const {
-    if (name == "default") {
-        const auto default_it = m_default_font_keys.find(resolution);
-        return default_it != m_default_font_keys.end() &&
-            m_fonts.find(default_it->second) != m_fonts.end();
-    }
-
-    return m_fonts.find(make_key(name, resolution)) != m_fonts.end();
+    return bgui::asset_manager::get_instance().has_font(name, resolution);
 }
 
 bgui::font& bgui::font_manager::get_font(
     const std::string& name,
     const unsigned int resolution
 ) {
-    if (resolution == 0)
-        throw std::invalid_argument("Font resolution must be greater than zero.");
-
-    if(name == "default") {
-        const auto default_key = m_default_font_keys.find(resolution);
-        if (default_key != m_default_font_keys.end()) {
-            const auto default_font = m_fonts.find(default_key->second);
-            if (default_font != m_fonts.end())
-                return default_font->second;
-        }
-    }
-
-    const auto it = m_fonts.find(make_key(name, resolution));
-    if (it != m_fonts.end())
-        return it->second;
+    auto& manager = bgui::asset_manager::get_instance();
+    if (manager.has_font(name, resolution))
+        return manager.get_font(name, resolution);
 
     std::cerr << "[FONT] Font " << name << " not found. Have you added it to the backend?" << std::endl;
-    throw std::runtime_error(
-        "Font " + name + " at resolution " +
-        std::to_string(resolution) + " was not found."
-    );
+    return manager.get_font(name, resolution);
 }

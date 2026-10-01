@@ -10,7 +10,10 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(
     all_tests
-    all_tests.cpp
+    element_tests.cpp
+    image_tests.cpp
+    linear_tests.cpp
+    style_tests.cpp
 )
 
 target_include_directories(all_tests
@@ -23,7 +26,10 @@ target_link_libraries(
     GTest::gtest_main 
 )
 
-add_test(NAME AllTests COMMAND all_tests)
+add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
+add_test(NAME ImageTests COMMAND all_tests --gtest_filter=ImageTest.*)
+add_test(NAME LinearTests COMMAND all_tests --gtest_filter=LinearTest.*)
+add_test(NAME StyleTests COMMAND all_tests --gtest_filter=StyleVisualTest.*:DeclarativeStyleTest.*)
 
 if(WIN32)
   # On Windows, do not link pthreads
