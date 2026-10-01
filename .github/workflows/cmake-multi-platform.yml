@@ -9,15 +9,10 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 1  # shallow clone
-
-      - name: Disable Windows Defender
-        if: runner.os == 'Windows'
-        run: Set-MpPreference -DisableRealtimeMonitoring $true
-        shell: pwsh
 
       - name: Set up CMake
         uses: jwlawson/actions-setup-cmake@v1
@@ -26,13 +21,16 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Install libraries (Ubuntu)
-        if: runner.os == 'Ubuntu'
-        run: sudo apt-get update && sudo apt install libpng-dev
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+
+      - name: Install libraries (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libpng
 
       - name: Configure CMake
         run: >
           cmake -S . -B out
-          -DBGUI_USE_OPENGL=OFF
           -DBGUI_USE_OPENGL=OFF
           -DBGUI_USE_VULKAN=OFF
           -DBGUI_USE_GLFW=OFF
@@ -41,13 +39,8 @@ jobs:
           -DCMAKE_C_COMPILER_LAUNCHER=sccache
           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      - name: Build (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: cmake --build out --config Debug
-
-      - name: Build (Windows — paralelo)
-        if: runner.os == 'Windows'
-        run: cmake --build out --config Debug -- /m
+      - name: Build
+        run: cmake --build out --config Debug --parallel
 
       - name: Run Tests
         run: ctest --test-dir out --output-on-failure -C Debug -V
