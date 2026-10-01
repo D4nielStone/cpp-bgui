@@ -28,7 +28,8 @@ int main() {
     panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
     panel.add<bgui::image>("assets/bubble.png", [](const std::string& path){
         std::cout << "Image clicked: " << path << std::endl;
-    });
+    })
+        .set_size_mode(bgui::mode::match_parent, bgui::mode::same);
     panel.add<bgui::button>("Button Example", 0.4f, [](){});
     auto& win = root.add<bgui::window>("Hello Bubble!");
     auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
@@ -43,7 +44,7 @@ int main() {
     context.add<bgui::text>("This is a window widget example.", 0.4f);
     auto& cb = context.add<bgui::checkbox>("Switch theme", 0.4f, false);
     cb.set_on_change([&sm](bool checked){
-        if(checked) {
+        if(!checked) {
             sm.apply_theme(bgui::dark_theme());
         } else {
             sm.apply_theme(bgui::light_theme());
@@ -53,7 +54,6 @@ int main() {
         .set_on_change([&cb](bool checked){
             cb.set_enable(checked);
         });
-    context.add<bgui::text>("FPS: ", 0.4f);
     context.add<bgui::button>("Button inside window", 0.4f, [](){});
     context.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
 
@@ -61,9 +61,6 @@ int main() {
         bgui::glfw_update(bgui::get_context());
         bgui::load_font_queue();
         bgui::on_update();
-
-        // Display fps in the title
-        int fps = bgui::get_fps();
         bgui::gl3_clear();
         bgui::gl3_render(bgui::get_draw_data());
         glfwSwapBuffers(window);
