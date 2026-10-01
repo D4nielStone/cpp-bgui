@@ -6,7 +6,7 @@
 bgui::button::button(const std::string& name,
                      float scale,
                      const std::function<void()>& f)
-    : m_label(&add<text>(name, scale)),
+    : m_label(&add_persistent<text>(name, scale)),
       m_function(f),
       linear(bgui::orientation::horizontal)
 {

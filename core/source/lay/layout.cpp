@@ -32,6 +32,9 @@ void layout::set_resizable(bool enabled) {
 void layout::get_requires(bgui::draw_data* data) {
     // the background quad
     element::get_requires(data);
+    const auto inherited_clip = data->m_clip_rect;
+    if (clips_children())
+        data->m_clip_rect = bgui::intersect_rect(inherited_clip, get_children_clip_rect());
     // linear layouts get the draw call in addition order
     for (auto& [lay, elems] : m_elements) {
         for(auto& elem : elems) {
@@ -42,4 +45,5 @@ void layout::get_requires(bgui::draw_data* data) {
             if(data->m_quad_requires.empty()) continue;
         }
     }
+    data->m_clip_rect = inherited_clip;
 };

@@ -56,3 +56,29 @@ TEST(ElementTest, ScopedInterfaceInitializesAndShutsDown) {
 
 	EXPECT_THROW(bgui::get_layout(), std::runtime_error);
 }
+
+TEST(ElementTest, ScopedElementIsRemovedWhenHandleLeavesScope) {
+	layout root;
+	EXPECT_TRUE(root.get_elements().empty());
+
+	{
+		auto handle = root.add<element>();
+		EXPECT_TRUE(handle);
+		EXPECT_EQ(root.get_elements().at(layer::base).size(), 1U);
+	}
+
+	EXPECT_TRUE(root.get_elements().at(layer::base).empty());
+}
+
+TEST(DrawDataTest, EnqueueCapturesIntersectedClipRect) {
+	const auto clip = intersect_rect(vec4i{10, 20, 80, 60}, vec4i{40, 0, 80, 50});
+	EXPECT_EQ(clip, (vec4i{40, 20, 50, 30}));
+
+	element elem;
+	draw_data data;
+	data.m_clip_rect = clip;
+	data.enqueue({elem.get_material()});
+
+	ASSERT_EQ(data.m_quad_requires.size(), 1U);
+	EXPECT_EQ(data.m_quad_requires.front().m_clip_rect, clip);
+}

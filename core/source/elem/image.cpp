@@ -73,7 +73,7 @@ namespace bgui {
 
         set_properties();
         m_material.m_texture = m_texture;
-        calls->m_quad_requires.push({
+        calls->enqueue({
             m_material,
             6,
             vec4{

@@ -4,7 +4,11 @@ namespace bgui {
     enum class cursor {
         arrow,
         hand,
-        ibeam
+        ibeam,
+        resize_horizontal,
+        resize_vertical,
+        resize_nwse,
+        resize_nesw
     };
     enum class input_key {
         none,

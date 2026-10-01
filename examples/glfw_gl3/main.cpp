@@ -11,11 +11,11 @@ int main() {
         auto& sm = bgui::style_manager::get_instance();
         sm.apply_theme(bgui::dark_theme());
 
-        // Build UI declaratively
+        // Keep each handle alive while its element should remain in the layout.
         bgui::layout& root = bgui::get_layout();
 
-        auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
-        panel.style = {
+        auto panel = root.add<bgui::linear>(bgui::orientation::vertical);
+        panel->style = {
             .layout = {
                 .size_mode = std::make_optional<bgui::vec<2UL, bgui::mode>>({bgui::mode::pixel, bgui::mode::match_parent}),
                 .size = std::make_optional<bgui::vec<2UL, float>>({300.f, 1.f})
@@ -24,13 +24,10 @@ int main() {
                 .visible = true
             }
         };
-        panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
-        panel.add<bgui::button>("Button Example", 0.3f, [](){});
-        panel.add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
-
-        auto& win = root.add<bgui::window>("Hello Bubble!");
-        auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
-        context.style = {
+        auto panel_text = panel->add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
+        auto demo_window = root.add<bgui::window>("Hello Bubble!");
+        auto context = demo_window->add<bgui::linear>(bgui::orientation::vertical);
+        context->style = {
             .layout = {
                 .size_mode = std::make_optional<bgui::vec<2UL, bgui::mode>>({bgui::mode::match_parent, bgui::mode::match_parent})
             },
@@ -38,25 +35,17 @@ int main() {
                 .visible = false
             }
         };
-        context.add<bgui::text>("This is a window widget example.", 0.4f);
-        auto& cb = context.add<bgui::checkbox>("Switch theme", 0.4f, false);
-        cb.set_on_change([&sm](bool checked){
-            if(!checked) {
-                sm.apply_theme(bgui::dark_theme());
-            } else {
-                sm.apply_theme(bgui::light_theme());
-            }
-        });
-        context.add<bgui::checkbox>("Allow the checkbox above", 0.4f, true)
-            .set_on_change([&cb](bool checked){
-                cb.set_enable(checked);
-            });
-        auto& window_button = context.add<bgui::button>("Button inside window", 0.4f, [](){});
-        window_button.style.visual.background.normal = {0.10f, 0.36f, 0.33f, 1.f};
-        window_button.style.visual.background.hover = {0.13f, 0.46f, 0.41f, 1.f};
-        window_button.style.visual.background.pressed = {0.08f, 0.29f, 0.27f, 1.f};
-        window_button.style.visual.border.normal = {0.18f, 0.54f, 0.49f, 1.f};
-        window_button.style.visual.text.normal = {1.f, 1.f, 1.f, 1.f};
+        auto window_text = context->add<bgui::text>("This is a window widget example.", 0.4f);
+        window_text->style.layout.align = bgui::vec<2UL, bgui::alignment>({bgui::alignment::center, bgui::alignment::start});
+        
+        auto enable_checkbox = context->add<bgui::checkbox>("Allow the checkbox above", 0.4f, true);
+       
+        auto window_button = context->add<bgui::button>("Button inside window", 0.4f, [](){});
+        window_button->style.visual.background.normal = {0.10f, 0.36f, 0.33f, 1.f};
+        window_button->style.visual.background.hover = {0.13f, 0.46f, 0.41f, 1.f};
+        window_button->style.visual.background.pressed = {0.08f, 0.29f, 0.27f, 1.f};
+        window_button->style.visual.border.normal = {0.18f, 0.54f, 0.49f, 1.f};
+        window_button->style.visual.text.normal = {1.f, 1.f, 1.f, 1.f};
 
         bgui::get_context().m_refresh_func = [&](){
             bgui::glfw_update(bgui::get_context());

@@ -22,14 +22,14 @@ TEST(LinearTest, VerticalLayoutFixedSizes) {
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
 	layout.process_required_size({200, 400});
 
-	auto& first = layout.add<mock_element>(100, 50);
-	auto& second = layout.add<mock_element>(100, 75);
-	first.compute_style();
-	second.compute_style();
+	auto first = layout.add<mock_element>(100, 50);
+	auto second = layout.add<mock_element>(100, 75);
+	first->compute_style();
+	second->compute_style();
 	layout.on_update();
 
-	EXPECT_EQ(first.processed_y(), 0);
-	EXPECT_EQ(second.processed_y(), 50);
+	EXPECT_EQ(first->processed_y(), 0);
+	EXPECT_EQ(second->processed_y(), 50);
 }
 
 TEST(LinearTest, HorizontalLayoutFixedSizes) {
@@ -38,14 +38,14 @@ TEST(LinearTest, HorizontalLayoutFixedSizes) {
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
 	layout.process_required_size({400, 200});
 
-	auto& first = layout.add<mock_element>(50, 100);
-	auto& second = layout.add<mock_element>(75, 100);
-	first.compute_style();
-	second.compute_style();
+	auto first = layout.add<mock_element>(50, 100);
+	auto second = layout.add<mock_element>(75, 100);
+	first->compute_style();
+	second->compute_style();
 	layout.on_update();
 
-	EXPECT_EQ(first.processed_x(), 0);
-	EXPECT_EQ(second.processed_x(), 50);
+	EXPECT_EQ(first->processed_x(), 0);
+	EXPECT_EQ(second->processed_x(), 50);
 }
 
 TEST(LinearTest, StretchElementsShareRemainingSpace) {
@@ -56,14 +56,14 @@ TEST(LinearTest, StretchElementsShareRemainingSpace) {
 	layout.compute_style();
 	layout.process_required_size({200, 400});
 
-	auto& first = layout.add<mock_element>(100, 0, mode::pixel, mode::stretch);
-	auto& second = layout.add<mock_element>(100, 0, mode::pixel, mode::stretch);
-	first.compute_style();
-	second.compute_style();
+	auto first = layout.add<mock_element>(100, 0, mode::pixel, mode::stretch);
+	auto second = layout.add<mock_element>(100, 0, mode::pixel, mode::stretch);
+	first->compute_style();
+	second->compute_style();
 	layout.on_update();
 
-	EXPECT_EQ(first.processed_height(), 200);
-	EXPECT_EQ(second.processed_height(), 200);
+	EXPECT_EQ(first->processed_height(), 200);
+	EXPECT_EQ(second->processed_height(), 200);
 }
 
 TEST(LinearTest, PaddingAffectsLayout) {
@@ -74,12 +74,12 @@ TEST(LinearTest, PaddingAffectsLayout) {
 	layout.compute_style();
 	layout.process_required_size({200, 400});
 
-	auto& child = layout.add<mock_element>(100, 50);
-	child.compute_style();
+	auto child = layout.add<mock_element>(100, 50);
+	child->compute_style();
 	layout.on_update();
 
-	EXPECT_EQ(child.processed_x(), 10);
-	EXPECT_EQ(child.processed_y(), 20);
+	EXPECT_EQ(child->processed_x(), 10);
+	EXPECT_EQ(child->processed_y(), 20);
 }
 
 TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
@@ -119,4 +119,46 @@ TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 		}
 	}
 	EXPECT_FALSE(has_resize_handle);
+}
+
+TEST(LinearTest, ResizingOneEdgePreservesTheOtherInitialDimension) {
+	bgui::set_up();
+	auto& manager = style_manager::get_instance();
+	style themed_size;
+	themed_size.layout.require_size(200.f, 160.f);
+	themed_size.layout.require_mode(mode::pixel, mode::pixel);
+	manager.set_type("resizable_test", themed_size);
+
+	linear panel(orientation::vertical);
+	panel.type = "resizable_test";
+	panel.compute_style();
+	panel.process_required_size({400, 300});
+	panel.set_resizable(true);
+	panel.on_update();
+
+	element* right_edge = nullptr;
+	element* bottom_right_corner = nullptr;
+	for (auto& [lay, elements] : panel.get_elements()) {
+		for (auto& elem : elements) {
+			if (elem->has_class("resize-right") &&
+				!elem->has_class("resize-top") && !elem->has_class("resize-bottom"))
+				right_edge = elem.get();
+			if (elem->has_class("resize-right") && elem->has_class("resize-bottom"))
+				bottom_right_corner = elem.get();
+		}
+	}
+	ASSERT_NE(right_edge, nullptr);
+	ASSERT_NE(bottom_right_corner, nullptr);
+
+	right_edge->on_mouse_hover();
+	EXPECT_EQ(bgui::get_context().m_actual_cursor, cursor::resize_horizontal);
+	right_edge->set_drag({20, 0});
+	right_edge->on_update();
+
+	ASSERT_TRUE(panel.style.layout.size.has_value());
+	EXPECT_FLOAT_EQ((*panel.style.layout.size)[0], 220.f);
+	EXPECT_FLOAT_EQ((*panel.style.layout.size)[1], 160.f);
+
+	bottom_right_corner->on_mouse_hover();
+	EXPECT_EQ(bgui::get_context().m_actual_cursor, cursor::resize_nwse);
 }

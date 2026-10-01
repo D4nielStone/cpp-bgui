@@ -204,7 +204,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         float h = scale * ch.size[1];
 
         set_properties();
-        data->m_quad_requires.push({
+        data->enqueue({
             m_material, 6,
             { xpos, ypos, w, -h },
             ch.uv_min, ch.uv_max,

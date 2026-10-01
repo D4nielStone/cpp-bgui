@@ -99,37 +99,37 @@ int main() {
 ```cpp
     bgui::layout& root = bgui::get_layout();
 
-    // Adding elements
-    auto& panel = root.add<bgui::linear>(bgui::orientation::vertical);
-    panel.style.layout.set_padding(10, 2);
-    panel.require_width(bgui::mode::pixel, 300.f);
-    panel.require_height(bgui::mode::match_parent);
+    // Keep each handle alive while its element should remain in the layout.
+    auto panel = root.add<bgui::linear>(bgui::orientation::vertical);
+    panel->style.layout.set_padding(10, 2);
+    panel->require_width(bgui::mode::pixel, 300.f);
+    panel->require_height(bgui::mode::match_parent);
 
     // layout are invisible by default
-    panel.set_visible(true);
+    panel->set_visible(true);
 
-    auto& txt = panel.add<bgui::text>("Linear Layout Example", 0.35f);
-    txt.require_width(bgui::mode::match_parent);
-    txt.set_alignment(bgui::alignment::center);
-    auto& button = panel.add<bgui::button>("Button Example", 0.35f, [](){});
-    button.require_width(bgui::mode::match_parent);
+    auto txt = panel->add<bgui::text>("Linear Layout Example", 0.35f);
+    txt->require_width(bgui::mode::match_parent);
+    txt->set_alignment(bgui::alignment::center);
+    auto button = panel->add<bgui::button>("Button Example", 0.35f, [](){});
+    button->require_width(bgui::mode::match_parent);
 
     // window widget
-    auto& win = root.add<bgui::window>("Hello Bubble!");
-    root.add<bgui::window>("win2");
-    root.add<bgui::window>("win3");
-    root.add<bgui::window>("win4");
-    auto& context = win.add<bgui::linear>(bgui::orientation::vertical);
-    context.require_height(bgui::mode::stretch);
-    context.require_width(bgui::mode::match_parent);
-    context.style.layout.set_padding(10, 10);
+    auto win = root.add<bgui::window>("Hello Bubble!");
+    auto window2 = root.add<bgui::window>("win2");
+    auto window3 = root.add<bgui::window>("win3");
+    auto window4 = root.add<bgui::window>("win4");
+    auto context = win->add<bgui::linear>(bgui::orientation::vertical);
+    context->require_height(bgui::mode::stretch);
+    context->require_width(bgui::mode::match_parent);
+    context->style.layout.set_padding(10, 10);
 
-    context.add<bgui::text>("This is a window widget example.", 0.35f);
-    auto& txt2 = context.add<bgui::text>("Centered text", 0.35f);
-    txt2.set_alignment(bgui::alignment::center);
-    txt2.require_width(bgui::mode::stretch);
-    auto& button2 = context.add<bgui::button>("Button inside window", 0.35f, [](){});
-    button2.require_width(bgui::mode::match_parent);
+    auto window_text = context->add<bgui::text>("This is a window widget example.", 0.35f);
+    auto txt2 = context->add<bgui::text>("Centered text", 0.35f);
+    txt2->set_alignment(bgui::alignment::center);
+    txt2->require_width(bgui::mode::stretch);
+    auto button2 = context->add<bgui::button>("Button inside window", 0.35f, [](){});
+    button2->require_width(bgui::mode::match_parent);
 
     // style must be applyed in the end
     bgui::cascade_style(bgui::dark_style);

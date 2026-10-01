@@ -10,12 +10,46 @@
 #include <algorithm>
 #include <queue>
 #include <map>
+#include <utility>
 
 namespace bgui {
+    class layout;
+
+    template<typename T>
+    class scoped_element {
+        friend class layout;
+        layout* m_parent;
+        T* m_element;
+
+        scoped_element(layout* parent, T* elem) noexcept : m_parent(parent), m_element(elem) {}
+    public:
+        scoped_element(const scoped_element&) = delete;
+        scoped_element& operator=(const scoped_element&) = delete;
+        scoped_element(scoped_element&& other) noexcept
+            : m_parent(std::exchange(other.m_parent, nullptr)),
+              m_element(std::exchange(other.m_element, nullptr)) {}
+        scoped_element& operator=(scoped_element&& other) noexcept;
+        ~scoped_element() noexcept;
+
+        T& get() const noexcept { return *m_element; }
+        T& operator*() const noexcept { return *m_element; }
+        T* operator->() const noexcept { return m_element; }
+        explicit operator bool() const noexcept { return m_element != nullptr; }
+    };
+
     class layout : public element {
     protected:
         std::map<bgui::layer, std::vector<std::unique_ptr<element>>> m_elements;
         bool m_resizable{false};
+    private:
+        template<typename T, layer lay, typename... Args>
+        T& insert_element(Args&&... args) {
+            auto elem = std::make_unique<T>(std::forward<Args>(args)...);
+            T& ref = *elem;
+            ref.set_parent(this);
+            m_elements[lay].push_back(std::move(elem));
+            return ref;
+        }
     public:
         layout();
         ~layout() = default;
@@ -55,12 +89,13 @@ namespace bgui {
             }
         }
         template<typename T, layer lay = layer::base, typename... Args>
-        T& add(Args&&... args) {
-            auto elem = std::make_unique<T>(std::forward<Args>(args)...);
-            T& ref = *elem;
-            ref.set_parent(this);
-            m_elements[lay].push_back(std::move(elem));
-            return ref;
+        scoped_element<T> add(Args&&... args) {
+            return scoped_element<T>(this, &insert_element<T, lay>(std::forward<Args>(args)...));
+        }
+
+        template<typename T, layer lay = layer::base, typename... Args>
+        T& add_persistent(Args&&... args) {
+            return insert_element<T, lay>(std::forward<Args>(args)...);
         }
     
         bool remove(element* elem) {
@@ -95,4 +130,18 @@ namespace bgui {
         }
         bgui::layout* as_layout() override { return this; }
     };
+
+    template<typename T>
+    scoped_element<T>& scoped_element<T>::operator=(scoped_element&& other) noexcept {
+        if (this == &other) return *this;
+        if (m_parent && m_element) m_parent->remove(m_element);
+        m_parent = std::exchange(other.m_parent, nullptr);
+        m_element = std::exchange(other.m_element, nullptr);
+        return *this;
+    }
+
+    template<typename T>
+    scoped_element<T>::~scoped_element() noexcept {
+        if (m_parent && m_element) m_parent->remove(m_element);
+    }
 } // namespace bgui

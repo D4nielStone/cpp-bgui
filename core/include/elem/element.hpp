@@ -124,6 +124,8 @@ namespace bgui {
          * @return Pointer to layout if the element is a layout, otherwise nullptr.
          */
         virtual layout* as_layout() { return nullptr; }
+        virtual bool clips_children() const { return false; }
+        virtual vec4i get_children_clip_rect() const { return processed_rect(); }
         // Final rect (computed by layout)
         /**
          * @brief Gets the final computed X position (left edge) of the element.

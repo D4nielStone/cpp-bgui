@@ -12,15 +12,15 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     set_position(20, 20);
 
     // testing the header:
-    m_header = &add<bgui::linear>(bgui::orientation::horizontal);
+    m_header = &add_persistent<bgui::linear>(bgui::orientation::horizontal);
     m_header->add_class("window-header");
-    m_icon = &m_header->add<bgui::image>();
+    m_icon = &m_header->add_persistent<bgui::image>();
     m_icon->set_size(1.f, 1.f);
     set_icon("bubble.png");
-    m_title = &m_header->add<bgui::text>(title, 0.35f);
+    m_title = &m_header->add_persistent<bgui::text>(title, 0.35f);
     m_title->add_class("window-label");
     // TODO: switch to image button later
-    m_header->add<bgui::button>(" X ", 0.35f, [this](){
+    m_header->add_persistent<bgui::button>(" X ", 0.35f, [this](){
         m_parent->remove(this);
     }).add_class("window-button");
     set_floating(floating);

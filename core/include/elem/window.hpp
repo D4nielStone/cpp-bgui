@@ -21,6 +21,7 @@ namespace bgui {
         void set_icon(const std::string& path);
         void set_title(const std::string& title) { m_title->set_buffer(title); }
         text& get_title() { return *m_title; }
+        bool clips_children() const override { return true; }
         bool is_floating() const { return m_floating; }
         void set_floating(bool floating);
     };

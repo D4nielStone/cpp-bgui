@@ -109,7 +109,7 @@ void element::get_requires(bgui::draw_data* calls) {
 
     set_properties();
     if (!computed_style.visual.visible) return;
-    calls->m_quad_requires.push({
+    calls->enqueue({
         m_material,
         6,
         vec4{

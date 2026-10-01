@@ -228,6 +228,7 @@ void bgui::on_update() {
 
     // get new requires
     if(!get_draw_data()->m_quad_requires.empty()) std::cout << "[BGUI] Warning: draw data not empty at beginning of frame.\nMake sure you are resetting draw data each frame.\n";
+    get_draw_data()->m_clip_rect = {0, 0, w_size.x, w_size.y};
     bgui::s_main_layout->get_requires(get_draw_data());
 }
 

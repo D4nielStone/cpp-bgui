@@ -33,7 +33,7 @@ bgui::input_area::input_area(const std::string& buffer, const float scale, std::
     m_enter_func(action) {
     type = "inputarea";
     recives_input(true);
-    m_text = &add<text>(m_input_buffer.empty() ? m_placeholder : m_input_buffer, scale);
+    m_text = &add_persistent<text>(m_input_buffer.empty() ? m_placeholder : m_input_buffer, scale);
     m_text->add_class("inputarea-txt");
     m_text->recives_input(false);
 }

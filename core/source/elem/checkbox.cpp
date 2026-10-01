@@ -6,10 +6,10 @@ bgui::checkbox::checkbox(bool* ref, bool actv, const std::string& title, const f
     type = "checkbox";
     recives_input(true);
     // box should be a button
-    auto& box = add<bgui::element>();
+    auto& box = add_persistent<bgui::element>();
     box.add_class("checkbox-box");
     if(title.empty() == false) {
-        auto& txt = add<text>(title, scale);
+        auto& txt = add_persistent<text>(title, scale);
         txt.add_class("checkbox-txt");
         label = &txt;
         txt.recives_input(false);
@@ -23,11 +23,11 @@ bgui::checkbox::checkbox(const std::string& title, const float scale, const bool
     recives_input(true);
 
     // box should be a button
-    auto& box = add<bgui::element>();
+    auto& box = add_persistent<bgui::element>();
     box.add_class("checkbox-box");
 
     if(title.empty() == false) {
-        auto& txt = add<text>(title, scale);
+        auto& txt = add_persistent<text>(title, scale);
         txt.add_class("checkbox-txt");
         label = &txt;
         txt.recives_input(false);
