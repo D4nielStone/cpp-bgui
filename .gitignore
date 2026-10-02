@@ -44,3 +44,5 @@ out
 build
 .vscode
 .todo_list.db
+
+_deps
