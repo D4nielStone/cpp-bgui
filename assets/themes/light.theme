@@ -107,8 +107,8 @@ visual.visible            = true
 layout.mode              = wrap_content, wrap_content
 layout.padding           = 0
 layout.margin            = 0
-visual.background.normal = 0.99, 0.995, 0.99, 1.0
-visual.border.normal     = 0.99, 0.995, 0.99, 1.0
+visual.background.normal = 0.0
+visual.border.normal     = 0.0
 
 
 [class.inputarea-txt]
