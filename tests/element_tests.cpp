@@ -5,6 +5,15 @@ using namespace bgui;
 
 namespace {
 const vec2i available_size = {400, 300};
+
+class drag_probe final : public element {
+public:
+	int drag_updates{0};
+
+	void set_drag(const vec2i&) override {
+		++drag_updates;
+	}
+};
 }
 
 TEST(ElementTest, RequireSizeAndMode) {
@@ -81,4 +90,34 @@ TEST(DrawDataTest, EnqueueCapturesIntersectedClipRect) {
 
 	ASSERT_EQ(data.m_quad_requires.size(), 1U);
 	EXPECT_EQ(data.m_quad_requires.front().m_clip_rect, clip);
+}
+
+TEST(ElementTest, DragRequiresPressToStartInsideTheDraggedWidget) {
+	bgui::scoped_interface interface;
+	auto& context = bgui::get_context();
+	context.m_size = {100, 100};
+	auto& root = bgui::get_layout();
+	auto& probe = root.add_persistent<drag_probe>();
+	probe.style.layout.require_size(50.f, 50.f);
+	probe.style.layout.require_mode(mode::pixel, mode::pixel);
+	probe.set_final_rect(20, 20, 50, 50);
+
+	context.m_mouse_position = {5, 5};
+	context.m_input_map[input_key::mouse_left] = input_action::press;
+	bgui::on_update();
+	context.m_mouse_position = {25, 25};
+	bgui::on_update();
+	EXPECT_EQ(probe.drag_updates, 0);
+
+	context.m_input_map[input_key::mouse_left] = input_action::release;
+	bgui::on_update();
+	context.m_mouse_position = {25, 25};
+	context.m_input_map[input_key::mouse_left] = input_action::press;
+	bgui::on_update();
+	context.m_mouse_position = {30, 25};
+	bgui::on_update();
+	EXPECT_EQ(probe.drag_updates, 1);
+
+	context.m_input_map[input_key::mouse_left] = input_action::release;
+	bgui::on_update();
 }

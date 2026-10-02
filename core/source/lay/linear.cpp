@@ -37,6 +37,9 @@ void linear::on_update() {
     int stretch_count = 0;
 
     for (auto& elem : m_elements[lay]) {
+        if (!elem->is_enabled())
+            continue;
+
         auto mreq = elem->computed_style.layout.size_mode[main];
 
         if (mreq == mode::pixel || mreq == mode::wrap_content || mreq == mode::same) {

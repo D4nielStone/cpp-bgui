@@ -72,10 +72,28 @@ TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {
     EXPECT_TRUE(unpin->is_enabled());
     EXPECT_FALSE(close->is_enabled());
 
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.on_update();
+
     unpin->on_released();
     bgui::on_update();
+    dock.on_update();
 
     EXPECT_TRUE(panel.is_floating());
     EXPECT_FALSE(unpin->is_enabled());
     EXPECT_TRUE(close->is_enabled());
+
+    bgui::linear* header = nullptr;
+    for (auto& [lay, elements] : panel.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("window-header"))
+                header = dynamic_cast<bgui::linear*>(element.get());
+        }
+    }
+    ASSERT_NE(header, nullptr);
+    EXPECT_EQ(close->processed_x() + close->processed_width(),
+              header->processed_x() + header->processed_width());
 }

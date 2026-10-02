@@ -20,6 +20,7 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     set_icon("bubble.png");
     m_title = &m_header->add_persistent<bgui::text>(title, 0.35f);
     m_title->add_class("window-label");
+    m_title->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
     // TODO: switch to image button later
     m_close_button = &m_header->add_persistent<bgui::button>(" X ", 0.35f, [this](){
         auto* parent = get_parent();
