@@ -163,3 +163,25 @@ TEST(LinearTest, ResizingOneEdgePreservesTheOtherInitialDimension) {
 	bottom_right_corner->on_mouse_hover();
 	EXPECT_EQ(bgui::get_context().m_actual_cursor, cursor::resize_nwse);
 }
+
+TEST(DetailsTest, PreservesContentWhileCollapsingAndExpanding) {
+	bgui::details section("Models");
+	auto& item = section.content().add_persistent<bgui::text>("cube.obj", 0.35f);
+
+	ASSERT_TRUE(section.style.layout.size_mode.has_value());
+	EXPECT_EQ((*section.style.layout.size_mode)[1], bgui::mode::wrap_content);
+	ASSERT_TRUE(section.content().style.layout.size_mode.has_value());
+	EXPECT_EQ((*section.content().style.layout.size_mode)[1], bgui::mode::wrap_content);
+	EXPECT_FALSE(section.is_open());
+	EXPECT_FALSE(section.content().is_enabled());
+
+	section.set_open(true);
+	EXPECT_TRUE(section.is_open());
+	EXPECT_TRUE(section.content().is_enabled());
+	ASSERT_EQ(section.content().get_elements().begin()->second.size(), 1u);
+	EXPECT_EQ(section.content().get_elements().begin()->second.front().get(), &item);
+
+	section.set_open(false);
+	EXPECT_FALSE(section.content().is_enabled());
+	EXPECT_EQ(section.content().get_elements().begin()->second.front().get(), &item);
+}

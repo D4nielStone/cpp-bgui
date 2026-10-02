@@ -130,6 +130,9 @@ bool update_inputs(bgui::layout &lay){
         for (size_t i = elements.size(); i-- > 0; ) {
             auto elem = elements[i].get();
 
+            if (!elem->is_enabled())
+                continue;
+
             if (auto* cast = elem->as_layout())
                 if(update_inputs(*cast)) {
                     return true;

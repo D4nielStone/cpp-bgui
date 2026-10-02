@@ -4,6 +4,7 @@
 #include "elem/element.hpp"
 #include "elem/button.hpp"
 #include "elem/checkbox.hpp"
+#include "elem/details.hpp"
 #include "elem/text.hpp"
 #include "elem/image.hpp"
 #include "elem/window.hpp"
