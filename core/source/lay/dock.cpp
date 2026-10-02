@@ -1,5 +1,6 @@
 #include "lay/dock.hpp"
 
+#include "bgui.hpp"
 #include "elem/window.hpp"
 #include "os/os.hpp"
 
