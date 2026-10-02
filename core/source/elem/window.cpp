@@ -1,5 +1,6 @@
 #include "elem/window.hpp"
 #include "elem/button.hpp"
+#include "lay/dock.hpp"
 #include "bgui.hpp"
 #include "os/asset_manager.hpp"
 #include "os/os.hpp"
@@ -20,11 +21,23 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     m_title = &m_header->add_persistent<bgui::text>(title, 0.35f);
     m_title->add_class("window-label");
     // TODO: switch to image button later
-    m_header->add_persistent<bgui::button>(" X ", 0.35f, [this](){
-        m_parent->remove(this);
-    }).add_class("window-button");
+    m_close_button = &m_header->add_persistent<bgui::button>(" X ", 0.35f, [this](){
+        auto* parent = get_parent();
+        bgui::add_function([this, parent]() {
+            if (auto* dock_parent = dynamic_cast<bgui::dock*>(parent))
+                dock_parent->remove_window(this);
+            else if (parent)
+                parent->remove(this);
+        });
+    });
+    m_close_button->add_class("window-button");
+    m_close_button->add_class("window-close-button");
+    m_unpin_button = &m_header->add_persistent<bgui::button>("Unpin", 0.35f, [this](){
+        set_floating(true);
+    });
+    m_unpin_button->add_class("window-button");
+    m_unpin_button->add_class("window-unpin-button");
     set_floating(floating);
-    set_resizable(true);
 }
 void bgui::window::on_update() {
     // drag system (title)
@@ -55,8 +68,9 @@ void bgui::window::set_icon(const std::string& path) {
 void bgui::window::set_floating(bool floating) {
     m_floating = floating;
     set_flex(!floating);
-    if(m_header) {
-        auto* elem = m_header->get_elements_by_class("window-button")[0];
-        elem->set_enable(floating);
-    }
+    if (m_close_button)
+        m_close_button->set_enable(floating);
+    if (m_unpin_button)
+        m_unpin_button->set_enable(!floating);
+    set_resizable(floating);
 }

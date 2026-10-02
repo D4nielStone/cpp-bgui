@@ -13,6 +13,7 @@ add_executable(
     element_tests.cpp
     image_tests.cpp
     linear_tests.cpp
+    dock_tests.cpp
     style_tests.cpp
 )
 
@@ -29,6 +30,7 @@ target_link_libraries(
 add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
 add_test(NAME ImageTests COMMAND all_tests --gtest_filter=ImageTest.*)
 add_test(NAME LinearTests COMMAND all_tests --gtest_filter=LinearTest.*)
+add_test(NAME DockTests COMMAND all_tests --gtest_filter=DockTest.*)
 add_test(NAME StyleTests COMMAND all_tests --gtest_filter=StyleVisualTest.*:DeclarativeStyleTest.*)
 
 if(WIN32)

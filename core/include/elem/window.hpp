@@ -5,11 +5,15 @@
 #include <string>
 
 namespace bgui {
+    class button;
+
     class window : public linear {
     private:
-        text* m_title;
-        linear* m_header;
-        image* m_icon;
+        text* m_title{nullptr};
+        linear* m_header{nullptr};
+        image* m_icon{nullptr};
+        button* m_close_button{nullptr};
+        button* m_unpin_button{nullptr};
         float m_icon_aspect_ratio = 1.f;
         int m_icon_height = 0;
         bool m_floating = true;
