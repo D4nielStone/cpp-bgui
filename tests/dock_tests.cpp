@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
+#include <algorithm>
 
 #include "bgui.hpp"
 #include "elem/button.hpp"
+#include "elem/window.hpp"
 #include "lay/dock.hpp"
 
 namespace {
@@ -58,6 +60,61 @@ TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
     dock.on_update();
     dock.on_update();
     EXPECT_GT(left.processed_width(), initial_width);
+}
+
+TEST(DockTest, FloatingWindowsStayAbovePinnedWindowsRegardlessOfInsertionOrder) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& pinned = dock.add_window("Pinned", bgui::dock_area::center);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.on_update();
+
+    const auto& elements = dock.get_elements()[bgui::layer::base];
+    const auto floating_position = std::find_if(elements.begin(), elements.end(), [&floating](const auto& element) {
+        return element.get() == &floating;
+    });
+    const auto pinned_position = std::find_if(elements.begin(), elements.end(), [&pinned](const auto& element) {
+        return element.get() == &pinned;
+    });
+
+    ASSERT_NE(floating_position, elements.end());
+    ASSERT_NE(pinned_position, elements.end());
+    EXPECT_LT(pinned_position, floating_position);
+
+    for (auto splitter = elements.begin(); splitter != elements.end(); ++splitter) {
+        if (splitter->get()->has_class("dock-splitter"))
+            EXPECT_LT(splitter, floating_position);
+    }
+}
+
+TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& focused = dock.add_persistent<bgui::window>("Focused", true);
+    auto& other = dock.add_persistent<bgui::window>("Other", true);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+
+    dock.focus_window(&focused);
+    dock.on_update();
+
+    const auto& elements = dock.get_elements()[bgui::layer::base];
+    const auto focused_position = std::find_if(elements.begin(), elements.end(), [&focused](const auto& element) {
+        return element.get() == &focused;
+    });
+    const auto other_position = std::find_if(elements.begin(), elements.end(), [&other](const auto& element) {
+        return element.get() == &other;
+    });
+
+    ASSERT_NE(focused_position, elements.end());
+    ASSERT_NE(other_position, elements.end());
+    EXPECT_LT(other_position, focused_position);
 }
 
 TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {

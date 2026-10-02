@@ -15,6 +15,7 @@
 #include "lay/linear.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
+#include "utils/draw.hpp"
 #include "utils/style.hpp"
 #include <queue>
 #include <functional>
@@ -45,6 +46,7 @@ namespace bgui {
     layout& get_layout();
     void cascade_style();
     bgui::draw_data* get_draw_data();
+    bgui::draw_list& get_draw_list();
     void set_up();
     bool shutdown_lib();
 

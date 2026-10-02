@@ -76,13 +76,13 @@ namespace bgui {
         style.layout.require_mode(mode::match_parent, mode::match_parent);
         style.layout.padding = vec4i{0};
 
-        m_area_splitters[0] = &add_persistent<dock_splitter, layer::overlay>(
+        m_area_splitters[0] = &add_persistent<dock_splitter, layer::base>(
             true, [this](const int delta) { resize_area(dock_area::left, delta); });
-        m_area_splitters[1] = &add_persistent<dock_splitter, layer::overlay>(
+        m_area_splitters[1] = &add_persistent<dock_splitter, layer::base>(
             true, [this](const int delta) { resize_area(dock_area::right, delta); });
-        m_area_splitters[2] = &add_persistent<dock_splitter, layer::overlay>(
+        m_area_splitters[2] = &add_persistent<dock_splitter, layer::base>(
             false, [this](const int delta) { resize_area(dock_area::top, delta); });
-        m_area_splitters[3] = &add_persistent<dock_splitter, layer::overlay>(
+        m_area_splitters[3] = &add_persistent<dock_splitter, layer::base>(
             false, [this](const int delta) { resize_area(dock_area::bottom, delta); });
     }
 
@@ -124,6 +124,9 @@ namespace bgui {
     }
 
     bool dock::remove_window(window* value) {
+        if (m_focused_window == value)
+            m_focused_window = nullptr;
+
         bool was_registered = false;
         for (auto& panel : m_panels) {
             for (std::size_t index = 0; index < panel.windows.size();) {
@@ -174,6 +177,9 @@ namespace bgui {
             if (!registered)
                 register_window(*value, dock_area::center);
         }
+
+        if (m_focused_window && !owned_windows.contains(m_focused_window))
+            m_focused_window = nullptr;
     }
 
     void dock::sync_panel_splitters(const dock_area area, panel& value, const std::size_t count) {
@@ -183,7 +189,7 @@ namespace bgui {
         }
         while (value.splitters.size() < count) {
             const std::size_t split_index = value.splitters.size();
-            auto& splitter = add_persistent<dock_splitter, layer::overlay>(
+            auto& splitter = add_persistent<dock_splitter, layer::base>(
                 is_horizontal_panel(area),
                 [this, area, split_index](const int delta) {
                     resize_panel_split(area, split_index, delta);
@@ -213,6 +219,11 @@ namespace bgui {
         const float min_weight = std::min(0.5f * pair_weight, 80.f / panel.split_extent);
         panel.weights[index] = std::clamp(requested, min_weight, pair_weight - min_weight);
         panel.weights[index + 1] = pair_weight - panel.weights[index];
+    }
+
+    void dock::focus_window(window* value) {
+        if (value && value->get_parent() == this)
+            m_focused_window = value;
     }
 
     void dock::on_update() {
@@ -402,5 +413,21 @@ namespace bgui {
                 element->on_update();
             }
         }
+
+        auto& base_elements = get_elements()[layer::base];
+        std::stable_sort(base_elements.begin(), base_elements.end(), [this](const auto& left, const auto& right) {
+            const auto z_order = [this](const auto& element) {
+                if (element->has_class("dock-splitter"))
+                    return 0;
+
+                const auto* value = dynamic_cast<const window*>(element.get());
+                if (!value)
+                    return 1;
+                if (value->is_floating())
+                    return value == m_focused_window ? 5 : 4;
+                return value == m_focused_window ? 3 : 2;
+            };
+            return z_order(left) < z_order(right);
+        });
     }
 }

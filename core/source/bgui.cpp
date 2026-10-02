@@ -92,6 +92,10 @@ bgui::draw_data* bgui::get_draw_data() {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
     return s_draw_data.get();
 }
+
+bgui::draw_list& bgui::get_draw_list() {
+    return get_draw_data()->m_draw_list;
+}
 bool bgui::shutdown_lib() {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
     shutdown_interface();
@@ -122,6 +126,18 @@ bool update_inputs(bgui::layout &lay){
 
     if (bgui::get_pressed(bgui::input_key::escape) && s_keyboard_focused) {
         set_keyboard_focus(nullptr);
+    }
+
+    if (mouse_click) {
+        if (auto* window = dynamic_cast<bgui::window*>(&lay)) {
+            const auto rect = window->processed_rect();
+            const bool inside = mx >= rect.x && mx <= rect.x + rect.z &&
+                my >= rect.y && my <= rect.y + rect.w;
+            if (inside) {
+                if (auto* parent_dock = dynamic_cast<bgui::dock*>(window->get_parent()))
+                    parent_dock->focus_window(window);
+            }
+        }
     }
     
     for(size_t i = lay.get_elements().size(); i-- > 0; ) {

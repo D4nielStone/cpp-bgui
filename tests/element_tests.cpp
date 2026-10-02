@@ -92,6 +92,26 @@ TEST(DrawDataTest, EnqueueCapturesIntersectedClipRect) {
 	EXPECT_EQ(data.m_quad_requires.front().m_clip_rect, clip);
 }
 
+TEST(DrawListTest, TessellatesPrimitivesWithEditableColor) {
+	draw_list list;
+	const vec4 color{0.2f, 0.4f, 0.6f, 0.8f};
+	list.set_color(color);
+	list.add_line({0.f, 0.f}, {10.f, 0.f}, 2.f);
+	list.add_polyline({{0.f, 0.f}, {5.f, 5.f}, {10.f, 0.f}}, 1.f);
+	list.add_triangle({0.f, 0.f}, {10.f, 0.f}, {5.f, 10.f});
+	list.add_quad({0.f, 0.f}, {10.f, 0.f}, {10.f, 10.f}, {0.f, 10.f});
+	list.add_circle({0.f, 0.f}, 5.f, 4);
+	list.add_rect_filled({0.f, 0.f}, {10.f, 10.f});
+	list.add_rect({0.f, 0.f}, {10.f, 10.f});
+	list.add_circle_filled({0.f, 0.f}, 5.f, 8);
+	list.add_convexpolyfilled({{0.f, 0.f}, {10.f, 0.f}, {5.f, 10.f}});
+
+	ASSERT_EQ(list.get_vertices().size(), 6U + 12U + 3U + 6U + 24U + 6U + 24U + 24U + 3U);
+	EXPECT_EQ(list.get_color(), color);
+	for (const auto& vertex : list.get_vertices())
+		EXPECT_EQ(vertex.m_color, color);
+}
+
 TEST(ElementTest, DragRequiresPressToStartInsideTheDraggedWidget) {
 	bgui::scoped_interface interface;
 	auto& context = bgui::get_context();

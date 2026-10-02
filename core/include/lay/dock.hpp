@@ -27,6 +27,7 @@ namespace bgui {
 
         window& add_window(const std::string& title, dock_area area = dock_area::center);
         bool remove_window(window* value);
+        void focus_window(window* value);
         void on_update() override;
 
     private:
@@ -40,6 +41,7 @@ namespace bgui {
 
         std::array<panel, 5> m_panels;
         std::array<dock_splitter*, 4> m_area_splitters{};
+        window* m_focused_window{nullptr};
         float m_left_ratio{0.24f};
         float m_right_ratio{0.24f};
         float m_top_ratio{0.24f};
