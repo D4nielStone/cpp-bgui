@@ -38,6 +38,11 @@ namespace bgui {
         mark_style_dirty();
     }
 
+    void image::set_uv_region(const vec2& uv_min, const vec2& uv_max) {
+        m_uv_min = uv_min;
+        m_uv_max = uv_max;
+    }
+
     void image::use_natural_size() {
         style.layout.require_mode(mode::wrap_content, mode::wrap_content);
         mark_style_dirty();
@@ -82,8 +87,8 @@ namespace bgui {
                 static_cast<float>(processed_width()),
                 static_cast<float>(processed_height())
             },
-            m_flip_vertical ? vec2{0.f, 1.f} : vec2{0.f, 0.f},
-            m_flip_vertical ? vec2{1.f, 0.f} : vec2{1.f, 1.f}
+            m_flip_vertical ? vec2{m_uv_min[0], m_uv_max[1]} : m_uv_min,
+            m_flip_vertical ? vec2{m_uv_max[0], m_uv_min[1]} : m_uv_max
         });
     }
 }

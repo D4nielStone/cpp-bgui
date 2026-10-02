@@ -36,6 +36,9 @@ namespace bgui {
         /** Sets the requested size mode for both image axes. */
         void set_size_mode(mode width_mode, mode height_mode);
 
+        /** Sets the normalized texture region to display, in bottom-left UV coordinates. */
+        void set_uv_region(const vec2& uv_min, const vec2& uv_max);
+
         /** Uses the decoded texture dimensions as the requested image size. */
         void use_natural_size();
 
@@ -61,5 +64,7 @@ namespace bgui {
         std::function<void(const std::string&)> m_on_click;
         texture m_texture{};
         bool m_flip_vertical{true};
+        vec2 m_uv_min{0.f, 0.f};
+        vec2 m_uv_max{1.f, 1.f};
     };
 }
