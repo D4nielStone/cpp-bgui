@@ -129,6 +129,7 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
 
+    bgui::get_context().m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
     bgui::get_context().m_mouse_position = {200, 200};
     floating.get_title().set_drag({25, 0});
     floating.on_update();
@@ -146,11 +147,52 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     for (auto* target : targets)
         EXPECT_TRUE(target->is_enabled());
 
+    bgui::get_context().m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
     floating.get_title().set_drag({0, 0});
     floating.on_update();
     dock.on_update();
     for (auto* target : targets)
         EXPECT_FALSE(target->is_enabled());
+}
+
+TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    context.m_mouse_position = {450, 300};
+    floating.get_title().set_drag({25, 0});
+    dock.on_update();
+    ASSERT_TRUE(floating.is_dragging());
+
+    bgui::element* center_target = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-drop-zone-center"))
+                center_target = element.get();
+        }
+    }
+    ASSERT_NE(center_target, nullptr);
+    ASSERT_TRUE(center_target->is_enabled());
+    const auto target_rect = center_target->processed_rect();
+    context.m_mouse_position = {
+        target_rect.x + target_rect.z / 2,
+        target_rect.y + target_rect.w / 2
+    };
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
+
+    dock.on_update();
+    dock.on_update();
+
+    EXPECT_FALSE(floating.is_floating());
+    EXPECT_EQ(floating.processed_rect().x, dock.processed_x());
+    EXPECT_EQ(floating.processed_rect().y, dock.processed_y());
 }
 
 TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {

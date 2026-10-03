@@ -61,6 +61,7 @@ namespace bgui {
         std::array<dock_splitter*, 4> m_area_splitters{};
         std::array<element*, 5> m_drop_targets{};
         window* m_focused_window{nullptr};
+        window* m_dragged_window{nullptr};
         float m_left_ratio{0.24f};
         float m_right_ratio{0.24f};
         float m_top_ratio{0.24f};

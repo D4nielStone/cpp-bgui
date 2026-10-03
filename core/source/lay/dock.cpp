@@ -141,6 +141,8 @@ namespace bgui {
     bool dock::remove_window(window* value) {
         if (m_focused_window == value)
             m_focused_window = nullptr;
+        if (m_dragged_window == value)
+            m_dragged_window = nullptr;
 
         bool was_registered = false;
         for (auto& panel : m_panels) {
@@ -169,6 +171,9 @@ namespace bgui {
                     owned_windows.insert(value);
             }
         }
+
+        if (m_dragged_window && !owned_windows.contains(m_dragged_window))
+            m_dragged_window = nullptr;
 
         for (auto& panel : m_panels) {
             for (std::size_t index = 0; index < panel.windows.size();) {
@@ -279,6 +284,32 @@ namespace bgui {
 
     void dock::update_drop_targets() {
         const auto pointer = bgui::get_mouse_position();
+        const auto dragged = std::find_if(get_elements()[layer::base].begin(), get_elements()[layer::base].end(), [](const auto& element) {
+            auto* value = dynamic_cast<window*>(element.get());
+            if (!value || !value->is_floating())
+                return false;
+            const auto drag = value->get_title().is_drag();
+            return value->is_dragging() || drag.x != 0 || drag.y != 0;
+        });
+        if (dragged != get_elements()[layer::base].end())
+            m_dragged_window = dynamic_cast<window*>(dragged->get());
+
+        if (m_dragged_window && !bgui::get_pressed(input_key::mouse_left)) {
+            for (std::size_t index = 0; index < m_drop_targets.size(); ++index) {
+                const auto rect = m_drop_targets[index]->processed_rect();
+                const bool pointer_inside = pointer.x >= rect.x && pointer.x <= rect.x + rect.z &&
+                    pointer.y >= rect.y && pointer.y <= rect.y + rect.w;
+                if (!m_drop_targets[index]->is_enabled() || !pointer_inside)
+                    continue;
+
+                m_dragged_window->set_floating(false);
+                register_window(*m_dragged_window, static_cast<dock_area>(index));
+                focus_window(m_dragged_window);
+                break;
+            }
+            m_dragged_window = nullptr;
+        }
+
         const auto padding = computed_style.layout.padding;
         const int x = processed_x() + padding.x;
         const int y = processed_y() + padding.y;
@@ -286,12 +317,8 @@ namespace bgui {
         const int height = std::max(0, processed_height() - padding.y - padding.w);
         const bool pointer_inside = pointer.x >= x && pointer.x <= x + width && pointer.y >= y && pointer.y <= y + height;
 
-        const auto dragged = std::find_if(get_elements()[layer::base].begin(), get_elements()[layer::base].end(), [](const auto& element) {
-            const auto* value = dynamic_cast<const window*>(element.get());
-            return value && value->is_floating() && value->is_dragging();
-        });
-
-        if (!pointer_inside || dragged == get_elements()[layer::base].end()) {
+        if (!pointer_inside || dragged == get_elements()[layer::base].end() ||
+            !bgui::get_pressed(input_key::mouse_left)) {
             for (auto* target : m_drop_targets) {
                 target->set_enable(false);
                 target->style.visual.visible = false;
@@ -569,7 +596,7 @@ namespace bgui {
                 if (element->has_class("dock-splitter"))
                     return 0;
                 if (element->has_class("dock-drop-zone"))
-                    return 3;
+                    return 6;
 
                 const auto* value = dynamic_cast<const window*>(element.get());
                 if (!value)

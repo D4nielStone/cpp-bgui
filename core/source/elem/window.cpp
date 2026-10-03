@@ -47,7 +47,7 @@ void bgui::window::on_update() {
         if(drag[0] || drag[1]) {
             set_position(processed_x() + drag[0], processed_y() + drag[1]);
             m_dragging = true;
-        } else {
+        } else if (!bgui::get_pressed(bgui::input_key::mouse_left)) {
             m_dragging = false;
         }
     } else {
