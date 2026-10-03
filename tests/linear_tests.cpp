@@ -164,6 +164,23 @@ TEST(LinearTest, ResizingOneEdgePreservesTheOtherInitialDimension) {
 	EXPECT_EQ(bgui::get_context().m_actual_cursor, cursor::resize_nwse);
 }
 
+TEST(TextTest, CaretRendersAfterPreviousGlyphInsteadOfOverlappingIt) {
+	bgui::set_up_freetype();
+	bgui::set_up();
+	bgui::load_font_queue();
+
+	bgui::text label("AB", 0.35f);
+	label.set_cursor(1, true);
+
+	bgui::draw_data data;
+	label.get_requires(&data);
+
+	ASSERT_GE(data.m_quad_requires.size(), 3u);
+	const float caret_x = data.m_quad_requires.back().m_rect.x;
+	const float previous_glyph_x = data.m_quad_requires.front().m_rect.x;
+	EXPECT_GT(caret_x, previous_glyph_x);
+}
+
 TEST(DetailsTest, PreservesContentWhileCollapsingAndExpanding) {
 	bgui::details section("Models");
 	auto& item = section.content().add_persistent<bgui::text>("cube.obj", 0.35f);

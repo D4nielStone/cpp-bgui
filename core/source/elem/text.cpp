@@ -238,8 +238,10 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         cursor_position_found = true;
     }
 
-    if (cursor_position_found)
-        draw_glyph(U'|', cursor_x, cursor_y);
+    if (cursor_position_found) {
+        const float caret_offset = std::max(1.f, 0.35f * scale);
+        draw_glyph(U'|', cursor_x + caret_offset, cursor_y);
+    }
 
     max_line_width = std::max(max_line_width, line_x);
     int total_height = line_count * (ascent + descent + line_gap);
