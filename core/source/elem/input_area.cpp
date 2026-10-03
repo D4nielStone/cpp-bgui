@@ -106,7 +106,6 @@ void bgui::input_area::on_update() {
         if (m_mode == bgui::input_mode::inputbox && bgui::get_pressed(bgui::input_key::enter)) {
             bgui::add_function([this]() {
                 m_enter_func(get_buffer());
-                set_buffer("");
             });
         }
     }

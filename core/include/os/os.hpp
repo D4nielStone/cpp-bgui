@@ -19,6 +19,7 @@ namespace bgui {
         bgui::vec2i m_size{800, 600};
         bgui::vec2i m_mouse_position{0, 0};
         bgui::vec2i m_last_mouse_pos{0, 0};
+        float m_scroll_delta_y{0.f};
         std::unordered_map<input_key, input_action> m_input_map;
         std::string m_char_buffer;
         std::string m_title{""};

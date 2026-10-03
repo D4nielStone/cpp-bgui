@@ -45,7 +45,7 @@ visual.border.normal = 0.17, 0.17, 0.17, 1.0
 visual.border.radius = 3
 visual.border.size = 1
 
-layout.padding = 5, 5, 5, 5
+layout.padding = 0, 0
 layout.mode = stretch, wrap_content
 
 =========================
@@ -64,7 +64,7 @@ visual.border.focused = 0.00, 0.47, 0.80, 1.0
 visual.border.radius = 2
 visual.border.size = 1
 
-layout.padding = 0
+layout.padding = 0, 0
 layout.mode = stretch, wrap_content
 
 =========================
@@ -109,7 +109,7 @@ visual.visible = true
 
 [class.window-button]
 layout.mode = wrap_content, wrap_content
-layout.padding = 0
+layout.padding = 0, 0
 layout.margin = 0
 
 visual.background.normal = 0.0

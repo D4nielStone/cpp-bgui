@@ -43,7 +43,7 @@ visual.background.pressed = 0.79, 0.87, 0.83, 1.0
 visual.border.normal      = 0.72, 0.79, 0.75, 1.0
 visual.border.radius      = 10
 visual.border.size        = 1
-layout.padding            = 5, 5, 5, 5
+layout.padding            = 0
 layout.mode               = stretch, wrap_content
 
 
