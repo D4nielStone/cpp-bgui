@@ -6,8 +6,10 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <map>
 #include <stdexcept>
 #include <iostream>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -21,6 +23,179 @@ static float s_global_scale = 1.f;
 
 namespace {
     constexpr const char* configuration_header = "cpp-bgui-ui 1";
+
+    using configuration_sections = std::map<std::string, std::map<std::string, std::string>>;
+    void collect_docks(bgui::layout& current, std::vector<bgui::dock*>& docks);
+
+    std::string trim(const std::string& value) {
+        const auto first = value.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos)
+            return {};
+        const auto last = value.find_last_not_of(" \t\r\n");
+        return value.substr(first, last - first + 1);
+    }
+
+    bool parse_configuration_sections(
+        std::istream& input,
+        configuration_sections& sections)
+    {
+        std::string section = "interface";
+        std::string line;
+        while (std::getline(input, line)) {
+            line = trim(line);
+            if (line.empty() || line.front() == '#' || line.front() == ';')
+                continue;
+            if (line.front() == '[' && line.back() == ']') {
+                section = trim(line.substr(1, line.size() - 2));
+                if (section.empty())
+                    return false;
+                continue;
+            }
+
+            const auto separator = line.find('=');
+            if (separator == std::string::npos)
+                return false;
+            const auto key = trim(line.substr(0, separator));
+            const auto value = trim(line.substr(separator + 1));
+            if (key.empty() || !sections[section].emplace(key, value).second)
+                return false;
+        }
+        return input.eof();
+    }
+
+    template<typename T>
+    bool read_configuration_value(
+        const configuration_sections& sections,
+        const std::string& section,
+        const std::string& key,
+        T& value)
+    {
+        const auto section_entry = sections.find(section);
+        if (section_entry == sections.end())
+            return false;
+        const auto value_entry = section_entry->second.find(key);
+        if (value_entry == section_entry->second.end())
+            return false;
+
+        std::istringstream input(value_entry->second);
+        if (!(input >> value))
+            return false;
+        input >> std::ws;
+        return input.eof();
+    }
+
+    bool read_configuration_string(
+        const configuration_sections& sections,
+        const std::string& section,
+        const std::string& key,
+        std::string& value)
+    {
+        const auto section_entry = sections.find(section);
+        if (section_entry == sections.end())
+            return false;
+        const auto value_entry = section_entry->second.find(key);
+        if (value_entry == section_entry->second.end())
+            return false;
+
+        std::istringstream input(value_entry->second);
+        if (!(input >> std::quoted(value)))
+            return false;
+        input >> std::ws;
+        return input.eof();
+    }
+
+    bool load_legacy_configuration(std::istream& input) {
+        std::size_t dock_count = 0;
+        if (!(input >> dock_count))
+            return false;
+
+        std::vector<bgui::dock::configuration> configurations(dock_count);
+        for (auto& configuration : configurations) {
+            std::size_t window_count = 0;
+            if (!(input >> configuration.left_ratio >> configuration.right_ratio
+                        >> configuration.top_ratio >> configuration.bottom_ratio >> window_count))
+                return false;
+
+            configuration.windows.reserve(window_count);
+            for (std::size_t index = 0; index < window_count; ++index) {
+                bgui::dock::window_configuration window;
+                int area = 0;
+                int floating = 0;
+                if (!(input >> std::quoted(window.title) >> area >> window.weight >> floating
+                            >> window.rect.x >> window.rect.y >> window.rect.z >> window.rect.w) ||
+                    area < static_cast<int>(bgui::dock_area::left) ||
+                    area > static_cast<int>(bgui::dock_area::center))
+                    return false;
+                window.area = static_cast<bgui::dock_area>(area);
+                window.floating = floating != 0;
+                configuration.windows.push_back(std::move(window));
+            }
+        }
+
+        std::vector<bgui::dock*> docks;
+        collect_docks(bgui::get_layout(), docks);
+        for (std::size_t index = 0; index < std::min(docks.size(), configurations.size()); ++index)
+            docks[index]->apply_configuration(configurations[index]);
+        return true;
+    }
+
+    bool load_cfg_configuration(std::istream& input) {
+        configuration_sections sections;
+        if (!parse_configuration_sections(input, sections))
+            return false;
+
+        std::string format;
+        int version = 0;
+        std::size_t dock_count = 0;
+        if (!read_configuration_string(sections, "interface", "format", format) ||
+            format != "cpp-bgui-ui" ||
+            !read_configuration_value(sections, "interface", "version", version) ||
+            version != 1 ||
+            !read_configuration_value(sections, "interface", "docks", dock_count))
+            return false;
+
+        std::vector<bgui::dock::configuration> configurations(dock_count);
+        for (std::size_t dock_index = 0; dock_index < dock_count; ++dock_index) {
+            const auto section = "dock." + std::to_string(dock_index);
+            auto& configuration = configurations[dock_index];
+            std::size_t window_count = 0;
+            if (!read_configuration_value(sections, section, "left_ratio", configuration.left_ratio) ||
+                !read_configuration_value(sections, section, "right_ratio", configuration.right_ratio) ||
+                !read_configuration_value(sections, section, "top_ratio", configuration.top_ratio) ||
+                !read_configuration_value(sections, section, "bottom_ratio", configuration.bottom_ratio) ||
+                !read_configuration_value(sections, section, "windows", window_count))
+                return false;
+
+            configuration.windows.reserve(window_count);
+            for (std::size_t window_index = 0; window_index < window_count; ++window_index) {
+                const auto window_section = section + ".window." + std::to_string(window_index);
+                bgui::dock::window_configuration window;
+                int area = 0;
+                std::string floating;
+                if (!read_configuration_string(sections, window_section, "title", window.title) ||
+                    !read_configuration_value(sections, window_section, "area", area) ||
+                    area < static_cast<int>(bgui::dock_area::left) ||
+                    area > static_cast<int>(bgui::dock_area::center) ||
+                    !read_configuration_value(sections, window_section, "weight", window.weight) ||
+                    !read_configuration_value(sections, window_section, "floating", floating) ||
+                    (floating != "true" && floating != "false") ||
+                    !read_configuration_value(sections, window_section, "rect_x", window.rect.x) ||
+                    !read_configuration_value(sections, window_section, "rect_y", window.rect.y) ||
+                    !read_configuration_value(sections, window_section, "rect_width", window.rect.z) ||
+                    !read_configuration_value(sections, window_section, "rect_height", window.rect.w))
+                    return false;
+                window.area = static_cast<bgui::dock_area>(area);
+                window.floating = floating == "true";
+                configuration.windows.push_back(std::move(window));
+            }
+        }
+
+        std::vector<bgui::dock*> docks;
+        collect_docks(bgui::get_layout(), docks);
+        for (std::size_t index = 0; index < std::min(docks.size(), configurations.size()); ++index)
+            docks[index]->apply_configuration(configurations[index]);
+        return true;
+    }
 
     void collect_docks(bgui::layout& current, std::vector<bgui::dock*>& docks) {
         if (auto* dock = dynamic_cast<bgui::dock*>(&current))

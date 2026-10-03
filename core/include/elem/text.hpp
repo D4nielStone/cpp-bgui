@@ -9,6 +9,8 @@ namespace bgui {
     private:
         std::string m_buffer, m_last_font;
         float m_scale;
+        size_t m_cursor_position = 0;
+        bool m_cursor_visible = false;
     public:
         text(const std::string& buffer, float scale);
         ~text();
@@ -17,6 +19,10 @@ namespace bgui {
         void on_update() override;
         void calc_content_size(const layer& lay) override;
         float get_text_width(const std::string& t);
+        void set_cursor(size_t position, bool visible) {
+            m_cursor_position = position;
+            m_cursor_visible = visible;
+        }
         void set_buffer(const std::string& buffer) { m_buffer = buffer; };
         const std::string& get_buffer() const { return m_buffer; };
         void get_requires(bgui::draw_data *calls) override;

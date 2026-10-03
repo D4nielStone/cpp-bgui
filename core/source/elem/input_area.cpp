@@ -136,19 +136,17 @@ void bgui::input_area::on_update() {
 void bgui::input_area::update_display() {
     if (m_input_buffer.empty() && !m_focused) {
         m_text->set_buffer(m_placeholder);
+        m_text->set_cursor(0, false);
         m_text->computed_style.visual.text.a = 0.4f;
         return;
     }
 
-    std::string display = m_input_buffer;
     const float blink_phase = std::fmod(
         bgui::get_time() - m_cursor_blink_start,
         1.0f
     );
-    if (m_focused && blink_phase < 0.5f) {
-        display.insert(m_cursor_position, "|");
-    }
-    m_text->set_buffer(display);
+    m_text->set_buffer(m_input_buffer);
+    m_text->set_cursor(m_cursor_position, m_focused && blink_phase < 0.5f);
     m_text->computed_style.visual.text.a = 1.f;
 }
 

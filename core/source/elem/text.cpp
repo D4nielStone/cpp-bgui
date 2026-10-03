@@ -150,38 +150,13 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     // Converte a string inteira UMA única vez, evitando reconverter
     // e re-medir substrings dentro do loop (era O(n^2)) e evitando
     // usar índices de codepoint em std::string::substr (bug de bytes).
-    std::u32string codepoints = utf8_to_utf32(m_buffer);
+    std::vector<size_t> byte_lengths;
+    std::u32string codepoints = utf8_to_utf32(m_buffer, &byte_lengths);
+    size_t byte_position = 0;
 
-    for (char32_t ca : codepoints) {
-        // Mede o glifo atual para decidir, incrementalmente, se ele
-        // ainda cabe na linha (equivalente ao antigo "> 100", mas
-        // sem refazer a conversão/medida do zero a cada caractere).
-        float advance_this_char = 0.f;
-        if (ca != U'\n') {
-            auto it_measure = chs.find(ca);
-            if (it_measure != chs.end()) {
-                advance_this_char = it_measure->second.advance * scale;
-            }
-        }
-
-        bool break_line = (ca == U'\n') || (line_x + advance_this_char > 500.f);
-        if (break_line) {
-            // End of line
-            max_line_width = std::max(max_line_width, line_x);
-            line_y += (ascent + descent + line_gap);
-            line_x = 0.f;
-            line_count++;
-
-            // Se a quebra não foi por '\n', o caractere atual pertence
-            // à nova linha e ainda precisa ser desenhado.
-            if (ca == U'\n') {
-                continue;
-            }
-        }
-
-        // Get glyph
-        auto it = chs.find(ca);
-        if (it == chs.end()) continue;
+    auto draw_glyph = [&](char32_t character, float x, float y) {
+        auto it = chs.find(character);
+        if (it == chs.end()) return;
         const auto& ch = it->second;
 
         int originx = processed_x();
@@ -197,20 +172,61 @@ void bgui::text::get_requires(bgui::draw_data* data) {
                 break;
         }
 
-        float xpos = originx + line_x + scale * ch.bearing[0];
-        float ypos = processed_y() + line_y - (ch.bearing[1] * scale - ch.size[1] * scale);
-
-        float w = scale * ch.size[0];
-        float h = scale * ch.size[1];
-
+        float xpos = originx + x + scale * ch.bearing[0];
+        float ypos = processed_y() + y - (ch.bearing[1] * scale - ch.size[1] * scale);
         set_properties();
         data->enqueue({
             m_material, 6,
-            { xpos, ypos, w, -h },
+            { xpos, ypos, scale * ch.size[0], -scale * ch.size[1] },
             ch.uv_min, ch.uv_max,
         });
+    };
 
-        line_x += ch.advance * scale;
+    for (size_t index = 0; index < codepoints.size(); ++index) {
+        const char32_t ca = codepoints[index];
+        // Mede o glifo atual para decidir, incrementalmente, se ele
+        // ainda cabe na linha (equivalente ao antigo "> 100", mas
+        // sem refazer a conversão/medida do zero a cada caractere).
+        float advance_this_char = 0.f;
+        if (ca != U'\n') {
+            auto it_measure = chs.find(ca);
+            if (it_measure != chs.end()) {
+                advance_this_char = it_measure->second.advance * scale;
+            }
+        }
+
+        if (ca == U'\n') {
+            if (m_cursor_visible && byte_position == m_cursor_position) {
+                draw_glyph(U'|', line_x, line_y);
+            }
+            // End of line
+            max_line_width = std::max(max_line_width, line_x);
+            line_y += (ascent + descent + line_gap);
+            line_x = 0.f;
+            line_count++;
+            byte_position += byte_lengths[index];
+            continue;
+        }
+
+        if (line_x + advance_this_char > 500.f) {
+            max_line_width = std::max(max_line_width, line_x);
+            line_y += (ascent + descent + line_gap);
+            line_x = 0.f;
+            line_count++;
+        }
+        if (m_cursor_visible && byte_position == m_cursor_position) {
+            draw_glyph(U'|', line_x, line_y);
+        }
+
+        draw_glyph(ca, line_x, line_y);
+        if (auto it = chs.find(ca); it != chs.end()) {
+            line_x += it->second.advance * scale;
+        }
+        byte_position += byte_lengths[index];
+    }
+
+    if (m_cursor_visible && byte_position == m_cursor_position) {
+        draw_glyph(U'|', line_x, line_y);
     }
 
     max_line_width = std::max(max_line_width, line_x);

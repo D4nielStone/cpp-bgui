@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 
 #include "bgui.hpp"
 #include "elem/button.hpp"
@@ -177,6 +179,14 @@ TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
     const auto config_path = std::filesystem::temp_directory_path() /
         "cpp-bgui-dock-test.cfg";
     ASSERT_TRUE(bgui::save_configuration(config_path.string()));
+    std::ifstream saved_file(config_path);
+    ASSERT_TRUE(saved_file);
+    std::ostringstream saved_contents;
+    saved_contents << saved_file.rdbuf();
+    EXPECT_NE(saved_contents.str().find("[interface]\n"), std::string::npos);
+    EXPECT_NE(saved_contents.str().find("format = \"cpp-bgui-ui\""), std::string::npos);
+    EXPECT_NE(saved_contents.str().find("left_ratio = "), std::string::npos);
+    EXPECT_NE(saved_contents.str().find("[dock.0.window.0]"), std::string::npos);
 
     auto changed = dock.get_configuration();
     changed.left_ratio = 0.48f;
@@ -211,4 +221,17 @@ TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
     EXPECT_EQ(floating_state->rect.w, 190);
     EXPECT_FALSE(left.is_floating());
     EXPECT_TRUE(floating.is_floating());
+
+    std::ofstream legacy_file(config_path, std::ios::trunc);
+    legacy_file << "cpp-bgui-ui 1\n"
+                << "1\n"
+                << "0.31 0.32 0.24 0.24 2\n"
+                << "\"Left\" 0 0.72 0 0 0 0 0\n"
+                << "\"Floating\" 4 1 1 45 55 280 190\n";
+    legacy_file.close();
+    changed.left_ratio = 0.48f;
+    dock.apply_configuration(changed);
+    ASSERT_TRUE(bgui::load_configuration(config_path.string()));
+    EXPECT_NEAR(dock.get_configuration().left_ratio, 0.31f, 0.001f);
+    std::filesystem::remove(config_path);
 }
