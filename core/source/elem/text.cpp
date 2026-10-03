@@ -153,6 +153,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     std::vector<size_t> byte_lengths;
     std::u32string codepoints = utf8_to_utf32(m_buffer, &byte_lengths);
     size_t byte_position = 0;
+    float cursor_x = 0.f;
+    float cursor_y = 0.f;
+    bool cursor_position_found = false;
 
     auto draw_glyph = [&](char32_t character, float x, float y) {
         auto it = chs.find(character);
@@ -197,7 +200,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
 
         if (ca == U'\n') {
             if (m_cursor_visible && byte_position == m_cursor_position) {
-                draw_glyph(U'|', line_x, line_y);
+                cursor_x = line_x;
+                cursor_y = line_y;
+                cursor_position_found = true;
             }
             // End of line
             max_line_width = std::max(max_line_width, line_x);
@@ -215,7 +220,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             line_count++;
         }
         if (m_cursor_visible && byte_position == m_cursor_position) {
-            draw_glyph(U'|', line_x, line_y);
+            cursor_x = line_x;
+            cursor_y = line_y;
+            cursor_position_found = true;
         }
 
         draw_glyph(ca, line_x, line_y);
@@ -226,8 +233,13 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     }
 
     if (m_cursor_visible && byte_position == m_cursor_position) {
-        draw_glyph(U'|', line_x, line_y);
+        cursor_x = line_x;
+        cursor_y = line_y;
+        cursor_position_found = true;
     }
+
+    if (cursor_position_found)
+        draw_glyph(U'|', cursor_x, cursor_y);
 
     max_line_width = std::max(max_line_width, line_x);
     int total_height = line_count * (ascent + descent + line_gap);

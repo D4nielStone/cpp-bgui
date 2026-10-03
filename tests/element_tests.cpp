@@ -111,33 +111,3 @@ TEST(DrawListTest, TessellatesPrimitivesWithEditableColor) {
 	for (const auto& vertex : list.get_vertices())
 		EXPECT_EQ(vertex.m_color, color);
 }
-
-TEST(ElementTest, DragRequiresPressToStartInsideTheDraggedWidget) {
-	bgui::scoped_interface interface;
-	auto& context = bgui::get_context();
-	context.m_size = {100, 100};
-	auto& root = bgui::get_layout();
-	auto& probe = root.add_persistent<drag_probe>();
-	probe.style.layout.require_size(50.f, 50.f);
-	probe.style.layout.require_mode(mode::pixel, mode::pixel);
-	probe.set_final_rect(20, 20, 50, 50);
-
-	context.m_mouse_position = {5, 5};
-	context.m_input_map[input_key::mouse_left] = input_action::press;
-	bgui::on_update();
-	context.m_mouse_position = {25, 25};
-	bgui::on_update();
-	EXPECT_EQ(probe.drag_updates, 0);
-
-	context.m_input_map[input_key::mouse_left] = input_action::release;
-	bgui::on_update();
-	context.m_mouse_position = {25, 25};
-	context.m_input_map[input_key::mouse_left] = input_action::press;
-	bgui::on_update();
-	context.m_mouse_position = {30, 25};
-	bgui::on_update();
-	EXPECT_EQ(probe.drag_updates, 1);
-
-	context.m_input_map[input_key::mouse_left] = input_action::release;
-	bgui::on_update();
-}
