@@ -84,6 +84,21 @@ namespace bgui {
             false, [this](const int delta) { resize_area(dock_area::top, delta); });
         m_area_splitters[3] = &add_persistent<dock_splitter, layer::base>(
             false, [this](const int delta) { resize_area(dock_area::bottom, delta); });
+
+        constexpr std::array<const char*, 5> names{ "left", "right", "top", "bottom", "center" };
+        for (std::size_t index = 0; index < m_drop_targets.size(); ++index) {
+            auto& target = add_persistent<element, layer::base>();
+            target.recives_input(false);
+            target.set_enable(false);
+            target.style.visual.background.normal = bgui::color{0.15f, 0.55f, 1.f, 0.45f};
+            target.style.visual.border.normal = bgui::color{0.25f, 0.75f, 1.f, 1.f};
+            target.style.visual.border_size = 2.f;
+            target.style.visual.border_radius = 6.f;
+            target.style.visual.visible = false;
+            target.add_class("dock-drop-zone");
+            target.add_class(std::string("dock-drop-zone-") + names[index]);
+            m_drop_targets[index] = &target;
+        }
     }
 
     dock::panel& dock::get_panel(const dock_area area) {
@@ -262,6 +277,46 @@ namespace bgui {
         return result;
     }
 
+    void dock::update_drop_targets() {
+        const auto pointer = bgui::get_mouse_position();
+        const auto padding = computed_style.layout.padding;
+        const int x = processed_x() + padding.x;
+        const int y = processed_y() + padding.y;
+        const int width = std::max(0, processed_width() - padding.x - padding.z);
+        const int height = std::max(0, processed_height() - padding.y - padding.w);
+        const bool pointer_inside = pointer.x >= x && pointer.x <= x + width && pointer.y >= y && pointer.y <= y + height;
+
+        const auto dragged = std::find_if(get_elements()[layer::base].begin(), get_elements()[layer::base].end(), [](const auto& element) {
+            const auto* value = dynamic_cast<const window*>(element.get());
+            return value && value->is_floating() && value->is_dragging();
+        });
+
+        if (!pointer_inside || dragged == get_elements()[layer::base].end()) {
+            for (auto* target : m_drop_targets) {
+                target->set_enable(false);
+                target->style.visual.visible = false;
+            }
+            return;
+        }
+
+        const int target_size = std::clamp(std::min(width, height) / 5, 42, 96);
+        const int margin = 18;
+        const std::array<vec4i, 5> rects{
+            vec4i{x + margin, y + (height - target_size) / 2, target_size, target_size},
+            vec4i{x + width - target_size - margin, y + (height - target_size) / 2, target_size, target_size},
+            vec4i{x + (width - target_size) / 2, y + margin, target_size, target_size},
+            vec4i{x + (width - target_size) / 2, y + height - target_size - margin, target_size, target_size},
+            vec4i{x + (width - target_size) / 2, y + (height - target_size) / 2, target_size, target_size}
+        };
+
+        for (std::size_t index = 0; index < m_drop_targets.size(); ++index) {
+            auto* target = m_drop_targets[index];
+            target->set_enable(true);
+            target->set_final_rect(rects[index].x, rects[index].y, rects[index].z, rects[index].w);
+            target->style.visual.visible = true;
+        }
+    }
+
     void dock::apply_configuration(const configuration& value) {
         const auto valid_ratio = [](const float ratio, const float fallback) {
             return std::isfinite(ratio) ? std::clamp(ratio, 0.1f, 0.65f) : fallback;
@@ -321,6 +376,7 @@ namespace bgui {
 
     void dock::on_update() {
         sync_windows();
+        update_drop_targets();
 
         const auto padding = computed_style.layout.padding;
         const int scale = std::max(1, static_cast<int>(std::round(get_global_scale())));
@@ -512,6 +568,8 @@ namespace bgui {
             const auto z_order = [this](const auto& element) {
                 if (element->has_class("dock-splitter"))
                     return 0;
+                if (element->has_class("dock-drop-zone"))
+                    return 3;
 
                 const auto* value = dynamic_cast<const window*>(element.get());
                 if (!value)

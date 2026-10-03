@@ -17,6 +17,7 @@ namespace bgui {
         float m_icon_aspect_ratio = 1.f;
         int m_icon_height = 0;
         bool m_floating = true;
+        bool m_dragging = false;
     public:
         window() = default;
         window(const char* title, bool floating = true);
@@ -27,6 +28,7 @@ namespace bgui {
         text& get_title() { return *m_title; }
         bool clips_children() const override { return true; }
         bool is_floating() const { return m_floating; }
+        bool is_dragging() const { return m_dragging; }
         void set_floating(bool floating);
     };
 }// namespace bgui

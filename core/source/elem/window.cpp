@@ -43,9 +43,15 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
 void bgui::window::on_update() {
     // drag system (title)
     if(is_floating()) {
-        if(m_title->is_drag()[0] || m_title->is_drag()[1]) {
-            set_position(processed_x()+m_title->is_drag()[0], processed_y()+m_title->is_drag()[1]);
+        const auto drag = m_title->is_drag();
+        if(drag[0] || drag[1]) {
+            set_position(processed_x() + drag[0], processed_y() + drag[1]);
+            m_dragging = true;
+        } else {
+            m_dragging = false;
         }
+    } else {
+        m_dragging = false;
     }
     m_title->set_drag({0, 0});
     linear::on_update();

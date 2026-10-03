@@ -324,6 +324,10 @@ void bgui::set_up() {
     // Create draw data structure
     if(!s_draw_data)
         s_draw_data = std::make_unique<bgui::draw_data>();
+#ifdef BGUI_USE_FREETYPE
+    bgui::set_up_freetype();
+    bgui::load_font_queue();
+#endif
     // Set up default theme
     auto& sm = style_manager::get_instance();
 }

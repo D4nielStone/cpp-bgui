@@ -59,6 +59,7 @@ namespace bgui {
 
         std::array<panel, 5> m_panels;
         std::array<dock_splitter*, 4> m_area_splitters{};
+        std::array<element*, 5> m_drop_targets{};
         window* m_focused_window{nullptr};
         float m_left_ratio{0.24f};
         float m_right_ratio{0.24f};
@@ -72,6 +73,7 @@ namespace bgui {
         const panel& get_panel(dock_area area) const;
         void register_window(window& value, dock_area area);
         void sync_windows();
+        void update_drop_targets();
         void sync_panel_splitters(dock_area area, panel& value, std::size_t count);
         void resize_area(dock_area area, int delta);
         void resize_panel_split(dock_area area, std::size_t index, int delta);

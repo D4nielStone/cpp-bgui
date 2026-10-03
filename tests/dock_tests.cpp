@@ -120,6 +120,39 @@ TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
     EXPECT_LT(other_position, focused_position);
 }
 
+TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+
+    bgui::get_context().m_mouse_position = {200, 200};
+    floating.get_title().set_drag({25, 0});
+    floating.on_update();
+    dock.on_update();
+
+    std::vector<bgui::element*> targets;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-drop-zone"))
+                targets.push_back(element.get());
+        }
+    }
+
+    ASSERT_EQ(targets.size(), 5u);
+    for (auto* target : targets)
+        EXPECT_TRUE(target->is_enabled());
+
+    floating.get_title().set_drag({0, 0});
+    floating.on_update();
+    dock.on_update();
+    for (auto* target : targets)
+        EXPECT_FALSE(target->is_enabled());
+}
+
 TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
