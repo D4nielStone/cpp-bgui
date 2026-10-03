@@ -22,7 +22,7 @@ static bgui::element* s_mouse_target = nullptr;
 static float s_global_scale = 1.f;
 
 namespace {
-    constexpr const char* configuration_header = "cpp-bgui-ui 1";
+    constexpr const char* legacy_configuration_header = "cpp-bgui-ui 1";
 
     using configuration_sections = std::map<std::string, std::map<std::string, std::string>>;
     void collect_docks(bgui::layout& current, std::vector<bgui::dock*>& docks);
@@ -150,7 +150,7 @@ namespace {
         if (!read_configuration_string(sections, "interface", "format", format) ||
             format != "cpp-bgui-ui" ||
             !read_configuration_value(sections, "interface", "version", version) ||
-            version != 1 ||
+            (version != 1 && version != 2) ||
             !read_configuration_value(sections, "interface", "docks", dock_count))
             return false;
 
@@ -188,6 +188,53 @@ namespace {
                 window.floating = floating == "true";
                 configuration.windows.push_back(std::move(window));
             }
+
+            if (version < 2)
+                continue;
+
+            std::size_t split_count = 0;
+            std::size_t tab_group_count = 0;
+            if (!read_configuration_value(sections, section, "splits", split_count) ||
+                !read_configuration_value(sections, section, "tab_groups", tab_group_count))
+                return false;
+            configuration.splits.reserve(split_count);
+            for (std::size_t split_index = 0; split_index < split_count; ++split_index) {
+                const auto split_section = section + ".split." + std::to_string(split_index);
+                bgui::dock::split_configuration split;
+                std::string horizontal;
+                std::string after;
+                if (!read_configuration_string(sections, split_section, "anchor", split.anchor) ||
+                    !read_configuration_string(sections, split_section, "added", split.added) ||
+                    !read_configuration_string(sections, split_section, "horizontal", horizontal) ||
+                    !read_configuration_string(sections, split_section, "after", after) ||
+                    (horizontal != "true" && horizontal != "false") ||
+                    (after != "true" && after != "false") ||
+                    !read_configuration_value(sections, split_section, "ratio", split.ratio))
+                    return false;
+                split.horizontal = horizontal == "true";
+                split.after = after == "true";
+                configuration.splits.push_back(std::move(split));
+            }
+
+            configuration.tab_groups.reserve(tab_group_count);
+            for (std::size_t group_index = 0; group_index < tab_group_count; ++group_index) {
+                const auto group_section = section + ".tabs." + std::to_string(group_index);
+                bgui::dock::tab_group_configuration group;
+                std::size_t tab_count = 0;
+                if (!read_configuration_string(sections, group_section, "anchor", group.anchor) ||
+                    !read_configuration_string(sections, group_section, "active", group.active) ||
+                    !read_configuration_value(sections, group_section, "windows", tab_count))
+                    return false;
+                group.windows.reserve(tab_count);
+                for (std::size_t tab_index = 0; tab_index < tab_count; ++tab_index) {
+                    std::string title;
+                    if (!read_configuration_string(
+                            sections, group_section, "window." + std::to_string(tab_index), title))
+                        return false;
+                    group.windows.push_back(std::move(title));
+                }
+                configuration.tab_groups.push_back(std::move(group));
+            }
         }
 
         std::vector<bgui::dock*> docks;
@@ -216,39 +263,14 @@ bool bgui::load_configuration(const std::string& path) {
 
     std::ifstream input(path);
     std::string header;
-    std::size_t dock_count = 0;
-    if (!input || !std::getline(input, header) || header != configuration_header ||
-        !(input >> dock_count))
+    if (!input || !std::getline(input, header))
         return false;
+    if (header == legacy_configuration_header)
+        return load_legacy_configuration(input);
 
-    std::vector<dock::configuration> configurations(dock_count);
-    for (auto& configuration : configurations) {
-        std::size_t window_count = 0;
-        if (!(input >> configuration.left_ratio >> configuration.right_ratio
-                    >> configuration.top_ratio >> configuration.bottom_ratio >> window_count))
-            return false;
-
-        configuration.windows.reserve(window_count);
-        for (std::size_t index = 0; index < window_count; ++index) {
-            dock::window_configuration window;
-            int area = 0;
-            int floating = 0;
-            if (!(input >> std::quoted(window.title) >> area >> window.weight >> floating
-                        >> window.rect.x >> window.rect.y >> window.rect.z >> window.rect.w) ||
-                area < static_cast<int>(dock_area::left) ||
-                area > static_cast<int>(dock_area::center))
-                return false;
-            window.area = static_cast<dock_area>(area);
-            window.floating = floating != 0;
-            configuration.windows.push_back(std::move(window));
-        }
-    }
-
-    std::vector<dock*> docks;
-    collect_docks(get_layout(), docks);
-    for (std::size_t index = 0; index < std::min(docks.size(), configurations.size()); ++index)
-        docks[index]->apply_configuration(configurations[index]);
-    return true;
+    input.clear();
+    input.seekg(0);
+    return load_cfg_configuration(input);
 }
 
 bool bgui::save_configuration(const std::string& path) {
@@ -261,18 +283,52 @@ bool bgui::save_configuration(const std::string& path) {
     if (!output)
         return false;
 
-    output << configuration_header << '\n' << docks.size() << '\n'
+    output << "[interface]\n"
+           << "format = \"cpp-bgui-ui\"\n"
+           << "version = 2\n"
+           << "docks = " << docks.size() << "\n"
            << std::setprecision(9);
-    for (auto* dock : docks) {
+    for (std::size_t dock_index = 0; dock_index < docks.size(); ++dock_index) {
+        auto* dock = docks[dock_index];
         const auto configuration = dock->get_configuration();
-        output << configuration.left_ratio << ' ' << configuration.right_ratio << ' '
-               << configuration.top_ratio << ' ' << configuration.bottom_ratio << ' '
-               << configuration.windows.size() << '\n';
-        for (const auto& window : configuration.windows) {
-            output << std::quoted(window.title) << ' ' << static_cast<int>(window.area) << ' '
-                   << window.weight << ' ' << static_cast<int>(window.floating) << ' '
-                   << window.rect.x << ' ' << window.rect.y << ' '
-                   << window.rect.z << ' ' << window.rect.w << '\n';
+        const auto section = "dock." + std::to_string(dock_index);
+        output << "\n[" << section << "]\n"
+               << "left_ratio = " << configuration.left_ratio << '\n'
+               << "right_ratio = " << configuration.right_ratio << '\n'
+               << "top_ratio = " << configuration.top_ratio << '\n'
+               << "bottom_ratio = " << configuration.bottom_ratio << '\n'
+               << "windows = " << configuration.windows.size() << '\n'
+               << "splits = " << configuration.splits.size() << '\n'
+               << "tab_groups = " << configuration.tab_groups.size() << '\n';
+        for (std::size_t window_index = 0; window_index < configuration.windows.size(); ++window_index) {
+            const auto& window = configuration.windows[window_index];
+            output << "\n[" << section << ".window." << window_index << "]\n"
+                   << "title = " << std::quoted(window.title) << '\n'
+                   << "area = " << static_cast<int>(window.area) << '\n'
+                   << "weight = " << window.weight << '\n'
+                   << "floating = " << (window.floating ? "true" : "false") << '\n'
+                   << "rect_x = " << window.rect.x << '\n'
+                   << "rect_y = " << window.rect.y << '\n'
+                   << "rect_width = " << window.rect.z << '\n'
+                   << "rect_height = " << window.rect.w << '\n';
+        }
+        for (std::size_t split_index = 0; split_index < configuration.splits.size(); ++split_index) {
+            const auto& split = configuration.splits[split_index];
+            output << "\n[" << section << ".split." << split_index << "]\n"
+                   << "anchor = " << std::quoted(split.anchor) << '\n'
+                   << "added = " << std::quoted(split.added) << '\n'
+                   << "horizontal = " << std::quoted(split.horizontal ? "true" : "false") << '\n'
+                   << "after = " << std::quoted(split.after ? "true" : "false") << '\n'
+                   << "ratio = " << split.ratio << '\n';
+        }
+        for (std::size_t group_index = 0; group_index < configuration.tab_groups.size(); ++group_index) {
+            const auto& group = configuration.tab_groups[group_index];
+            output << "\n[" << section << ".tabs." << group_index << "]\n"
+                   << "anchor = " << std::quoted(group.anchor) << '\n'
+                   << "active = " << std::quoted(group.active) << '\n'
+                   << "windows = " << group.windows.size() << '\n';
+            for (std::size_t tab_index = 0; tab_index < group.windows.size(); ++tab_index)
+                output << "window." << tab_index << " = " << std::quoted(group.windows[tab_index]) << '\n';
         }
     }
     return static_cast<bool>(output);

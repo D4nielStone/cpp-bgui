@@ -169,6 +169,8 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     EXPECT_TRUE(preview->is_enabled());
     EXPECT_EQ(preview->processed_rect().x, dock.processed_x());
     EXPECT_EQ(preview->processed_rect().y, dock.processed_y());
+    EXPECT_EQ(preview->processed_rect().z, dock.processed_width());
+    EXPECT_EQ(preview->processed_rect().w, dock.processed_height());
 
     bgui::get_context().m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
     floating.get_title().set_drag({0, 0});
@@ -262,6 +264,21 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     EXPECT_FALSE(floating.is_floating());
     EXPECT_LT(floating.processed_rect().x, anchor.processed_rect().x);
     EXPECT_GT(floating.processed_rect().z, 0);
+    auto configuration = dock.get_configuration();
+    ASSERT_EQ(configuration.splits.size(), 1u);
+    EXPECT_EQ(configuration.splits.front().anchor, "Anchor");
+    EXPECT_EQ(configuration.splits.front().added, "Floating");
+
+    const auto config_path = std::filesystem::temp_directory_path() /
+        "cpp-bgui-dock-split-test.cfg";
+    ASSERT_TRUE(bgui::save_configuration(config_path.string()));
+    dock.apply_configuration({});
+    ASSERT_TRUE(bgui::load_configuration(config_path.string()));
+    std::filesystem::remove(config_path);
+    configuration = dock.get_configuration();
+    ASSERT_EQ(configuration.splits.size(), 1u);
+    EXPECT_EQ(configuration.splits.front().anchor, "Anchor");
+    EXPECT_EQ(configuration.splits.front().added, "Floating");
 }
 
 TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
@@ -307,6 +324,10 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     EXPECT_FALSE(anchor.is_enabled());
     EXPECT_FALSE(floating.is_floating());
     EXPECT_TRUE(floating.is_enabled());
+    auto configuration = dock.get_configuration();
+    ASSERT_EQ(configuration.tab_groups.size(), 1u);
+    EXPECT_EQ(configuration.tab_groups.front().active, "Floating");
+    ASSERT_EQ(configuration.tab_groups.front().windows.size(), 2u);
     std::size_t tabs = 0;
     for (auto& [lay, elements] : dock.get_elements()) {
         for (auto& element : elements) {
@@ -315,6 +336,18 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
         }
     }
     EXPECT_EQ(tabs, 2u);
+
+    const auto config_path = std::filesystem::temp_directory_path() /
+        "cpp-bgui-dock-tabs-test.cfg";
+    ASSERT_TRUE(bgui::save_configuration(config_path.string()));
+    dock.apply_configuration({});
+    ASSERT_TRUE(bgui::load_configuration(config_path.string()));
+    std::filesystem::remove(config_path);
+    configuration = dock.get_configuration();
+    ASSERT_EQ(configuration.tab_groups.size(), 1u);
+    EXPECT_EQ(configuration.tab_groups.front().active, "Floating");
+    EXPECT_FALSE(anchor.is_enabled());
+    EXPECT_TRUE(floating.is_enabled());
 }
 
 TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {

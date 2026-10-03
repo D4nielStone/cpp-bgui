@@ -32,12 +32,28 @@ namespace bgui {
             vec4i rect{0};
         };
 
+        struct split_configuration {
+            std::string anchor;
+            std::string added;
+            bool horizontal{false};
+            bool after{false};
+            float ratio{0.5f};
+        };
+
+        struct tab_group_configuration {
+            std::string anchor;
+            std::string active;
+            std::vector<std::string> windows;
+        };
+
         struct configuration {
             float left_ratio{0.24f};
             float right_ratio{0.24f};
             float top_ratio{0.24f};
             float bottom_ratio{0.24f};
             std::vector<window_configuration> windows;
+            std::vector<split_configuration> splits;
+            std::vector<tab_group_configuration> tab_groups;
         };
 
         dock();
