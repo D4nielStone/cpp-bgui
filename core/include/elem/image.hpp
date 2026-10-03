@@ -55,7 +55,7 @@ namespace bgui {
         void calc_content_size(const layer& lay) override;
         void get_requires(draw_data* calls) override;
         void on_clicked() override {
-            on_clicked();
+            element::on_clicked();
             if (m_on_click) {
                 m_on_click(m_texture.m_path);
             }

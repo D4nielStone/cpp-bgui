@@ -1,20 +1,112 @@
 #include "bgui.hpp"
 #include "os/os.hpp"
 #include "os/style_manager.hpp"
+#include "lay/dock.hpp"
 #include <utils/vec.hpp>
+#include <algorithm>
+#include <fstream>
+#include <iomanip>
 #include <stdexcept>
 #include <iostream>
+#include <utility>
+#include <vector>
 
 static bool init_trigger = false;
 std::unique_ptr<bgui::layout> bgui::s_main_layout;
 static std::unique_ptr<bgui::draw_data> s_draw_data;
 static std::queue<std::function<void()>> s_functions;
 static bgui::element* s_keyboard_focused = nullptr;
+static bgui::element* s_mouse_target = nullptr;
 static float s_global_scale = 1.f;
+
+namespace {
+    constexpr const char* configuration_header = "cpp-bgui-ui 1";
+
+    void collect_docks(bgui::layout& current, std::vector<bgui::dock*>& docks) {
+        if (auto* dock = dynamic_cast<bgui::dock*>(&current))
+            docks.push_back(dock);
+
+        for (auto& [layer, elements] : current.get_elements()) {
+            for (auto& element : elements) {
+                if (auto* child = element->as_layout())
+                    collect_docks(*child, docks);
+            }
+        }
+    }
+}
+
+bool bgui::load_configuration(const std::string& path) {
+    if (!init_trigger)
+        return false;
+
+    std::ifstream input(path);
+    std::string header;
+    std::size_t dock_count = 0;
+    if (!input || !std::getline(input, header) || header != configuration_header ||
+        !(input >> dock_count))
+        return false;
+
+    std::vector<dock::configuration> configurations(dock_count);
+    for (auto& configuration : configurations) {
+        std::size_t window_count = 0;
+        if (!(input >> configuration.left_ratio >> configuration.right_ratio
+                    >> configuration.top_ratio >> configuration.bottom_ratio >> window_count))
+            return false;
+
+        configuration.windows.reserve(window_count);
+        for (std::size_t index = 0; index < window_count; ++index) {
+            dock::window_configuration window;
+            int area = 0;
+            int floating = 0;
+            if (!(input >> std::quoted(window.title) >> area >> window.weight >> floating
+                        >> window.rect.x >> window.rect.y >> window.rect.z >> window.rect.w) ||
+                area < static_cast<int>(dock_area::left) ||
+                area > static_cast<int>(dock_area::center))
+                return false;
+            window.area = static_cast<dock_area>(area);
+            window.floating = floating != 0;
+            configuration.windows.push_back(std::move(window));
+        }
+    }
+
+    std::vector<dock*> docks;
+    collect_docks(get_layout(), docks);
+    for (std::size_t index = 0; index < std::min(docks.size(), configurations.size()); ++index)
+        docks[index]->apply_configuration(configurations[index]);
+    return true;
+}
+
+bool bgui::save_configuration(const std::string& path) {
+    if (!init_trigger)
+        return false;
+
+    std::vector<dock*> docks;
+    collect_docks(get_layout(), docks);
+    std::ofstream output(path, std::ios::trunc);
+    if (!output)
+        return false;
+
+    output << configuration_header << '\n' << docks.size() << '\n'
+           << std::setprecision(9);
+    for (auto* dock : docks) {
+        const auto configuration = dock->get_configuration();
+        output << configuration.left_ratio << ' ' << configuration.right_ratio << ' '
+               << configuration.top_ratio << ' ' << configuration.bottom_ratio << ' '
+               << configuration.windows.size() << '\n';
+        for (const auto& window : configuration.windows) {
+            output << std::quoted(window.title) << ' ' << static_cast<int>(window.area) << ' '
+                   << window.weight << ' ' << static_cast<int>(window.floating) << ' '
+                   << window.rect.x << ' ' << window.rect.y << ' '
+                   << window.rect.z << ' ' << window.rect.w << '\n';
+        }
+    }
+    return static_cast<bool>(output);
+}
 
 static void shutdown_interface() noexcept {
     init_trigger = false;
     s_keyboard_focused = nullptr;
+    s_mouse_target = nullptr;
     bgui::s_main_layout.reset();
     s_draw_data.reset();
     std::queue<std::function<void()>> empty;
@@ -102,6 +194,19 @@ bool bgui::shutdown_lib() {
     return true;
 }
 
+static void clear_stale_mouse_hover(bgui::layout& lay, bgui::element* target) {
+    for (auto& [layer, elements] : lay.get_elements()) {
+        for (auto& owned_element : elements) {
+            auto* element = owned_element.get();
+            if (element != target && element->get_style_state() == bgui::state::hover)
+                element->on_mouse_leave();
+
+            if (auto* child_layout = element->as_layout())
+                clear_stale_mouse_hover(*child_layout, target);
+        }
+    }
+}
+
 bool update_inputs(bgui::layout &lay){
     // global element for last capture
     static bgui::element* g_mouse_captured = nullptr;
@@ -115,6 +220,7 @@ bool update_inputs(bgui::layout &lay){
     bool mouse_released = (!mouse_now && bgui::get_context().m_last_mouse_left);
 
     if (g_mouse_captured) {
+        s_mouse_target = g_mouse_captured;
         if (mouse_released) {
             g_mouse_captured->on_released();
             g_mouse_captured = nullptr;
@@ -160,11 +266,6 @@ bool update_inputs(bgui::layout &lay){
             float w = elem->processed_width();
             float h = elem->processed_height();
 
-            if (elem != g_mouse_captured &&
-                elem->get_style_state() == bgui::state::hover) {
-                elem->on_mouse_leave();
-            }
-
             bool inside =
                 mx >= x &&
                 mx <= x + w &&
@@ -184,6 +285,7 @@ bool update_inputs(bgui::layout &lay){
                     }
                     return true;
                 }
+                s_mouse_target = elem;
                 elem->on_mouse_hover();
                 if (mouse_click) {
                     g_mouse_captured = elem; // start capture
@@ -228,7 +330,9 @@ void bgui::on_update() {
     // Resolve mouse focus before updating keyboard-driven elements.
     bgui::s_main_layout->process_required_size(w_size);
     get_context().m_actual_cursor = cursor::arrow;
+    s_mouse_target = nullptr;
     update_inputs(*bgui::s_main_layout);
+    clear_stale_mouse_hover(*bgui::s_main_layout, s_mouse_target);
     bgui::s_main_layout->on_update();
 
     if (!s_keyboard_focused) {
@@ -242,6 +346,10 @@ void bgui::on_update() {
     if(!get_draw_data()->m_quad_requires.empty()) std::cout << "[BGUI] Warning: draw data not empty at beginning of frame.\nMake sure you are resetting draw data each frame.\n";
     get_draw_data()->m_clip_rect = {0, 0, w_size.x, w_size.y};
     bgui::s_main_layout->get_requires(get_draw_data());
+}
+
+bgui::element* bgui::get_mouse_target() {
+    return s_mouse_target;
 }
 
 void bgui::add_function(const std::function<void()>& f) {

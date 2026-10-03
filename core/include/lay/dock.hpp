@@ -23,11 +23,29 @@ namespace bgui {
 
     class dock final : public layout {
     public:
+        struct window_configuration {
+            std::string title;
+            dock_area area{dock_area::center};
+            float weight{1.f};
+            bool floating{false};
+            vec4i rect{0};
+        };
+
+        struct configuration {
+            float left_ratio{0.24f};
+            float right_ratio{0.24f};
+            float top_ratio{0.24f};
+            float bottom_ratio{0.24f};
+            std::vector<window_configuration> windows;
+        };
+
         dock();
 
         window& add_window(const std::string& title, dock_area area = dock_area::center);
         bool remove_window(window* value);
         void focus_window(window* value);
+        configuration get_configuration();
+        void apply_configuration(const configuration& value);
         void on_update() override;
 
     private:

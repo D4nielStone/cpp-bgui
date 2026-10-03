@@ -226,6 +226,99 @@ namespace bgui {
             m_focused_window = value;
     }
 
+    dock::configuration dock::get_configuration() {
+        configuration result;
+        result.left_ratio = m_left_ratio;
+        result.right_ratio = m_right_ratio;
+        result.top_ratio = m_top_ratio;
+        result.bottom_ratio = m_bottom_ratio;
+
+        for (std::size_t panel_index = 0; panel_index < m_panels.size(); ++panel_index) {
+            const auto& panel = m_panels[panel_index];
+            for (std::size_t window_index = 0; window_index < panel.windows.size(); ++window_index) {
+                auto* value = panel.windows[window_index];
+                window_configuration entry;
+                entry.title = value->get_title().get_buffer();
+                entry.area = static_cast<dock_area>(panel_index);
+                if (window_index < panel.weights.size())
+                    entry.weight = panel.weights[window_index];
+                entry.floating = value->is_floating();
+                entry.rect = value->processed_rect();
+                result.windows.push_back(std::move(entry));
+            }
+        }
+
+        for (const auto& [layer, elements] : get_elements()) {
+            for (const auto& element : elements) {
+                auto* value = dynamic_cast<window*>(element.get());
+                if (!value || !value->is_floating())
+                    continue;
+                result.windows.push_back({
+                    value->get_title().get_buffer(), dock_area::center, 1.f, true,
+                    value->processed_rect()
+                });
+            }
+        }
+        return result;
+    }
+
+    void dock::apply_configuration(const configuration& value) {
+        const auto valid_ratio = [](const float ratio, const float fallback) {
+            return std::isfinite(ratio) ? std::clamp(ratio, 0.1f, 0.65f) : fallback;
+        };
+        m_left_ratio = valid_ratio(value.left_ratio, m_left_ratio);
+        m_right_ratio = valid_ratio(value.right_ratio, m_right_ratio);
+        m_top_ratio = valid_ratio(value.top_ratio, m_top_ratio);
+        m_bottom_ratio = valid_ratio(value.bottom_ratio, m_bottom_ratio);
+
+        for (const auto& entry : value.windows) {
+            if (static_cast<std::size_t>(entry.area) >= m_panels.size())
+                continue;
+            window* target = nullptr;
+            for (auto& [layer, elements] : get_elements()) {
+                for (auto& element : elements) {
+                    auto* candidate = dynamic_cast<window*>(element.get());
+                    if (candidate && candidate->get_title().get_buffer() == entry.title) {
+                        target = candidate;
+                        break;
+                    }
+                }
+                if (target)
+                    break;
+            }
+            if (!target)
+                continue;
+
+            target->set_floating(entry.floating);
+            if (entry.floating) {
+                target->set_position(entry.rect.x, entry.rect.y);
+                const float scale = get_global_scale();
+                if (scale > 0.f && entry.rect.z > 0 && entry.rect.w > 0) {
+                    target->set_final_size(entry.rect.z, entry.rect.w);
+                    target->style.layout.require_mode(mode::pixel, mode::pixel);
+                    target->style.layout.require_size(entry.rect.z / scale, entry.rect.w / scale);
+                    target->mark_style_dirty();
+                }
+            } else {
+                register_window(*target, entry.area);
+            }
+        }
+
+        for (const auto& entry : value.windows) {
+            if (entry.floating || !std::isfinite(entry.weight) || entry.weight <= 0.f)
+                continue;
+            if (static_cast<std::size_t>(entry.area) >= m_panels.size())
+                continue;
+            auto& panel = get_panel(entry.area);
+            for (std::size_t index = 0; index < panel.windows.size(); ++index) {
+                if (panel.windows[index]->get_title().get_buffer() == entry.title) {
+                    panel.weights[index] = entry.weight;
+                    break;
+                }
+            }
+        }
+    }
+
     void dock::on_update() {
         sync_windows();
 

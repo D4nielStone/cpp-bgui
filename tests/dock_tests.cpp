@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <filesystem>
 
 #include "bgui.hpp"
 #include "elem/button.hpp"
@@ -153,4 +154,61 @@ TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {
     ASSERT_NE(header, nullptr);
     EXPECT_EQ(close->processed_x() + close->processed_width(),
               header->processed_x() + header->processed_width());
+}
+
+TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
+    bgui::scoped_interface interface;
+    auto& root = bgui::set_layout<bgui::layout>();
+    auto& dock = root.add_persistent<bgui::dock>();
+    auto& left = dock.add_window("Left", bgui::dock_area::left);
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    floating.set_final_rect(45, 55, 280, 190);
+
+    auto saved = dock.get_configuration();
+    saved.left_ratio = 0.31f;
+    for (auto& window : saved.windows) {
+        if (window.title == "Left")
+            window.weight = 0.72f;
+        if (window.title == "Floating")
+            window.rect = {45, 55, 280, 190};
+    }
+    dock.apply_configuration(saved);
+
+    const auto config_path = std::filesystem::temp_directory_path() /
+        "cpp-bgui-dock-test.cfg";
+    ASSERT_TRUE(bgui::save_configuration(config_path.string()));
+
+    auto changed = dock.get_configuration();
+    changed.left_ratio = 0.48f;
+    for (auto& window : changed.windows) {
+        if (window.title == "Left")
+            window.area = bgui::dock_area::right;
+        if (window.title == "Floating")
+            window.rect = {5, 10, 150, 120};
+    }
+    dock.apply_configuration(changed);
+    ASSERT_TRUE(bgui::load_configuration(config_path.string()));
+    std::filesystem::remove(config_path);
+
+    const auto restored = dock.get_configuration();
+    EXPECT_NEAR(restored.left_ratio, 0.31f, 0.001f);
+    ASSERT_EQ(restored.windows.size(), 2u);
+    const auto left_state = std::find_if(restored.windows.begin(), restored.windows.end(), [](const auto& item) {
+        return item.title == "Left";
+    });
+    ASSERT_NE(left_state, restored.windows.end());
+    EXPECT_EQ(left_state->area, bgui::dock_area::left);
+    EXPECT_NEAR(left_state->weight, 0.72f, 0.001f);
+
+    const auto floating_state = std::find_if(restored.windows.begin(), restored.windows.end(), [](const auto& item) {
+        return item.title == "Floating";
+    });
+    ASSERT_NE(floating_state, restored.windows.end());
+    EXPECT_TRUE(floating_state->floating);
+    EXPECT_EQ(floating_state->rect.x, 45);
+    EXPECT_EQ(floating_state->rect.y, 55);
+    EXPECT_EQ(floating_state->rect.z, 280);
+    EXPECT_EQ(floating_state->rect.w, 190);
+    EXPECT_FALSE(left.is_floating());
+    EXPECT_TRUE(floating.is_floating());
 }

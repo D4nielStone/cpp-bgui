@@ -49,6 +49,8 @@ namespace bgui {
     bgui::draw_list& get_draw_list();
     void set_up();
     bool shutdown_lib();
+    bool load_configuration(const std::string& path);
+    bool save_configuration(const std::string& path);
 
     class scoped_interface {
     public:
@@ -62,6 +64,7 @@ namespace bgui {
     };
 
     void on_update();
+    element* get_mouse_target();
     void set_global_scale(float scale);
     float get_global_scale();
 };

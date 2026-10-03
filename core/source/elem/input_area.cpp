@@ -32,6 +32,8 @@ bgui::input_area::input_area(const std::string& buffer, const float scale, std::
     m_cursor_blink_start(0.f),
     m_enter_func(action) {
     type = "inputarea";
+    if (m_mode == input_mode::inputbox)
+        style.layout.align = {alignment::start, alignment::center};
     recives_input(true);
     m_text = &add_persistent<text>(m_input_buffer.empty() ? m_placeholder : m_input_buffer, scale);
     m_text->add_class("inputarea-txt");
@@ -47,6 +49,20 @@ void bgui::input_area::on_pressed() {
 }
 
 void bgui::input_area::on_clicked() {
+    const float local_x = static_cast<float>(bgui::get_mouse_position().x - m_text->processed_x());
+    size_t closest_position = 0;
+    float closest_distance = std::abs(local_x);
+    for (size_t position = 0;; position = next_utf8_character(m_input_buffer, position)) {
+        const float text_width = m_text->get_text_width(m_input_buffer.substr(0, position));
+        const float distance = std::abs(local_x - text_width);
+        if (distance < closest_distance) {
+            closest_position = position;
+            closest_distance = distance;
+        }
+        if (position == m_input_buffer.size())
+            break;
+    }
+    m_cursor_position = closest_position;
     set_focused(true);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }

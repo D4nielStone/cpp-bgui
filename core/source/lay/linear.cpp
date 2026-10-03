@@ -219,12 +219,17 @@ void linear::calc_content_size(const layer& lay) {
 
         const auto& margin = elem->computed_style.layout.margin;
 
+        const auto content_size = elem->get_content_size();
         const int elem_w =
-            elem->processed_width() +
+            (elem->computed_style.layout.size_mode[0] == mode::wrap_content
+                ? content_size.x
+                : elem->processed_width()) +
             margin.x + margin.z;
 
         const int elem_h =
-            elem->processed_height() +
+            (elem->computed_style.layout.size_mode[1] == mode::wrap_content
+                ? content_size.y
+                : elem->processed_height()) +
             margin.y + margin.w;
 
         if (vertical) {

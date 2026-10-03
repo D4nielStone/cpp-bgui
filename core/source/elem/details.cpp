@@ -5,7 +5,7 @@ namespace bgui {
         : linear(orientation::vertical), m_summary(summary) {
         type = "details";
         style.layout.require_mode(mode::match_parent, mode::wrap_content);
-        m_summary_button = &add_persistent<button>("", 0.3f, [this]() {
+        m_summary_button = &add_persistent<button>("", 0.35f, [this]() {
             set_open(!m_open);
         });
         m_summary_button->style.layout.require_mode(mode::match_parent, mode::wrap_content);
@@ -20,7 +20,7 @@ namespace bgui {
         m_open = open;
         m_content->set_enable(open);
         m_summary_button->get_label().set_buffer(
-            std::string(open ? "- " : "+ ") + m_summary
+            std::string(open ? " V " : " > ") + m_summary
         );
     }
 }
