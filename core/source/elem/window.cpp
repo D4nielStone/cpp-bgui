@@ -33,16 +33,10 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     });
     m_close_button->add_class("window-button");
     m_close_button->add_class("window-close-button");
-    m_unpin_button = &m_header->add_persistent<bgui::button>("Unpin", 0.35f, [this](){
-        set_floating(true);
-    });
-    m_unpin_button->add_class("window-button");
-    m_unpin_button->add_class("window-unpin-button");
     set_floating(floating);
 }
 void bgui::window::on_update() {
-    // drag system (title)
-    if(is_floating()) {
+    if (is_floating()) {
         const auto drag = m_title->is_drag();
         if(drag[0] || drag[1]) {
             set_position(processed_x() + drag[0], processed_y() + drag[1]);
@@ -51,7 +45,25 @@ void bgui::window::on_update() {
             m_dragging = false;
         }
     } else {
-        m_dragging = false;
+        const auto drag = m_title->is_drag();
+        if (bgui::get_pressed(bgui::input_key::mouse_left) && (drag.x != 0 || drag.y != 0)) {
+            m_pinned_drag_distance.x += drag.x;
+            m_pinned_drag_distance.y += drag.y;
+            const int threshold = std::max(12, static_cast<int>(24.f * bgui::get_global_scale()));
+            if (m_pinned_drag_distance.x * m_pinned_drag_distance.x +
+                m_pinned_drag_distance.y * m_pinned_drag_distance.y >= threshold * threshold) {
+                set_floating(true);
+                set_position(
+                    processed_x() + m_pinned_drag_distance.x,
+                    processed_y() + m_pinned_drag_distance.y
+                );
+                m_dragging = true;
+                m_pinned_drag_distance = {0, 0};
+            }
+        } else if (!bgui::get_pressed(bgui::input_key::mouse_left)) {
+            m_pinned_drag_distance = {0, 0};
+            m_dragging = false;
+        }
     }
     m_title->set_drag({0, 0});
     linear::on_update();
@@ -77,7 +89,5 @@ void bgui::window::set_floating(bool floating) {
     set_flex(!floating);
     if (m_close_button)
         m_close_button->set_enable(floating);
-    if (m_unpin_button)
-        m_unpin_button->set_enable(!floating);
     set_resizable(floating);
 }

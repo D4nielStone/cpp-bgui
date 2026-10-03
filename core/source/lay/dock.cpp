@@ -1,6 +1,7 @@
 #include "lay/dock.hpp"
 
 #include "bgui.hpp"
+#include "elem/button.hpp"
 #include "elem/window.hpp"
 #include "os/os.hpp"
 
@@ -138,11 +139,99 @@ namespace bgui {
         panel.weights.push_back(weight);
     }
 
+    void dock::split_window(window& anchor, window& added, const bool horizontal, const bool after) {
+        dock_area area = dock_area::center;
+        for (std::size_t index = 0; index < m_panels.size(); ++index) {
+            const auto& windows = m_panels[index].windows;
+            if (std::find(windows.begin(), windows.end(), &anchor) != windows.end()) {
+                area = static_cast<dock_area>(index);
+                break;
+            }
+        }
+        register_window(added, area);
+        m_nested_splits.push_back({&anchor, &added, horizontal, after});
+    }
+
+    void dock::merge_window_as_tab(window& anchor, window& added) {
+        auto group = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [&anchor](const tab_group& candidate) {
+            return std::find(candidate.windows.begin(), candidate.windows.end(), &anchor) != candidate.windows.end();
+        });
+        if (group == m_tab_groups.end()) {
+            m_tab_groups.push_back({&anchor, &anchor, {&anchor}, {}});
+            group = std::prev(m_tab_groups.end());
+        }
+
+        if (std::find(group->windows.begin(), group->windows.end(), &added) != group->windows.end())
+            return;
+
+        dock_area area = dock_area::center;
+        for (std::size_t index = 0; index < m_panels.size(); ++index) {
+            const auto& windows = m_panels[index].windows;
+            if (std::find(windows.begin(), windows.end(), &anchor) != windows.end()) {
+                area = static_cast<dock_area>(index);
+                break;
+            }
+        }
+        register_window(added, area);
+        group->windows.push_back(&added);
+        group->active = &added;
+
+        for (std::size_t index = group->buttons.size(); index < group->windows.size(); ++index) {
+            auto* tab_window = group->windows[index];
+            auto& tab = add_persistent<button, layer::base>(
+                tab_window->get_title().get_buffer(), 0.35f,
+                [this, host = group->anchor, tab_window]() {
+                    const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [host](const tab_group& candidate) {
+                        return candidate.anchor == host;
+                    });
+                    if (found != m_tab_groups.end()) {
+                        found->active = tab_window;
+                        focus_window(tab_window);
+                    }
+                });
+            tab.add_class("dock-tab");
+            group->buttons.push_back(&tab);
+        }
+    }
+
     bool dock::remove_window(window* value) {
         if (m_focused_window == value)
             m_focused_window = nullptr;
         if (m_dragged_window == value)
             m_dragged_window = nullptr;
+        if (m_drop_target_window == value)
+            m_drop_target_window = nullptr;
+
+        m_nested_splits.erase(std::remove_if(m_nested_splits.begin(), m_nested_splits.end(), [value](nested_split& split) {
+            if (split.added == value)
+                return true;
+            if (split.anchor == value)
+                split.anchor = split.added;
+            return false;
+        }), m_nested_splits.end());
+
+        for (auto group = m_tab_groups.begin(); group != m_tab_groups.end();) {
+            const auto item = std::find(group->windows.begin(), group->windows.end(), value);
+            if (item == group->windows.end()) {
+                ++group;
+                continue;
+            }
+
+            const auto index = static_cast<std::size_t>(std::distance(group->windows.begin(), item));
+            if (index < group->buttons.size()) {
+                remove(group->buttons[index]);
+                group->buttons.erase(group->buttons.begin() + static_cast<std::ptrdiff_t>(index));
+            }
+            group->windows.erase(item);
+            if (group->active == value)
+                group->active = group->windows.empty() ? nullptr : group->windows.front();
+            if (group->anchor == value && !group->windows.empty())
+                group->anchor = group->windows.front();
+            if (group->windows.empty())
+                group = m_tab_groups.erase(group);
+            else
+                ++group;
+        }
 
         bool was_registered = false;
         for (auto& panel : m_panels) {

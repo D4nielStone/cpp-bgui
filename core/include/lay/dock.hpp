@@ -10,6 +10,7 @@
 #include "lay/layout.hpp"
 
 namespace bgui {
+    class button;
     class window;
     class dock_splitter;
 
@@ -57,11 +58,28 @@ namespace bgui {
             int split_extent{0};
         };
 
+        struct nested_split {
+            window* anchor{nullptr};
+            window* added{nullptr};
+            bool horizontal{false};
+            bool after{false};
+        };
+
+        struct tab_group {
+            window* anchor{nullptr};
+            window* active{nullptr};
+            std::vector<window*> windows;
+            std::vector<button*> buttons;
+        };
+
         std::array<panel, 5> m_panels;
         std::array<dock_splitter*, 4> m_area_splitters{};
         std::array<element*, 5> m_drop_targets{};
+        std::vector<nested_split> m_nested_splits;
+        std::vector<tab_group> m_tab_groups;
         window* m_focused_window{nullptr};
         window* m_dragged_window{nullptr};
+        window* m_drop_target_window{nullptr};
         float m_left_ratio{0.24f};
         float m_right_ratio{0.24f};
         float m_top_ratio{0.24f};
@@ -73,6 +91,8 @@ namespace bgui {
         panel& get_panel(dock_area area);
         const panel& get_panel(dock_area area) const;
         void register_window(window& value, dock_area area);
+        void split_window(window& anchor, window& added, bool horizontal, bool after);
+        void merge_window_as_tab(window& anchor, window& added);
         void sync_windows();
         void update_drop_targets();
         void sync_panel_splitters(dock_area area, panel& value, std::size_t count);
