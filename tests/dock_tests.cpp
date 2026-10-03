@@ -8,6 +8,7 @@
 #include "elem/button.hpp"
 #include "elem/window.hpp"
 #include "lay/dock.hpp"
+#include "os/os.hpp"
 
 namespace {
     bgui::button* find_button(bgui::layout& parent, const std::string& class_name) {
@@ -147,6 +148,28 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     for (auto* target : targets)
         EXPECT_TRUE(target->is_enabled());
 
+    bgui::element* center_target = nullptr;
+    bgui::element* preview = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-drop-zone-center"))
+                center_target = element.get();
+            if (element->has_class("dock-drop-preview"))
+                preview = element.get();
+        }
+    }
+    ASSERT_NE(center_target, nullptr);
+    ASSERT_NE(preview, nullptr);
+    const auto center_rect = center_target->processed_rect();
+    bgui::get_context().m_mouse_position = {
+        center_rect.x + center_rect.z / 2,
+        center_rect.y + center_rect.w / 2
+    };
+    dock.on_update();
+    EXPECT_TRUE(preview->is_enabled());
+    EXPECT_EQ(preview->processed_rect().x, dock.processed_x());
+    EXPECT_EQ(preview->processed_rect().y, dock.processed_y());
+
     bgui::get_context().m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
     floating.get_title().set_drag({0, 0});
     floating.on_update();
@@ -192,19 +215,116 @@ TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
 
     EXPECT_FALSE(floating.is_floating());
     EXPECT_EQ(floating.processed_rect().x, dock.processed_x());
-    EXPECT_EQ(floating.processed_rect().y, dock.processed_y());
+    EXPECT_GE(floating.processed_rect().y, dock.processed_y());
+    EXPECT_LT(floating.processed_rect().y, dock.processed_y() + dock.processed_height());
 }
 
-TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {
+TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.on_update();
+
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    const auto anchor_rect = anchor.processed_rect();
+    context.m_mouse_position = {
+        anchor_rect.x + anchor_rect.z / 2,
+        anchor_rect.y + anchor_rect.w / 2
+    };
+    floating.get_title().set_drag({5, 0});
+    floating.on_update();
+    dock.on_update();
+
+    bgui::element* left_target = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-drop-zone-left"))
+                left_target = element.get();
+        }
+    }
+    ASSERT_NE(left_target, nullptr);
+    ASSERT_TRUE(left_target->is_enabled());
+    const auto target_rect = left_target->processed_rect();
+    context.m_mouse_position = {
+        target_rect.x + target_rect.z / 2,
+        target_rect.y + target_rect.w / 2
+    };
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
+
+    dock.on_update();
+
+    EXPECT_FALSE(floating.is_floating());
+    EXPECT_LT(floating.processed_rect().x, anchor.processed_rect().x);
+    EXPECT_GT(floating.processed_rect().z, 0);
+}
+
+TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.on_update();
+
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    const auto anchor_rect = anchor.processed_rect();
+    context.m_mouse_position = {
+        anchor_rect.x + anchor_rect.z / 2,
+        anchor_rect.y + anchor_rect.w / 2
+    };
+    floating.get_title().set_drag({5, 0});
+    floating.on_update();
+    dock.on_update();
+
+    bgui::element* center_target = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-drop-zone-center"))
+                center_target = element.get();
+        }
+    }
+    ASSERT_NE(center_target, nullptr);
+    ASSERT_TRUE(center_target->is_enabled());
+    const auto target_rect = center_target->processed_rect();
+    context.m_mouse_position = {
+        target_rect.x + target_rect.z / 2,
+        target_rect.y + target_rect.w / 2
+    };
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
+
+    dock.on_update();
+
+    EXPECT_FALSE(anchor.is_enabled());
+    EXPECT_FALSE(floating.is_floating());
+    EXPECT_TRUE(floating.is_enabled());
+    std::size_t tabs = 0;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-tab"))
+                ++tabs;
+        }
+    }
+    EXPECT_EQ(tabs, 2u);
+}
+
+TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
     auto& panel = dock.add_window("Panel", bgui::dock_area::center);
 
-    auto* unpin = find_button(panel, "window-unpin-button");
     auto* close = find_button(panel, "window-close-button");
-    ASSERT_NE(unpin, nullptr);
     ASSERT_NE(close, nullptr);
-    EXPECT_TRUE(unpin->is_enabled());
+    EXPECT_FALSE(panel.is_floating());
     EXPECT_FALSE(close->is_enabled());
 
     dock.compute_style();
@@ -213,13 +333,20 @@ TEST(DockTest, PinnedWindowCanBeUnpinnedFromItsHeader) {
     dock.cascade_style();
     dock.on_update();
 
-    unpin->on_released();
-    bgui::on_update();
-    dock.on_update();
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    panel.get_title().set_drag({10, 0});
+    panel.on_update();
+    EXPECT_FALSE(panel.is_floating());
+    panel.get_title().set_drag({10, 0});
+    panel.on_update();
+    EXPECT_FALSE(panel.is_floating());
+    panel.get_title().set_drag({10, 0});
+    panel.on_update();
 
     EXPECT_TRUE(panel.is_floating());
-    EXPECT_FALSE(unpin->is_enabled());
     EXPECT_TRUE(close->is_enabled());
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 
     bgui::linear* header = nullptr;
     for (auto& [lay, elements] : panel.get_elements()) {

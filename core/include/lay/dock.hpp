@@ -63,6 +63,9 @@ namespace bgui {
             window* added{nullptr};
             bool horizontal{false};
             bool after{false};
+            float ratio{0.5f};
+            int extent{0};
+            dock_splitter* splitter{nullptr};
         };
 
         struct tab_group {
@@ -75,6 +78,7 @@ namespace bgui {
         std::array<panel, 5> m_panels;
         std::array<dock_splitter*, 4> m_area_splitters{};
         std::array<element*, 5> m_drop_targets{};
+        element* m_drop_preview{nullptr};
         std::vector<nested_split> m_nested_splits;
         std::vector<tab_group> m_tab_groups;
         window* m_focused_window{nullptr};
