@@ -23,9 +23,16 @@ public:
 
 class capture_probe final : public element {
 public:
-	capture_probe() {
+	explicit capture_probe(int& release_count) : m_release_count(release_count) {
 		recives_input(true);
 	}
+
+	void on_released() override {
+		++m_release_count;
+	}
+
+private:
+	int& m_release_count;
 };
 }
 
@@ -92,60 +99,75 @@ TEST(ElementTest, ScopedElementIsRemovedWhenHandleLeavesScope) {
 }
 
 TEST(InteractionTest, RemovingCapturedElementAndAncestorCancelsCapture) {
-		bgui::scoped_interface interface;
-		auto& root = bgui::get_layout();
-		auto& context = bgui::get_context();
-		context.m_input_map.clear();
-		context.m_mouse_position = {10, 10};
-		context.m_input_map[input_key::mouse_left] = input_action::press;
+	bgui::scoped_interface interface;
+	auto& root = bgui::get_layout();
+	auto& context = bgui::get_context();
+	context.m_input_map.clear();
+	context.m_mouse_position = {10, 10};
+	context.m_input_map[input_key::mouse_left] = input_action::press;
 
-		auto& direct = root.add_persistent<capture_probe>();
-		direct.set_final_rect(0, 0, 50, 50);
-		bgui::on_update();
-		EXPECT_EQ(bgui::get_mouse_target(), &direct);
-		ASSERT_TRUE(root.remove(&direct));
-		EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+	int direct_release_count = 0;
+	auto& direct = root.add_persistent<capture_probe>(direct_release_count);
+	direct.set_final_rect(0, 0, 50, 50);
+	bgui::on_update();
+	EXPECT_EQ(bgui::get_mouse_target(), &direct);
+	ASSERT_TRUE(root.remove(&direct));
+	EXPECT_EQ(bgui::get_mouse_target(), nullptr);
 
-		context.m_input_map[input_key::mouse_left] = input_action::release;
-		bgui::on_update();
+	context.m_input_map[input_key::mouse_left] = input_action::release;
+	bgui::on_update();
+	EXPECT_EQ(direct_release_count, 0);
 
-		context.m_input_map[input_key::mouse_left] = input_action::press;
-		auto& parent = root.add_persistent<layout>();
-		parent.set_final_rect(0, 0, 200, 200);
-		auto& nested = parent.add_persistent<capture_probe>();
-		nested.set_final_rect(0, 0, 50, 50);
-		bgui::on_update();
-		EXPECT_EQ(bgui::get_mouse_target(), &nested);
-		ASSERT_TRUE(root.remove(&parent));
-		EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+	context.m_input_map[input_key::mouse_left] = input_action::press;
+	auto& parent = root.add_persistent<layout>();
+	parent.set_final_rect(0, 0, 200, 200);
+	int nested_release_count = 0;
+	auto& nested = parent.add_persistent<capture_probe>(nested_release_count);
+	nested.set_final_rect(0, 0, 50, 50);
+	bgui::on_update();
+	EXPECT_EQ(bgui::get_mouse_target(), &nested);
+	ASSERT_TRUE(root.remove(&parent));
+	EXPECT_EQ(bgui::get_mouse_target(), nullptr);
 
-		context.m_input_map[input_key::mouse_left] = input_action::release;
-		bgui::on_update();
-		context.m_input_map.clear();
+	context.m_input_map[input_key::mouse_left] = input_action::release;
+	bgui::on_update();
+	context.m_input_map.clear();
 }
 
 TEST(ConfigurationTest, ReplacesExistingFileWithoutLeavingTemporaryFiles) {
-		bgui::scoped_interface interface;
-		const auto path = std::filesystem::temp_directory_path() / "bgui-configuration-atomic-test.cfg";
-		{
-			std::ofstream previous(path, std::ios::binary | std::ios::trunc);
-			ASSERT_TRUE(previous);
-			previous << "previous";
-		}
+	bgui::scoped_interface interface;
+	const auto path = std::filesystem::temp_directory_path() / "bgui-configuration-atomic-test.cfg";
+	{
+		std::ofstream previous(path, std::ios::binary | std::ios::trunc);
+		ASSERT_TRUE(previous);
+		previous << "previous";
+	}
 
-		ASSERT_TRUE(bgui::save_configuration(path.string()));
-		std::ifstream saved(path, std::ios::binary);
-		const std::string contents(std::istreambuf_iterator<char>(saved), {});
-		EXPECT_NE(contents.find("[interface]"), std::string::npos);
+	ASSERT_TRUE(bgui::save_configuration(path.string()));
+	std::ifstream saved(path, std::ios::binary);
+	const std::string contents(std::istreambuf_iterator<char>(saved), {});
+	EXPECT_NE(contents.find("[interface]"), std::string::npos);
 
-		std::size_t files = 0;
-		for (const auto& entry : std::filesystem::directory_iterator(path.parent_path())) {
-			if (entry.path().filename().string().starts_with("bgui-configuration-atomic-test.cfg"))
-				++files;
-		}
-		EXPECT_EQ(files, 1U);
-		std::error_code ignored;
-		std::filesystem::remove(path, ignored);
+	std::size_t files = 0;
+	for (const auto& entry : std::filesystem::directory_iterator(path.parent_path())) {
+		if (entry.path().filename().string().starts_with("bgui-configuration-atomic-test.cfg"))
+			++files;
+	}
+	EXPECT_EQ(files, 1U);
+
+	const auto directory_path = std::filesystem::temp_directory_path() / "bgui-configuration-atomic-test-directory";
+	std::filesystem::create_directories(directory_path);
+	{
+		std::ofstream marker(directory_path / "preserved.txt", std::ios::binary | std::ios::trunc);
+		ASSERT_TRUE(marker);
+		marker << "preserved";
+	}
+	EXPECT_FALSE(bgui::save_configuration(directory_path.string()));
+	EXPECT_TRUE(std::filesystem::is_regular_file(directory_path / "preserved.txt"));
+
+	std::error_code ignored;
+	std::filesystem::remove(path, ignored);
+	std::filesystem::remove_all(directory_path, ignored);
 }
 
 TEST(DrawDataTest, EnqueueCapturesIntersectedClipRect) {

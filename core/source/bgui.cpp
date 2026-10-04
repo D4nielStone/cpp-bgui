@@ -613,11 +613,6 @@ bool update_inputs(bgui::layout &lay){
                     elem->on_clicked();
                     elem->on_pressed();
                 }
-                if(mouse_released) {
-                    elem->on_released();
-                    if (s_mouse_captured == elem)
-                        s_mouse_captured = nullptr;
-                }
                 return true;
             }
         }
