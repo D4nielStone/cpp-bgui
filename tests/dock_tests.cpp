@@ -393,6 +393,12 @@ TEST(DockTest, TabbedWindowsUseCompactTabsAndRemoveTheExtraHeaderRow) {
     ASSERT_NE(second_tab, nullptr);
     EXPECT_TRUE(anchor.is_enabled());
     EXPECT_FALSE(tabbed.is_enabled());
+    EXPECT_TRUE(first_tab->is_enabled());
+    EXPECT_TRUE(second_tab->is_enabled());
+    ASSERT_TRUE(first_tab->style.visual.background.normal.has_value());
+    ASSERT_TRUE(second_tab->style.visual.background.normal.has_value());
+    EXPECT_LT(second_tab->style.visual.background.normal->x,
+              first_tab->style.visual.background.normal->x);
     const auto find_header = [](bgui::window& value) {
         for (auto& [lay, elements] : value.get_elements()) {
             for (auto& element : elements) {
@@ -416,6 +422,16 @@ TEST(DockTest, TabbedWindowsUseCompactTabsAndRemoveTheExtraHeaderRow) {
     EXPECT_EQ(content.processed_y(), anchor.processed_y());
     EXPECT_EQ(anchor.processed_y(),
               first_tab->processed_y() + first_tab->processed_height());
+    auto& dock_elements = dock.get_elements()[bgui::layer::base];
+    const auto splitter_entry = std::find_if(
+        dock_elements.begin(),
+        dock_elements.end(),
+        [](const auto& element) {
+            return element->has_class("dock-splitter") && element->is_enabled();
+        });
+    ASSERT_NE(splitter_entry, dock_elements.end());
+    auto* splitter = splitter_entry->get();
+    EXPECT_FALSE(splitter->computed_style.visual.visible);
 
     auto& context = bgui::get_context();
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
