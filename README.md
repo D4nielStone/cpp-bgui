@@ -149,6 +149,10 @@ Supported styles include `regular`, `bold`, `italic`, `bold_italic`, `light`,
 `semibold`, `black` and `thin`. Loaded faces retain their family and style
 metadata in `bgui::font`, and repeated requests reuse the cached atlas.
 
+FreeType prefers an installed monospace family for the `"default"` font
+(including Consolas, DejaVu Sans Mono and Courier New). If no known monospace
+family is found, it falls back to the available system fonts.
+
 The first successfully loaded face is registered as the deterministic
 `"default"` fallback used by text widgets and by unresolved font requests.
 Font requests queued by text widgets are processed with
@@ -204,4 +208,3 @@ Detailed backend documentation is available in
 OpenGL 3, FreeType, Vulkan and the Null backend.
 
 ---
-

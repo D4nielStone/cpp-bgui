@@ -99,7 +99,9 @@ namespace bgui {
         std::vector<tab_group> m_tab_groups;
         window* m_focused_window{nullptr};
         window* m_dragged_window{nullptr};
+        window* m_tab_dragged_window{nullptr};
         window* m_drop_target_window{nullptr};
+        vec2i m_tab_drag_offset{0, 0};
         float m_left_ratio{0.24f};
         float m_right_ratio{0.24f};
         float m_top_ratio{0.24f};

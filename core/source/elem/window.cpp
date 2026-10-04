@@ -91,3 +91,8 @@ void bgui::window::set_floating(bool floating) {
         m_close_button->set_enable(floating);
     set_resizable(floating);
 }
+
+void bgui::window::set_tabbed(bool tabbed) {
+    if (m_header)
+        m_header->set_enable(!tabbed);
+}

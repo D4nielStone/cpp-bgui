@@ -30,5 +30,6 @@ namespace bgui {
         bool is_floating() const { return m_floating; }
         bool is_dragging() const { return m_dragging; }
         void set_floating(bool floating);
+        void set_tabbed(bool tabbed);
     };
 }// namespace bgui

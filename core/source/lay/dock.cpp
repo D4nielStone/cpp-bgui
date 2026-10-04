@@ -19,6 +19,8 @@ namespace bgui {
             : m_resize_width(resize_width), m_resize(std::move(resize)) {
             type = "element";
             add_class("dock-splitter");
+            style.visual.visible = false;
+            mark_style_dirty();
             set_flex(false);
             style.layout.limit_min = {0, 0};
         }
@@ -212,6 +214,9 @@ namespace bgui {
         if (std::find(group->windows.begin(), group->windows.end(), &added) != group->windows.end())
             return;
 
+        for (auto* member : group->windows)
+            member->set_tabbed(true);
+
         dock_area area = dock_area::center;
         for (std::size_t index = 0; index < m_panels.size(); ++index) {
             const auto& windows = m_panels[index].windows;
@@ -223,6 +228,7 @@ namespace bgui {
         register_window(added, area);
         group->windows.push_back(&added);
         group->active = &added;
+        added.set_tabbed(true);
 
         for (std::size_t index = group->buttons.size(); index < group->windows.size(); ++index) {
             auto* tab_window = group->windows[index];
@@ -247,6 +253,8 @@ namespace bgui {
             m_focused_window = nullptr;
         if (m_dragged_window == value)
             m_dragged_window = nullptr;
+        if (m_tab_dragged_window == value)
+            m_tab_dragged_window = nullptr;
         if (m_drop_target_window == value)
             m_drop_target_window = nullptr;
 
@@ -262,8 +270,10 @@ namespace bgui {
                 continue;
             }
             for (auto* member : group->windows) {
-                if (member != value)
+                if (member != value) {
                     member->set_enable(true);
+                    member->set_tabbed(false);
+                }
             }
             for (auto* tab : group->buttons)
                 remove(tab);
@@ -300,6 +310,8 @@ namespace bgui {
 
         if (m_dragged_window && !owned_windows.contains(m_dragged_window))
             m_dragged_window = nullptr;
+        if (m_tab_dragged_window && !owned_windows.contains(m_tab_dragged_window))
+            m_tab_dragged_window = nullptr;
 
         m_nested_splits.erase(std::remove_if(m_nested_splits.begin(), m_nested_splits.end(), [this, &owned_windows](const nested_split& split) {
             const bool remove_split = !owned_windows.contains(split.anchor) || !owned_windows.contains(split.added) ||
@@ -317,8 +329,10 @@ namespace bgui {
                 ++group;
                 continue;
             }
-            for (auto* member : group->windows)
+            for (auto* member : group->windows) {
                 member->set_enable(true);
+                member->set_tabbed(false);
+            }
             for (auto* tab : group->buttons)
                 remove(tab);
             group = m_tab_groups.erase(group);
@@ -489,8 +503,17 @@ namespace bgui {
             const auto drag = value->get_title().is_drag();
             return value->is_dragging() || drag.x != 0 || drag.y != 0;
         });
-        const bool has_dragged_window = dragged != get_elements()[layer::base].end();
-        if (has_dragged_window)
+        const bool tab_dragging = m_tab_dragged_window && m_tab_dragged_window->is_floating();
+        if (tab_dragging) {
+            m_tab_dragged_window->set_position(
+                pointer.x - m_tab_drag_offset.x,
+                pointer.y - m_tab_drag_offset.y
+            );
+            m_dragged_window = m_tab_dragged_window;
+        }
+        const bool has_dragged_window =
+            dragged != get_elements()[layer::base].end() || tab_dragging;
+        if (has_dragged_window && !tab_dragging)
             m_dragged_window = dynamic_cast<window*>(dragged->get());
 
         if (m_dragged_window && !bgui::get_pressed(input_key::mouse_left)) {
@@ -528,7 +551,11 @@ namespace bgui {
             }
             m_dragged_window = nullptr;
             m_drop_target_window = nullptr;
+            m_tab_dragged_window = nullptr;
         }
+        if (!bgui::get_pressed(input_key::mouse_left) && m_tab_dragged_window &&
+            !m_tab_dragged_window->is_floating())
+            m_tab_dragged_window = nullptr;
 
         const auto padding = computed_style.layout.padding;
         const int x = processed_x() + padding.x;
@@ -739,14 +766,17 @@ namespace bgui {
         }
         for (const auto& group : m_tab_groups) {
             for (auto* member : group.windows) {
-                if (member)
+                if (member) {
                     member->set_enable(true);
+                    member->set_tabbed(false);
+                }
             }
             for (auto* tab : group.buttons)
                 remove(tab);
         }
         m_nested_splits.clear();
         m_tab_groups.clear();
+        m_tab_dragged_window = nullptr;
         for (auto& panel : m_panels) {
             panel.windows.clear();
             panel.weights.clear();
@@ -1064,31 +1094,65 @@ namespace bgui {
                 }
 
                 const int tab_height = std::min(28 * scale, std::max(0, remaining.w / 4));
-                const int tab_width = group->windows.empty()
-                    ? remaining.z
-                    : remaining.z / static_cast<int>(group->windows.size());
+                int tab_x = remaining.x;
+                const int tab_right = remaining.x + remaining.z;
                 for (std::size_t tab_index = 0; tab_index < group->windows.size(); ++tab_index) {
                     auto* tab_window = group->windows[tab_index];
-                    const int width = tab_index + 1 == group->windows.size()
-                        ? remaining.z - tab_width * static_cast<int>(tab_index)
-                        : tab_width;
                     auto* tab = group->buttons[tab_index];
+                    const int padding = tab->computed_style.layout.padding.x +
+                        tab->computed_style.layout.padding.z;
+                    const int margin = tab->computed_style.layout.margin.x +
+                        tab->computed_style.layout.margin.z;
+                    const int desired_width = std::max(
+                        tab->computed_style.layout.limit_min.x,
+                        static_cast<int>(std::ceil(
+                            tab->get_label().get_text_width(
+                                tab->get_label().get_buffer()) + padding + margin
+                        ))
+                    );
+                    const int width = std::min(desired_width, std::max(0, tab_right - tab_x));
                     tab->set_enable(true);
                     tab->set_final_rect(
-                        remaining.x + tab_width * static_cast<int>(tab_index),
-                        remaining.y, width, tab_height
+                        tab_x, remaining.y, width, tab_height
                     );
                     tab->on_update();
 
+                    const auto tab_drag = tab->is_drag();
+                    if (tab_drag.x != 0 || tab_drag.y != 0) {
+                        group->active = tab_window;
+                        focus_window(tab_window);
+                        if (m_tab_dragged_window != tab_window) {
+                            const auto pointer = bgui::get_mouse_position();
+                            m_tab_drag_offset = {
+                                pointer.x - tab->processed_x(),
+                                pointer.y - tab->processed_y()
+                            };
+                            m_tab_dragged_window = tab_window;
+                        }
+                    }
+
                     const bool active = tab_window == group->active;
+                    tab->style.visual.background.normal = active
+                        ? bgui::color{0.22f, 0.22f, 0.22f, 1.f}
+                        : bgui::color{0.10f, 0.10f, 0.10f, 1.f};
+                    tab->style.visual.background.hover = active
+                        ? bgui::color{0.28f, 0.28f, 0.28f, 1.f}
+                        : bgui::color{0.16f, 0.16f, 0.16f, 1.f};
+                    tab->style.visual.background.pressed = active
+                        ? bgui::color{0.19f, 0.19f, 0.19f, 1.f}
+                        : bgui::color{0.13f, 0.13f, 0.13f, 1.f};
+                    tab->mark_style_dirty();
                     tab_window->set_enable(active);
                     if (active) {
+                        tab_window->get_title().set_drag(tab_drag);
                         tab_window->set_final_rect(
                             remaining.x, remaining.y + tab_height, remaining.z,
                             std::max(0, remaining.w - tab_height)
                         );
                         tab_window->on_update();
                     }
+                    tab->set_drag({0, 0});
+                    tab_x += width;
                 }
             };
 

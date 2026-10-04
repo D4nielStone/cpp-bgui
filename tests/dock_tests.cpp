@@ -350,6 +350,84 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     EXPECT_TRUE(floating.is_enabled());
 }
 
+TEST(DockTest, TabbedWindowsUseCompactTabsAndRemoveTheExtraHeaderRow) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
+    auto& tabbed = dock.add_window("Tabbed", bgui::dock_area::center);
+    auto& side = dock.add_window("Side", bgui::dock_area::right);
+    auto& content = anchor.add_persistent<bgui::element>();
+
+    bgui::dock::configuration configuration;
+    configuration.windows = {
+        {"Anchor", bgui::dock_area::center, 1.f},
+        {"Tabbed", bgui::dock_area::center, 1.f},
+        {"Side", bgui::dock_area::right, 1.f}
+    };
+    configuration.tab_groups = {
+        {"Anchor", "Anchor", {"Anchor", "Tabbed"}}
+    };
+    dock.apply_configuration(configuration);
+
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.on_update();
+
+    bgui::button* first_tab = nullptr;
+    bgui::button* second_tab = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            auto* tab = dynamic_cast<bgui::button*>(element.get());
+            if (!tab || !tab->has_class("dock-tab"))
+                continue;
+            if (!first_tab)
+                first_tab = tab;
+            else
+                second_tab = tab;
+        }
+    }
+
+    ASSERT_NE(first_tab, nullptr);
+    ASSERT_NE(second_tab, nullptr);
+    EXPECT_TRUE(anchor.is_enabled());
+    EXPECT_FALSE(tabbed.is_enabled());
+    const auto find_header = [](bgui::window& value) {
+        for (auto& [lay, elements] : value.get_elements()) {
+            for (auto& element : elements) {
+                if (element->has_class("window-header"))
+                    return element.get();
+            }
+        }
+        return static_cast<bgui::element*>(nullptr);
+    };
+    auto* anchor_header = find_header(anchor);
+    auto* tabbed_header = find_header(tabbed);
+    auto* side_header = find_header(side);
+    ASSERT_NE(anchor_header, nullptr);
+    ASSERT_NE(tabbed_header, nullptr);
+    ASSERT_NE(side_header, nullptr);
+    EXPECT_FALSE(anchor_header->is_enabled());
+    EXPECT_FALSE(tabbed_header->is_enabled());
+    EXPECT_TRUE(side_header->is_enabled());
+    EXPECT_LT(second_tab->processed_x() + second_tab->processed_width(),
+              anchor.processed_x() + anchor.processed_width());
+    EXPECT_EQ(content.processed_y(), anchor.processed_y());
+    EXPECT_EQ(anchor.processed_y(),
+              first_tab->processed_y() + first_tab->processed_height());
+
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    second_tab->set_drag({10, 0});
+    dock.on_update();
+    second_tab->set_drag({10, 0});
+    dock.on_update();
+    second_tab->set_drag({10, 0});
+    dock.on_update();
+    EXPECT_TRUE(tabbed.is_floating());
+}
+
 TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();

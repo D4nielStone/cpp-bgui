@@ -13,79 +13,8 @@
 namespace bgui {
 
 class layout;
-
 template<typename T>
-class scoped_element {
-    friend class layout;
-
-    layout* m_parent{};
-    T* m_element{};
-
-    scoped_element(layout* parent, T* element) noexcept
-        : m_parent(parent),
-          m_element(element) {}
-
-public:
-    scoped_element() noexcept = default;
-
-    scoped_element(const scoped_element&) = delete;
-    scoped_element& operator=(const scoped_element&) = delete;
-
-    scoped_element(scoped_element&& other) noexcept
-        : m_parent(std::exchange(other.m_parent, nullptr)),
-          m_element(std::exchange(other.m_element, nullptr)) {}
-
-    scoped_element& operator=(scoped_element&& other) noexcept {
-        if (this == &other)
-            return *this;
-
-        reset();
-
-        m_parent = std::exchange(other.m_parent, nullptr);
-        m_element = std::exchange(other.m_element, nullptr);
-
-        return *this;
-    }
-
-    ~scoped_element() noexcept {
-        reset();
-    }
-
-    void reset() noexcept {
-        if (!m_parent || !m_element)
-            return;
-
-        m_parent->remove(m_element);
-
-        m_parent = nullptr;
-        m_element = nullptr;
-    }
-
-    T& get() const noexcept {
-        return *m_element;
-    }
-
-    T& operator*() const noexcept {
-        return *m_element;
-    }
-
-    T* operator->() const noexcept {
-        return m_element;
-    }
-
-    explicit operator bool() const noexcept {
-        return m_element != nullptr;
-    }
-
-    T* release() noexcept {
-        T* element = m_element;
-
-        m_parent = nullptr;
-        m_element = nullptr;
-
-        return element;
-    }
-};
+class scoped_element;
 
 class layout : public element {
 protected:
@@ -222,6 +151,79 @@ public:
 
     bgui::layout* as_layout() override {
         return this;
+    }
+};
+
+template<typename T>
+class scoped_element {
+    friend class layout;
+
+    layout* m_parent{};
+    T* m_element{};
+
+    scoped_element(layout* parent, T* element) noexcept
+        : m_parent(parent),
+          m_element(element) {}
+
+public:
+    scoped_element() noexcept = default;
+
+    scoped_element(const scoped_element&) = delete;
+    scoped_element& operator=(const scoped_element&) = delete;
+
+    scoped_element(scoped_element&& other) noexcept
+        : m_parent(std::exchange(other.m_parent, nullptr)),
+          m_element(std::exchange(other.m_element, nullptr)) {}
+
+    scoped_element& operator=(scoped_element&& other) noexcept {
+        if (this == &other)
+            return *this;
+
+        reset();
+
+        m_parent = std::exchange(other.m_parent, nullptr);
+        m_element = std::exchange(other.m_element, nullptr);
+
+        return *this;
+    }
+
+    ~scoped_element() noexcept {
+        reset();
+    }
+
+    void reset() noexcept {
+        if (!m_parent || !m_element)
+            return;
+
+        m_parent->remove(m_element);
+
+        m_parent = nullptr;
+        m_element = nullptr;
+    }
+
+    T& get() const noexcept {
+        return *m_element;
+    }
+
+    T& operator*() const noexcept {
+        return *m_element;
+    }
+
+    T* operator->() const noexcept {
+        return m_element;
+    }
+
+    explicit operator bool() const noexcept {
+        return m_element != nullptr;
+    }
+
+    T* release() noexcept {
+        T* element = m_element;
+
+        m_parent = nullptr;
+        m_element = nullptr;
+
+        return element;
     }
 };
 

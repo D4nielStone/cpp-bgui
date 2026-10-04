@@ -32,15 +32,14 @@ namespace bgui {
     }
     context_menu& menu_bar::add_button(const std::string& name) {
         m_menus.push_back(nullptr);
-
-        auto& menu_ptr = m_menus.back();
+        const auto menu_index = m_menus.size() - 1;
 
         auto& button = add_persistent<bgui::button>(
             name,
             0.35f,
-            [&menu_ptr]() {
-                if (menu_ptr)
-                    menu_ptr->toggle();
+            [this, menu_index]() {
+                if (m_menus[menu_index])
+                    m_menus[menu_index]->toggle();
             }
         );
 
@@ -56,12 +55,12 @@ namespace bgui {
         button.style.visual.background.hover =
             bgui::color{0.17f, 0.17f, 0.17f, 1.f};
 
-        menu_ptr = std::make_unique<context_menu>(
+        m_menus[menu_index] = std::make_unique<context_menu>(
             m_root,
             button
         );
 
-        return *menu_ptr;
+        return *m_menus[menu_index];
     }
     bgui::button& menu_bar::add_menu(
         const std::string& name,
