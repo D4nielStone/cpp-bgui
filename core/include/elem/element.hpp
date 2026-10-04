@@ -13,7 +13,9 @@
  * @brief Base namespace for the BGUI (Basic GUI) framework components.
  */
 namespace bgui {
+    class element;
     class layout;
+    void cancel_interactions(element* subtree) noexcept;
 
     /**
      * @brief The small part of the UI.
@@ -79,7 +81,7 @@ namespace bgui {
         /**
          * @brief Virtual destructor.
          */
-        virtual ~element() = default;
+        virtual ~element();
 
         void add_class(const std::string& cls);
         void remove_class(const std::string& cls);

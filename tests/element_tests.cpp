@@ -1,5 +1,11 @@
 #include <gtest/gtest.h>
 #include "bgui.hpp"
+#include "os/os.hpp"
+
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <string>
 
 using namespace bgui;
 
@@ -12,6 +18,13 @@ public:
 
 	void set_drag(const vec2i&) override {
 		++drag_updates;
+	}
+};
+
+class capture_probe final : public element {
+public:
+	capture_probe() {
+		recives_input(true);
 	}
 };
 }
@@ -75,8 +88,64 @@ TEST(ElementTest, ScopedElementIsRemovedWhenHandleLeavesScope) {
 		EXPECT_TRUE(handle);
 		EXPECT_EQ(root.get_elements().at(layer::base).size(), 1U);
 	}
-
 	EXPECT_TRUE(root.get_elements().at(layer::base).empty());
+}
+
+TEST(InteractionTest, RemovingCapturedElementAndAncestorCancelsCapture) {
+		bgui::scoped_interface interface;
+		auto& root = bgui::get_layout();
+		auto& context = bgui::get_context();
+		context.m_input_map.clear();
+		context.m_mouse_position = {10, 10};
+		context.m_input_map[input_key::mouse_left] = input_action::press;
+
+		auto& direct = root.add_persistent<capture_probe>();
+		direct.set_final_rect(0, 0, 50, 50);
+		bgui::on_update();
+		EXPECT_EQ(bgui::get_mouse_target(), &direct);
+		ASSERT_TRUE(root.remove(&direct));
+		EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+
+		context.m_input_map[input_key::mouse_left] = input_action::release;
+		bgui::on_update();
+
+		context.m_input_map[input_key::mouse_left] = input_action::press;
+		auto& parent = root.add_persistent<layout>();
+		parent.set_final_rect(0, 0, 200, 200);
+		auto& nested = parent.add_persistent<capture_probe>();
+		nested.set_final_rect(0, 0, 50, 50);
+		bgui::on_update();
+		EXPECT_EQ(bgui::get_mouse_target(), &nested);
+		ASSERT_TRUE(root.remove(&parent));
+		EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+
+		context.m_input_map[input_key::mouse_left] = input_action::release;
+		bgui::on_update();
+		context.m_input_map.clear();
+}
+
+TEST(ConfigurationTest, ReplacesExistingFileWithoutLeavingTemporaryFiles) {
+		bgui::scoped_interface interface;
+		const auto path = std::filesystem::temp_directory_path() / "bgui-configuration-atomic-test.cfg";
+		{
+			std::ofstream previous(path, std::ios::binary | std::ios::trunc);
+			ASSERT_TRUE(previous);
+			previous << "previous";
+		}
+
+		ASSERT_TRUE(bgui::save_configuration(path.string()));
+		std::ifstream saved(path, std::ios::binary);
+		const std::string contents(std::istreambuf_iterator<char>(saved), {});
+		EXPECT_NE(contents.find("[interface]"), std::string::npos);
+
+		std::size_t files = 0;
+		for (const auto& entry : std::filesystem::directory_iterator(path.parent_path())) {
+			if (entry.path().filename().string().starts_with("bgui-configuration-atomic-test.cfg"))
+				++files;
+		}
+		EXPECT_EQ(files, 1U);
+		std::error_code ignored;
+		std::filesystem::remove(path, ignored);
 }
 
 TEST(DrawDataTest, EnqueueCapturesIntersectedClipRect) {

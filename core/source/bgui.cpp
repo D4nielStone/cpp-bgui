@@ -4,6 +4,9 @@
 #include "lay/dock.hpp"
 #include <utils/vec.hpp>
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -13,12 +16,20 @@
 #include <utility>
 #include <vector>
 
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 static bool init_trigger = false;
 std::unique_ptr<bgui::layout> bgui::s_main_layout;
 static std::unique_ptr<bgui::draw_data> s_draw_data;
 static std::queue<std::function<void()>> s_functions;
 static bgui::element* s_keyboard_focused = nullptr;
 static bgui::element* s_mouse_target = nullptr;
+static bgui::element* s_mouse_captured = nullptr;
 static float s_global_scale = 1.f;
 
 namespace {
@@ -26,6 +37,67 @@ namespace {
 
     using configuration_sections = std::map<std::string, std::map<std::string, std::string>>;
     void collect_docks(bgui::layout& current, std::vector<bgui::dock*>& docks);
+
+    bool write_file_atomically(const std::string& path, const std::string& contents) {
+        static std::atomic_uint64_t temporary_sequence{0};
+        const std::filesystem::path destination(path);
+        const auto temporary_path = std::filesystem::path(path + ".tmp." +
+            std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "." +
+            std::to_string(temporary_sequence.fetch_add(1, std::memory_order_relaxed)));
+        {
+            std::ofstream output(temporary_path, std::ios::binary | std::ios::trunc);
+            if (!output)
+                return false;
+            output.write(contents.data(), static_cast<std::streamsize>(contents.size()));
+            output.flush();
+            if (!output.good()) {
+                output.close();
+                std::error_code ignored;
+                std::filesystem::remove(temporary_path, ignored);
+                return false;
+            }
+            output.close();
+            if (output.fail()) {
+                std::error_code ignored;
+                std::filesystem::remove(temporary_path, ignored);
+                return false;
+            }
+        }
+#ifdef _WIN32
+        if (!MoveFileExW(
+                temporary_path.c_str(),
+                destination.c_str(),
+                MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+            std::error_code ignored;
+            std::filesystem::remove(temporary_path, ignored);
+            return false;
+        }
+#else
+        std::error_code error;
+        std::filesystem::rename(temporary_path, destination, error);
+        if (error) {
+            std::error_code ignored;
+            std::filesystem::remove(temporary_path, ignored);
+            return false;
+        }
+#endif
+        return true;
+    }
+
+    bool contains_element(bgui::element* subtree, bgui::element* candidate) {
+        if (subtree == candidate)
+            return true;
+        auto* layout = subtree->as_layout();
+        if (!layout)
+            return false;
+        for (const auto& [layer, elements] : layout->get_elements()) {
+            for (const auto& child : elements) {
+                if (contains_element(child.get(), candidate))
+                    return true;
+            }
+        }
+        return false;
+    }
 
     std::string trim(const std::string& value) {
         const auto first = value.find_first_not_of(" \t\r\n");
@@ -279,9 +351,7 @@ bool bgui::save_configuration(const std::string& path) {
 
     std::vector<dock*> docks;
     collect_docks(get_layout(), docks);
-    std::ofstream output(path, std::ios::trunc);
-    if (!output)
-        return false;
+    std::ostringstream output;
 
     output << "[interface]\n"
            << "format = \"cpp-bgui-ui\"\n"
@@ -331,13 +401,16 @@ bool bgui::save_configuration(const std::string& path) {
                 output << "window." << tab_index << " = " << std::quoted(group.windows[tab_index]) << '\n';
         }
     }
-    return static_cast<bool>(output);
+    return write_file_atomically(path, output.str());
 }
 
 static void shutdown_interface() noexcept {
+    if (bgui::s_main_layout)
+        bgui::cancel_interactions(bgui::s_main_layout.get());
     init_trigger = false;
     s_keyboard_focused = nullptr;
     s_mouse_target = nullptr;
+    s_mouse_captured = nullptr;
     bgui::s_main_layout.reset();
     s_draw_data.reset();
     std::queue<std::function<void()>> empty;
@@ -364,6 +437,17 @@ static void set_keyboard_focus(bgui::element* element) {
     } else if (element) {
         element->set_style_state(bgui::state::focused);
     }
+}
+
+void bgui::cancel_interactions(bgui::element* subtree) noexcept {
+    if (!subtree)
+        return;
+    if (s_mouse_captured && contains_element(subtree, s_mouse_captured))
+        s_mouse_captured = nullptr;
+    if (s_mouse_target && contains_element(subtree, s_mouse_target))
+        s_mouse_target = nullptr;
+    if (s_keyboard_focused && contains_element(subtree, s_keyboard_focused))
+        set_keyboard_focus(nullptr);
 }
 
 bgui::layout& bgui::get_layout() {
@@ -443,9 +527,6 @@ static void clear_stale_mouse_hover(bgui::layout& lay, bgui::element* target) {
 }
 
 bool update_inputs(bgui::layout &lay){
-    // global element for last capture
-    static bgui::element* g_mouse_captured = nullptr;
-
     auto m = bgui::get_mouse_position();
     float mx = m[0];
     float my = m[1];
@@ -454,13 +535,13 @@ bool update_inputs(bgui::layout &lay){
     bool mouse_click = (mouse_now && !bgui::get_context().m_last_mouse_left);
     bool mouse_released = (!mouse_now && bgui::get_context().m_last_mouse_left);
 
-    if (g_mouse_captured) {
-        s_mouse_target = g_mouse_captured;
+    if (s_mouse_captured) {
+        s_mouse_target = s_mouse_captured;
         if (mouse_released) {
-            g_mouse_captured->on_released();
-            g_mouse_captured = nullptr;
+            s_mouse_captured->on_released();
+            s_mouse_captured = nullptr;
         } else if (mouse_now) {
-            g_mouse_captured->set_drag(m - bgui::get_context().m_last_mouse_pos);
+            s_mouse_captured->set_drag(m - bgui::get_context().m_last_mouse_pos);
         }
         return true;
     }
@@ -523,7 +604,7 @@ bool update_inputs(bgui::layout &lay){
                 s_mouse_target = elem;
                 elem->on_mouse_hover();
                 if (mouse_click) {
-                    g_mouse_captured = elem; // start capture
+                    s_mouse_captured = elem;
                     if (elem->type == "inputarea") {
                         set_keyboard_focus(elem);
                     } else {
@@ -534,8 +615,8 @@ bool update_inputs(bgui::layout &lay){
                 }
                 if(mouse_released) {
                     elem->on_released();
-                    if (g_mouse_captured == elem)
-                        g_mouse_captured = nullptr; // release capture when mouse release
+                    if (s_mouse_captured == elem)
+                        s_mouse_captured = nullptr;
                 }
                 return true;
             }

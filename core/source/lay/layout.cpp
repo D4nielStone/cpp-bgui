@@ -9,6 +9,10 @@ layout::layout() : element() {
     recives_input(false);
 };
 
+layout::~layout() {
+    bgui::cancel_interactions(this);
+}
+
 void layout::on_update() {
     for(auto& [lay, elems] : m_elements) {
         for(auto& elem : elems) {

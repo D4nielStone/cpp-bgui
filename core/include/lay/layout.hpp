@@ -39,7 +39,7 @@ private:
 
 public:
     layout();
-    ~layout() override = default;
+    ~layout() override;
 
     template<typename T, layer Lay = layer::base, typename... Args>
     scoped_element<T> add(Args&&... args) {
@@ -74,6 +74,7 @@ public:
             if (it == elems.end())
                 continue;
 
+            cancel_interactions(it->get());
             elems.erase(it);
             return true;
         }

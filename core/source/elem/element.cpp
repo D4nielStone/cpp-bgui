@@ -5,6 +5,11 @@
 #include "os/style_manager.hpp"
 
 using namespace bgui;
+
+element::~element() {
+    bgui::cancel_interactions(this);
+}
+
 void element::mark_style_dirty() {
     m_style_dirty = true;
 

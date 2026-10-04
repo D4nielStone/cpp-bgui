@@ -37,6 +37,8 @@ namespace bgui {
 
     template<typename T, typename... Args>
     T& set_layout(Args&&... args) {
+        if (s_main_layout)
+            cancel_interactions(s_main_layout.get());
         s_main_layout = std::make_unique<T>(std::forward<Args>(args)...);
         static_assert(std::is_base_of<layout, T>::value, "[BGUI] the class T must be a layout type.");
         return static_cast<T&>(*s_main_layout);
