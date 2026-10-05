@@ -112,6 +112,18 @@ TEST(ElementTest, LoggingCanBeToggled) {
 	EXPECT_EQ(captured_output.str(), "visible");
 }
 
+TEST(ElementTest, TextWithoutConfiguredFontDoesNotThrow) {
+	bgui::text text("text without font", 1.f);
+	text.style.visual.font = "missing-font-for-test";
+	text.compute_style();
+
+	EXPECT_NO_THROW(text.calc_content_size(bgui::layer::base));
+	EXPECT_FLOAT_EQ(text.get_text_width(text.get_buffer()), 0.f);
+	bgui::draw_data data;
+	EXPECT_NO_THROW(text.get_requires(&data));
+	EXPECT_TRUE(data.m_quad_requires.empty());
+}
+
 TEST(ElementTest, ScopedElementIsRemovedWhenHandleLeavesScope) {
 	layout root;
 	EXPECT_TRUE(root.get_elements().empty());

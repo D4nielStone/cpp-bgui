@@ -56,7 +56,12 @@ void bgui::text::on_update() {
 }
 
 void bgui::text::calc_content_size(const layer&) {
-    const auto& font = bgui::font_manager::get_instance().get_font(computed_style.visual.font);
+    auto& font_manager = bgui::font_manager::get_instance();
+    if (!font_manager.has_font(computed_style.visual.font)) {
+        set_content_size({0, 0});
+        return;
+    }
+    const auto& font = font_manager.get_font(computed_style.visual.font);
     if (font.chs.empty()) {
         set_content_size({0, 0});
         return;
@@ -102,7 +107,10 @@ void bgui::text::set_font(const std::string &path) {
 }
 
 float bgui::text::get_text_width(const std::string& t) {
-    const auto& chs = bgui::font_manager::get_instance().get_font(computed_style.visual.font).chs;
+    auto& font_manager = bgui::font_manager::get_instance();
+    if (!font_manager.has_font(computed_style.visual.font))
+        return 0.0f;
+    const auto& chs = font_manager.get_font(computed_style.visual.font).chs;
     if (chs.empty()) return 0.0f;
     const float scale = m_scale * bgui::get_global_scale();
 
@@ -130,7 +138,10 @@ float bgui::text::get_text_width(const std::string& t) {
 }
 
 void bgui::text::get_requires(bgui::draw_data* data) {
-    const auto& font = bgui::font_manager::get_instance().get_font(computed_style.visual.font);
+    auto& font_manager = bgui::font_manager::get_instance();
+    if (!font_manager.has_font(computed_style.visual.font))
+        return;
+    const auto& font = font_manager.get_font(computed_style.visual.font);
     const auto& chs = font.chs;
     if (chs.empty()) return;
 
