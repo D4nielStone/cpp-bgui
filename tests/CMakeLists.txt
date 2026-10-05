@@ -22,6 +22,10 @@ target_include_directories(all_tests
     PRIVATE ${PROJECT_SOURCE_DIR}/core/include
 )
 
+target_compile_definitions(all_tests PRIVATE
+  $<$<CONFIG:Debug>:BGUI_LOGS_DEFAULT_ENABLED>
+)
+
 target_link_libraries(
     all_tests PRIVATE 
     bgui

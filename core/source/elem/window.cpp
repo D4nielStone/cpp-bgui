@@ -15,6 +15,7 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     // testing the header:
     m_header = &add_persistent<bgui::linear>(bgui::orientation::horizontal);
     m_header->add_class("window-header");
+    m_header->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
     m_icon = &m_header->add_persistent<bgui::image>();
     m_icon->set_size(1.f, 1.f);
     set_icon("bubble.png");
@@ -85,6 +86,14 @@ void bgui::window::set_icon(const std::string& path) {
     m_icon_height = 0;
 }
 void bgui::window::set_floating(bool floating) {
+    if (floating && !m_floating) {
+        const float scale = bgui::get_global_scale();
+        if (scale > 0.f && processed_width() > 0 && processed_height() > 0) {
+            style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
+            style.layout.require_size(processed_width() / scale, processed_height() / scale);
+            mark_style_dirty();
+        }
+    }
     m_floating = floating;
     set_flex(!floating);
     if (m_close_button)

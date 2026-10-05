@@ -42,7 +42,12 @@ namespace {
 
     bgui::texture decode_texture(const std::filesystem::path& asset_path) {
         const HRESULT init_result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-        const bool should_uninitialize = SUCCEEDED(init_result);
+        struct com_apartment {
+            bool initialized;
+            ~com_apartment() {
+                if (initialized) CoUninitialize();
+            }
+        } apartment{SUCCEEDED(init_result)};
 
         ComPtr<IWICImagingFactory> factory;
         HRESULT result = CoCreateInstance(
@@ -52,7 +57,6 @@ namespace {
             IID_PPV_ARGS(&factory)
         );
         if (FAILED(result)) {
-            if (should_uninitialize) CoUninitialize();
             throw std::runtime_error("[AssetManager] Could not initialize WIC");
         }
 
@@ -91,7 +95,6 @@ namespace {
             );
         }
 
-        if (should_uninitialize) CoUninitialize();
         if (FAILED(result))
             throw std::runtime_error("[AssetManager] Could not decode asset: " + asset_path.string());
         return loaded;

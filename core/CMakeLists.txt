@@ -12,6 +12,7 @@ target_include_directories(bgui_core
 
 target_compile_definitions(bgui_core
     PRIVATE BGUI_ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets"
+    $<$<CONFIG:Debug>:BGUI_LOGS_DEFAULT_ENABLED>
 )
 
 if(BGUI_USE_FREETYPE)

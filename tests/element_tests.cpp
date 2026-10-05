@@ -4,7 +4,9 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <iterator>
+#include <sstream>
 #include <string>
 
 using namespace bgui;
@@ -84,6 +86,30 @@ TEST(ElementTest, ScopedInterfaceInitializesAndShutsDown) {
 	}
 
 	EXPECT_THROW(bgui::get_layout(), std::runtime_error);
+}
+
+TEST(ElementTest, LoggingDefaultFollowsBuildConfiguration) {
+#ifdef BGUI_LOGS_DEFAULT_ENABLED
+	EXPECT_TRUE(bgui::logs_enabled());
+#else
+	EXPECT_FALSE(bgui::logs_enabled());
+#endif
+}
+
+TEST(ElementTest, LoggingCanBeToggled) {
+	const bool initial_state = bgui::logs_enabled();
+	std::ostringstream captured_output;
+	auto* previous_buffer = std::cout.rdbuf(captured_output.rdbuf());
+
+	bgui::set_logs_enabled(true);
+	bgui::detail::log_out() << "visible";
+	bgui::set_logs_enabled(false);
+	bgui::detail::log_out() << "hidden";
+
+	std::cout.rdbuf(previous_buffer);
+	bgui::set_logs_enabled(initial_state);
+
+	EXPECT_EQ(captured_output.str(), "visible");
 }
 
 TEST(ElementTest, ScopedElementIsRemovedWhenHandleLeavesScope) {

@@ -10,7 +10,11 @@
 #include "lay/dock.hpp"
 #include "os/os.hpp"
 
+// This suite exercises the dock layout behavior with real UI state changes,
+// mouse drag simulation, and configuration persistence.
 namespace {
+    // Recursively finds a button inside nested layouts by its CSS class so tests
+    // can validate dock controls without depending on a specific widget tree shape.
     bgui::button* find_button(bgui::layout& parent, const std::string& class_name) {
         for (auto& [lay, elements] : parent.get_elements()) {
             for (auto& element : elements) {
@@ -27,6 +31,8 @@ namespace {
     }
 }
 
+// Ensures pinned dock windows remain tiled and can be resized by dragging a
+// divider between the left pane and the central area.
 TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -63,9 +69,12 @@ TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
     left_divider->set_drag({40, 0});
     dock.on_update();
     dock.on_update();
+    std::cout << left.processed_width() << " " << initial_width << "\n";
     EXPECT_GT(left.processed_width(), initial_width);
 }
 
+// Verifies that floating windows always render above pinned content even when the
+// insertion order is different from the expected z-order.
 TEST(DockTest, FloatingWindowsStayAbovePinnedWindowsRegardlessOfInsertionOrder) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -95,6 +104,7 @@ TEST(DockTest, FloatingWindowsStayAbovePinnedWindowsRegardlessOfInsertionOrder) 
     }
 }
 
+// Confirms that focusing a floating window raises it to the top of the dock stack.
 TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -121,6 +131,8 @@ TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
     EXPECT_LT(other_position, focused_position);
 }
 
+// Covers the drag-preview path: a floating window should expose valid drop targets
+// and highlight the center preview while it is being moved.
 TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -180,6 +192,8 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
         EXPECT_FALSE(target->is_enabled());
 }
 
+// When the mouse is released over a drop zone, the floating window should snap into
+// the dock layout instead of lingering in an invalid intermediate state.
 TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -221,6 +235,8 @@ TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
     EXPECT_LT(floating.processed_rect().y, dock.processed_y() + dock.processed_height());
 }
 
+// Tests the side-drop behavior for a floating window: dragging it onto a dock edge
+// should split the hovered panel and persist the split configuration.
 TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -260,6 +276,7 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 
     dock.on_update();
+    dock.on_update();
 
     EXPECT_FALSE(floating.is_floating());
     EXPECT_LT(floating.processed_rect().x, anchor.processed_rect().x);
@@ -275,12 +292,15 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     dock.apply_configuration({});
     ASSERT_TRUE(bgui::load_configuration(config_path.string()));
     std::filesystem::remove(config_path);
+    dock.on_update();
     configuration = dock.get_configuration();
     ASSERT_EQ(configuration.splits.size(), 1u);
     EXPECT_EQ(configuration.splits.front().anchor, "Anchor");
     EXPECT_EQ(configuration.splits.front().added, "Floating");
 }
 
+// Validates the tab-creation workflow when a floating window is dropped over the
+// center area of another docked window.
 TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -320,6 +340,7 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 
     dock.on_update();
+    dock.on_update();
 
     EXPECT_FALSE(anchor.is_enabled());
     EXPECT_FALSE(floating.is_floating());
@@ -350,6 +371,8 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     EXPECT_TRUE(floating.is_enabled());
 }
 
+// Checks the compact tab layout semantics: grouped windows should share a narrow tab
+// strip and hide redundant header rows while preserving window state.
 TEST(DockTest, TabbedWindowsUseCompactTabsAndRemoveTheExtraHeaderRow) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -444,6 +467,8 @@ TEST(DockTest, TabbedWindowsUseCompactTabsAndRemoveTheExtraHeaderRow) {
     EXPECT_TRUE(tabbed.is_floating());
 }
 
+// Confirms that dragging a pinned window by its title bar converts it into a
+// floating window and re-enables the normal window controls.
 TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
@@ -474,6 +499,9 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     EXPECT_TRUE(panel.is_floating());
     EXPECT_TRUE(close->is_enabled());
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
+    dock.cascade_style();
+    dock.on_update();
+    dock.on_update();
 
     bgui::linear* header = nullptr;
     for (auto& [lay, elements] : panel.get_elements()) {
@@ -487,6 +515,8 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
               header->processed_x() + header->processed_width());
 }
 
+// Covers serialization and restoration of the dock state, including legacy config
+// parsing as well as regular save/load round-trips.
 TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
     bgui::scoped_interface interface;
     auto& root = bgui::set_layout<bgui::layout>();
@@ -512,6 +542,7 @@ TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
     ASSERT_TRUE(saved_file);
     std::ostringstream saved_contents;
     saved_contents << saved_file.rdbuf();
+    saved_file.close();
     EXPECT_NE(saved_contents.str().find("[interface]\n"), std::string::npos);
     EXPECT_NE(saved_contents.str().find("format = \"cpp-bgui-ui\""), std::string::npos);
     EXPECT_NE(saved_contents.str().find("left_ratio = "), std::string::npos);

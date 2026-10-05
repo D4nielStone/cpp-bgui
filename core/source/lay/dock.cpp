@@ -844,6 +844,8 @@ namespace bgui {
                 auto* active = find_window(entry.active);
                 if (active && std::find(group->windows.begin(), group->windows.end(), active) != group->windows.end())
                     group->active = active;
+                for (auto* member : group->windows)
+                    member->set_enable(member == group->active);
             }
         }
 
@@ -1189,7 +1191,8 @@ namespace bgui {
                 if (dynamic_cast<dock_splitter*>(element.get()))
                     continue;
                 if (element->has_class("dock-drop-zone") ||
-                    element->has_class("dock-drop-preview"))
+                    element->has_class("dock-drop-preview") ||
+                    element->has_class("dock-tab"))
                     continue;
                 if (!element->is_enabled())
                     continue;

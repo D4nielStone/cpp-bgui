@@ -4,7 +4,7 @@
 using namespace bgui;
 
 TEST(StyleVisualTest, ResolveBackgroundColor) {
-	bgui::set_up();
+	bgui::scoped_interface interface;
 	element elem;
 	elem.style.visual.background.normal = {1.f, 0.f, 0.f, 1.f};
 	elem.compute_style();
@@ -20,7 +20,7 @@ TEST(StyleVisualTest, StyleManagerIsSingleton) {
 }
 
 TEST(StyleVisualTest, StateColorUpdatesAfterInteraction) {
-	bgui::set_up();
+	bgui::scoped_interface interface;
 	auto& manager = style_manager::get_instance();
 
 	style button_style;
@@ -57,7 +57,7 @@ TEST(StyleVisualTest, StateColorUpdatesAfterInteraction) {
 }
 
 TEST(DeclarativeStyleTest, InlineStyleOverridesClassStyle) {
-	bgui::set_up();
+	bgui::scoped_interface interface;
 	auto& manager = style_manager::get_instance();
 
 	style class_style;
@@ -74,7 +74,7 @@ TEST(DeclarativeStyleTest, InlineStyleOverridesClassStyle) {
 }
 
 TEST(DeclarativeStyleTest, ClassToggleRecomputesStyle) {
-	bgui::set_up();
+	bgui::scoped_interface interface;
 	auto& manager = style_manager::get_instance();
 	style hidden;
 	hidden.visual.visible = false;

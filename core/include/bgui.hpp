@@ -18,6 +18,7 @@
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
 #include "utils/draw.hpp"
+#include "utils/logging.hpp"
 #include "utils/style.hpp"
 #include <queue>
 #include <functional>
