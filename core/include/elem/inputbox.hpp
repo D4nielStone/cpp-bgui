@@ -30,7 +30,7 @@ namespace bgui {
         void move_cursor_right();
         void erase_before_cursor();
     public:
-        std::function<void(const std::string)> m_enter_func;
+        std::function<void(const std::string)> m_enter_func = nullptr;
         std::function<void(const float)> m_float_func = nullptr;
         /// \brief Contructor.
         /// \param buffer The initial text to inject on the buffer.

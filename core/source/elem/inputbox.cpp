@@ -151,8 +151,11 @@ void bgui::inputbox::on_update() {
                 bgui::add_function([this]() {
                     m_enter_func(get_buffer());
                 });
+            break;
             case input_mode::number:
-                float value = std::stof(get_buffer());
+                auto v = get_buffer();
+                if(v.empty()) break;
+                float value = std::stof(v);
                 float t = std::clamp(value, m_min_float, m_max_float);
                 if(m_float_func)
                 bgui::add_function([this, t]() {    
@@ -161,6 +164,7 @@ void bgui::inputbox::on_update() {
                 auto str = std::to_string(t);
                 str = remove_trailing_zeros(str);
                 set_buffer(str);
+            break;
             }
         }
     }

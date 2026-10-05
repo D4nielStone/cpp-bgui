@@ -109,6 +109,8 @@ layout.padding = 4
 CLASSES
 =========================
 
+[class.dock-tab]
+
 [class.window-header]
 layout.mode = stretch, wrap_content
 layout.padding = 0, 0

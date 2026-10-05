@@ -22,7 +22,7 @@ jobs:
 
       - name: Install libraries (Ubuntu)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev libsdl2-dev
 
       - name: Install libraries (macOS)
         if: runner.os == 'macOS'

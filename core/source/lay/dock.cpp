@@ -233,7 +233,7 @@ namespace bgui {
         for (std::size_t index = group->buttons.size(); index < group->windows.size(); ++index) {
             auto* tab_window = group->windows[index];
             auto& tab = add_persistent<button, layer::base>(
-                tab_window->get_title().get_buffer(), 0.35f,
+                tab_window->get_title().get_buffer(), 0.4f,
                 [this, host = group->anchor, tab_window]() {
                     const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [host](const tab_group& candidate) {
                         return candidate.anchor == host;
