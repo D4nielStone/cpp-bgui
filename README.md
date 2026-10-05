@@ -94,6 +94,14 @@ int main() {
 }
 ```
 
+#### Logging
+
+BGUI logs are enabled by default in Debug builds and disabled in other build configurations. Change the setting at runtime with `bgui::set_logs_enabled(bool)` and query it with `bgui::logs_enabled()`.
+
+```cpp
+bgui::set_logs_enabled(false);
+```
+
 - Configure the layout as you want
 
 ```cpp

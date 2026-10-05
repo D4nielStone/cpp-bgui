@@ -1,7 +1,7 @@
 #include "os/font.hpp"
 #include "os/asset_manager.hpp"
+#include "utils/logging.hpp"
 #include <stdexcept>
-#include <iostream>
 #include <limits>
 
 const char* bgui::font_style_name(const bgui::font_style style) {
@@ -63,6 +63,6 @@ bgui::font& bgui::font_manager::get_font(
     if (manager.has_font(name, resolution))
         return manager.get_font(name, resolution);
 
-    std::cerr << "[FONT] Font " << name << " not found. Have you added it to the backend?" << std::endl;
+    bgui::detail::log_err() << "[FONT] Font " << name << " not found. Have you added it to the backend?" << std::endl;
     return manager.get_font(name, resolution);
 }

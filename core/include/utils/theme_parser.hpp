@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include "utils/logging.hpp"
 
 namespace fs = std::filesystem;
 namespace bgui {
@@ -118,7 +119,7 @@ namespace bgui {
         std::ifstream file(theme_path.c_str());
 
         if (!file) {
-            std::cerr << "[Theme] Could not find the theme file "
+            detail::log_err() << "[Theme] Could not find the theme file "
                     << theme_path.string() << ".\n";
             return {};
         }

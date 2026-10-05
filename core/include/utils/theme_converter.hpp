@@ -21,7 +21,7 @@ namespace bgui {
             return {0,0,0,0};
 
         if (v.size() < 3 && v.size() != 1)
-            std::cerr << "[ThemeConverter] Invalid color value.\n";
+            detail::log_err() << "[ThemeConverter] Invalid color value.\n";
 
         if(v.size()==1) 
             return bgui::color({
@@ -133,7 +133,7 @@ namespace bgui {
                 else if (val.size() == 4)
                     out.layout.padding = {to_int(val[0]), to_int(val[1]), to_int(val[2]), to_int(val[3])};
                 else
-                    std::cerr << "[ThemeConverter] Invalid padding value.\n";
+                    detail::log_err() << "[ThemeConverter] Invalid padding value.\n";
             }
             else if (key == "layout.margin") {
                 if (val.size() == 1)
@@ -143,7 +143,7 @@ namespace bgui {
                 else if (val.size() == 4)
                     out.layout.margin = {to_int(val[0]), to_int(val[1]), to_int(val[2]), to_int(val[3])};
                 else
-                    std::cerr << "[ThemeConverter] Invalid margin value.\n";
+                    detail::log_err() << "[ThemeConverter] Invalid margin value.\n";
             }
             else if (key == "layout.size") {
                 if (val.size() == 1)
@@ -151,7 +151,7 @@ namespace bgui {
                 else if(val.size() == 2)
                     out.layout.size = {to_float(val[0]), to_float(val[1])};
                 else
-                    std::cerr << "[ThemeConverter] Invalid size value.\n";
+                    detail::log_err() << "[ThemeConverter] Invalid size value.\n";
             }
             else if (key == "layout.limit_min") {
                 if (val.size() == 1)
@@ -159,7 +159,7 @@ namespace bgui {
                 else if(val.size() == 2)
                     out.layout.limit_min = {to_int(val[0]), to_int(val[1])};
                 else
-                    std::cerr << "[ThemeConverter] Invalid size value.\n";
+                    detail::log_err() << "[ThemeConverter] Invalid size value.\n";
             }
         }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iosfwd>
+#include <ostream>
 
 namespace bgui {
     void set_logs_enabled(bool enabled) noexcept;
