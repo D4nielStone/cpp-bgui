@@ -17,34 +17,35 @@ int main() {
         auto& demo_window = dock->add_window("Hello Bubble!");
         auto& panel = dock->add_window("Panel", bgui::dock_area::right);
         auto panel_text = panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
-        auto context = demo_window.add<bgui::linear>(bgui::orientation::vertical);
-        context->style = {
-            .layout = {
-                .size_mode = std::make_optional<bgui::vec<2UL, bgui::mode>>({bgui::mode::match_parent, bgui::mode::match_parent})
-            },
-            .visual = {
-                .visible = false
-            }
-        };
-        auto window_text = context->add<bgui::text>("This is a window widget example.", 0.4f);
+        auto window_text = demo_window.add<bgui::text>("This is a window widget example.", 0.4f);
         window_text->style.layout.align = bgui::vec<2UL, bgui::alignment>({bgui::alignment::center, bgui::alignment::start});
-        
-        auto chkbx = context->add<bgui::checkbox>("CheckBox Element", 0.4f, true);
-        chkbx->style.visual.visible = true;
-       
-        auto btn = context->add<bgui::button>("Button inside window", 0.4f, [](){});
-        btn->style.visual.visible = true;
-        auto fi = context->add<bgui::field>("UI Scale", "1", 0.4f);
-        auto fii = context->add<bgui::field>("InputBox", "", 0.4f);
+
+        auto value_text = demo_window.add<bgui::text>(
+            "Slider and progress bar", 0.4f);
+        auto value_slider = demo_window.add<bgui::slider>(
+            -50.f, 50.f, 0, bgui::orientation::horizontal);
+        value_slider->style.layout.require_width(bgui::mode::match_parent);
+        value_slider->style.layout.require_height(bgui::mode::wrap_content);
+        value_slider->set_step(5.f);
+        value_text->set_buffer("Slider value: " + std::to_string(value_slider->get_value()));
+        value_slider->set_on_change([label = &value_text.get()](float value) {
+            label->set_buffer("Slider value: " + std::to_string(value));
+        });
+
+        auto chkbx = demo_window.add<bgui::checkbox>("CheckBox Element", 0.4f, true);
+
+        auto btn = demo_window.add<bgui::button>("Button inside window", 0.4f, [](){});
+        auto fi = demo_window.add<bgui::field>("UI Scale", "1", 0.4f);
+        auto fii = demo_window.add<bgui::field>("InputBox", "", 0.4f);
         auto& fipt = fi->get_inputbox();
         fipt.set_input_mode(bgui::input_mode::number);
         fipt.set_min_float(0.6);
         fipt.set_max_float(1.6);
         fipt.set_float_callback(bgui::set_global_scale);
-        auto fiii = context->add<bgui::inputbox>("", "", 0.4f);
-        fi->style.visual.visible=true;
-        fii->style.visual.visible=true;
-        fiii->style.visual.visible=true;
+        auto fiii = demo_window.add<bgui::inputbox>("", "", 0.4f);
+
+        auto text_editor_window = root.add<bgui::window>("Text Editor", true);
+
         bgui::load_configuration("ui.cfg");
         bgui::get_context().m_refresh_func = [&](){
             bgui::glfw_update(bgui::get_context());

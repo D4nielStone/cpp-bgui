@@ -71,7 +71,7 @@ void element::compute_style() {
 
     // inherit parent's style
     if(get_parent())
-        bgui::merge(computed_style.visual, get_parent()->style.visual, m_state);
+        bgui::merge(computed_style.visual, get_parent()->style.visual, m_state, false);
     bgui::merge(computed_style, style, m_state);
 
     const float scale = bgui::get_global_scale();

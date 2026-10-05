@@ -29,17 +29,35 @@ int main() {
         auto panel_button = panel->add<bgui::button>("Button Example", 0.4f, [](){});
         auto demo_window = root.add<bgui::window>("Hello Bubble!");
 
-        auto context = demo_window->add<bgui::linear>(bgui::orientation::vertical);
-        context->style = {
-            .layout = {
-                .size_mode = std::make_optional<bgui::vec<2UL, bgui::mode>>({bgui::mode::match_parent, bgui::mode::match_parent})
-            },
-            .visual = {
-                .visible = false
-            }
-        };
-        auto window_text = context->add<bgui::text>("This is a window widget example.", 0.4f);
-        auto theme_checkbox = context->add<bgui::checkbox>("Switch theme", 0.4f, false);
+        auto window_text = demo_window->add<bgui::text>("This is a window widget example.", 0.4f);
+        auto value_text = demo_window->add<bgui::text>("Slider value: 0", 0.4f);
+        auto progress = demo_window->add<bgui::progress_bar>(0.f, 100.f, 0.f);
+        progress->style.layout.require_width(bgui::mode::match_parent);
+        progress->style.layout.require_height(bgui::mode::pixel, 14.f);
+        auto value_slider = demo_window->add<bgui::slider>(
+            0.f, 100.f, progress->get_value(), bgui::orientation::horizontal);
+        value_slider->style.layout.require_width(bgui::mode::match_parent);
+        value_slider->style.layout.require_height(bgui::mode::pixel, 24.f);
+        value_slider->set_step(5.f);
+        value_slider->set_on_change([bar = &progress.get(), label = &value_text.get()](float value) {
+            bar->set_value(value);
+            label->set_buffer("Slider value: " + std::to_string(value));
+        });
+
+        auto vertical_controls = demo_window->add<bgui::linear>(bgui::orientation::horizontal);
+        vertical_controls->style.layout.require_width(bgui::mode::match_parent);
+        vertical_controls->style.layout.require_height(bgui::mode::pixel, 110.f);
+        auto vertical_slider = vertical_controls->add<bgui::slider>(
+            -1.f, 1.f, 0.f, bgui::orientation::vertical);
+        vertical_slider->style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
+        vertical_slider->style.layout.require_size(28.f, 110.f);
+        vertical_slider->set_step(0.1f);
+        auto vertical_progress = vertical_controls->add<bgui::progress_bar>(
+            0.f, 1.f, 0.65f, bgui::orientation::vertical);
+        vertical_progress->style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
+        vertical_progress->style.layout.require_size(28.f, 110.f);
+
+        auto theme_checkbox = demo_window->add<bgui::checkbox>("Switch theme", 0.4f, false);
         theme_checkbox->set_on_change([&sm](bool checked){
             if(checked) {
                 sm.apply_theme(bgui::dark_theme());
@@ -47,13 +65,13 @@ int main() {
                 sm.apply_theme(bgui::light_theme());
             }
         });
-        auto enable_checkbox = context->add<bgui::checkbox>("Allow the checkbox above", 0.4f, true);
+        auto enable_checkbox = demo_window->add<bgui::checkbox>("Allow the checkbox above", 0.4f, true);
         enable_checkbox->set_on_change([&theme_checkbox](bool checked){
             theme_checkbox->set_enable(checked);
             });
-        auto fps_text = context->add<bgui::text>("FPS: ", 0.4f);
-        auto window_button = context->add<bgui::button>("Button inside window", 0.4f, [](){});
-        auto inputbox = context->add<bgui::inputbox>("", 0.4f, [](const std::string& s){}, "Input box example");
+        auto fps_text = demo_window->add<bgui::text>("FPS: ", 0.4f);
+        auto window_button = demo_window->add<bgui::button>("Button inside window", 0.4f, [](){});
+        auto inputbox = demo_window->add<bgui::inputbox>("", 0.4f, [](const std::string& s){}, "Input box example");
 
         // Main loop
         while (!glfwWindowShouldClose(window)) {

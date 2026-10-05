@@ -12,6 +12,7 @@ add_executable(
     all_tests
     element_tests.cpp
     inputbox_tests.cpp
+    value_control_tests.cpp
     image_tests.cpp
     linear_tests.cpp
     dock_tests.cpp
@@ -34,6 +35,7 @@ target_link_libraries(
 
 add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
 add_test(NAME InputAreaTests COMMAND all_tests --gtest_filter=InputAreaTest.*)
+add_test(NAME ValueControlTests COMMAND all_tests --gtest_filter=ValueControlTest.*)
 add_test(NAME InteractionTests COMMAND all_tests --gtest_filter=InteractionTest.*)
 add_test(NAME ConfigurationTests COMMAND all_tests --gtest_filter=ConfigurationTest.*)
 add_test(NAME ImageTests COMMAND all_tests --gtest_filter=ImageTest.*)

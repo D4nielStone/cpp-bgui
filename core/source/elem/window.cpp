@@ -6,6 +6,11 @@
 #include "os/os.hpp"
 #include <algorithm>
 
+bgui::window::window() : linear(bgui::orientation::vertical) {
+    type = "window";
+    initialize_context();
+}
+
 bgui::window::window(const char* title, bool floating) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr), m_icon(nullptr) {
     type = "window";
     // window widget experiment
@@ -34,7 +39,15 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     });
     m_close_button->add_class("window-button");
     m_close_button->add_class("window-close-button");
+
+    initialize_context();
     set_floating(floating);
+}
+
+void bgui::window::initialize_context() {
+    m_context = &add_persistent<bgui::linear>(bgui::orientation::vertical);
+    m_context->style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
+    m_context->style.visual.visible = false;
 }
 void bgui::window::on_update() {
     if (is_floating()) {

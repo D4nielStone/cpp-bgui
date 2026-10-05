@@ -88,3 +88,17 @@ TEST(DeclarativeStyleTest, ClassToggleRecomputesStyle) {
 	elem.compute_style();
 	EXPECT_FALSE(elem.computed_style.visual.visible);
 }
+
+TEST(DeclarativeStyleTest, VisibilityIsNotInheritedFromParent) {
+	bgui::scoped_interface interface;
+
+	layout parent;
+	parent.style.visual.visible = false;
+	auto& child = parent.add_persistent<element>();
+
+	parent.compute_style();
+	child.compute_style();
+
+	EXPECT_FALSE(parent.computed_style.visual.visible);
+	EXPECT_TRUE(child.computed_style.visual.visible);
+}

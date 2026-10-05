@@ -16,7 +16,8 @@ namespace bgui {
     inline void merge(
         computed_visual_style& out,
         const visual_style& in,
-        state state
+        state state,
+        bool inherit_visible = true
     ) {
         out.background = in.background.resolve(state, out.background);
         out.border     = in.border.resolve(state, out.border);
@@ -25,7 +26,8 @@ namespace bgui {
         apply_optional(out.border_radius, in.border_radius);
         apply_optional(out.border_size, in.border_size);
         apply_optional(out.font, in.font);
-        apply_optional(out.visible, in.visible);
+        if (inherit_visible)
+            apply_optional(out.visible, in.visible);
     }
     inline void merge(
         visual_style& out,

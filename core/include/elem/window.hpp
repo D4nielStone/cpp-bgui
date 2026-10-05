@@ -3,6 +3,7 @@
 #include "elem/image.hpp"
 #include "elem/text.hpp"
 #include <string>
+#include <utility>
 
 namespace bgui {
     class button;
@@ -11,6 +12,7 @@ namespace bgui {
     private:
         text* m_title{nullptr};
         linear* m_header{nullptr};
+        linear* m_context{nullptr};
         image* m_icon{nullptr};
         button* m_close_button{nullptr};
         float m_icon_aspect_ratio = 1.f;
@@ -18,10 +20,20 @@ namespace bgui {
         vec2i m_pinned_drag_distance{0, 0};
         bool m_floating = true;
         bool m_dragging = false;
+
+        void initialize_context();
     public:
-        window() = default;
+        window();
         window(const char* title, bool floating = true);
         ~window()=default;
+
+        template<typename T, layer Lay = layer::base, typename... Args>
+        scoped_element<T> add(Args&&... args) {
+            return m_context->add<T, Lay>(std::forward<Args>(args)...);
+        }
+
+        linear& get_context() { return *m_context; }
+
         void on_update() override;
         void set_icon(const std::string& path);
         void set_title(const std::string& title) { m_title->set_buffer(title); }

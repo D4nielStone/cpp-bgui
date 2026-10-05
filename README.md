@@ -127,21 +127,81 @@ bgui::set_logs_enabled(false);
     auto window2 = root.add<bgui::window>("win2");
     auto window3 = root.add<bgui::window>("win3");
     auto window4 = root.add<bgui::window>("win4");
-    auto context = win->add<bgui::linear>(bgui::orientation::vertical);
-    context->require_height(bgui::mode::stretch);
-    context->require_width(bgui::mode::match_parent);
-    context->style.layout.set_padding(10, 10);
-
-    auto window_text = context->add<bgui::text>("This is a window widget example.", 0.35f);
-    auto txt2 = context->add<bgui::text>("Centered text", 0.35f);
+    win->get_context().style.layout.set_padding(10, 10);
+    auto window_text = win->add<bgui::text>("This is a window widget example.", 0.35f);
+    auto txt2 = win->add<bgui::text>("Centered text", 0.35f);
     txt2->set_alignment(bgui::alignment::center);
     txt2->require_width(bgui::mode::stretch);
-    auto button2 = context->add<bgui::button>("Button inside window", 0.35f, [](){});
+    auto button2 = win->add<bgui::button>("Button inside window", 0.35f, [](){});
     button2->require_width(bgui::mode::match_parent);
+
+    // Slider and progress bar share an explicit value range.
+    auto progress = win->add<bgui::progress_bar>(0.f, 100.f, 35.f);
+    auto slider = win->add<bgui::slider>(0.f, 100.f, 35.f);
+    slider->set_step(5.f);
+    slider->set_on_change([&progress](float value) {
+        progress->set_value(value);
+    });
+
+    // Put vertical controls in a row with an explicit height.
+    auto vertical_controls = win->add<bgui::linear>(bgui::orientation::horizontal);
+    vertical_controls->style.layout.require_width(bgui::mode::match_parent);
+    vertical_controls->style.layout.require_height(bgui::mode::pixel, 110.f);
+    auto vertical_slider = vertical_controls->add<bgui::slider>(
+        -1.f, 1.f, 0.f, bgui::orientation::vertical);
+    vertical_slider->style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
+    vertical_slider->style.layout.require_size(28.f, 110.f);
+    auto vertical_progress = vertical_controls->add<bgui::progress_bar>(
+        0.f, 1.f, 0.65f, bgui::orientation::vertical);
+    vertical_progress->style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
+    vertical_progress->style.layout.require_size(28.f, 110.f);
 
     // style must be applyed in the end
     bgui::cascade_style(bgui::dark_style);
 ```
+
+### Slider and progress bar
+
+`bgui::slider` is an interactive, mouse-draggable control. `bgui::progress_bar`
+displays a value without receiving input. Both accept a minimum, maximum,
+initial value and orientation; their default orientations are horizontal.
+Their appearance follows the `[type.slider]` and `[type.progressbar]`
+sections of the active theme.
+
+```cpp
+auto progress = panel->add<bgui::progress_bar>(0.f, 100.f, 25.f);
+auto slider = panel->add<bgui::slider>(0.f, 100.f, 25.f);
+
+slider->set_step(5.f); // Snap to multiples of 5 from the minimum.
+slider->set_on_change([&progress](float value) {
+    progress->set_value(value);
+});
+
+slider->set_range(-50.f, 50.f);
+slider->set_value(10.f);
+const float current = slider->get_value();
+const float minimum = slider->get_minimum();
+const float maximum = slider->get_maximum();
+const float step = slider->get_step();
+
+auto vertical = panel->add<bgui::slider>(
+    0.f, 1.f, 0.5f, bgui::orientation::vertical);
+auto vertical_progress = panel->add<bgui::progress_bar>(
+    0.f, 1.f, 0.5f, bgui::orientation::vertical);
+```
+
+The slider API also includes `set_range(minimum, maximum)`,
+`set_value(value)`, `set_step(step)`, `set_on_change(callback)`, and
+`get_orientation()`. A step of `0.f` disables snapping. The progress bar
+provides `set_range`, `set_value`, `get_minimum`, `get_maximum`, `get_value`
+and `get_orientation`. Its fill is updated by setting its value.
+
+Both controls clamp finite values to their configured range. Constructors and
+`set_range` throw `std::invalid_argument` when either endpoint is non-finite or
+the maximum is not greater than the minimum. Non-finite values are rejected;
+the slider also rejects negative or non-finite steps. A slider's change
+callback runs only when its effective value changes, including changes caused
+by updating its range or step.
 
 ### Font families and styles
 

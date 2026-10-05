@@ -83,6 +83,24 @@ layout.padding = 2, 2
 layout.mode = stretch, wrap_content
 
 =========================
+SLIDER AND PROGRESS BAR
+=========================
+
+[type.slider]
+visual.background.normal = 0.22, 0.22, 0.22, 1.0
+visual.background.hover = 0.25, 0.25, 0.25, 1.0
+visual.border.normal = 0.00, 0.47, 0.80, 1.0
+visual.border.hover = 0.10, 0.55, 0.88, 1.0
+layout.mode = match_parent, pixel
+layout.size = 200, 24
+
+[type.progressbar]
+visual.background.normal = 0.22, 0.22, 0.22, 1.0
+visual.border.normal = 0.00, 0.47, 0.80, 1.0
+layout.mode = match_parent, pixel
+layout.size = 200, 14
+
+=========================
 TEXT
 =========================
 
