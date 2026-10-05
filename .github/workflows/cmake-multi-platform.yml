@@ -26,7 +26,7 @@ jobs:
 
       - name: Install libraries (macOS)
         if: runner.os == 'macOS'
-        run: brew install libpng libsdl2
+        run: brew install libpng sdl3
 
       - name: Configure CMake
         run: >
