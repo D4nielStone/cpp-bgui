@@ -98,6 +98,20 @@ void bgui::window::set_icon(const std::string& path) {
         m_icon_aspect_ratio = texture.m_size.x / texture.m_size.y;
     m_icon_height = 0;
 }
+
+void bgui::window::use_highlight_config(const std::string& path) {
+    auto rules = std::make_shared<const std::vector<syntax_highlight_rule>>(
+        load_syntax_highlight_config(path));
+    m_highlight_rules = std::move(rules);
+
+    for (auto& [lay, elements] : m_context->get_elements()) {
+        for (auto& element : elements) {
+            if (auto* input = dynamic_cast<inputbox*>(element.get()))
+                input->set_highlight_rules(m_highlight_rules);
+        }
+    }
+}
+
 void bgui::window::set_floating(bool floating) {
     if (floating && !m_floating) {
         const float scale = bgui::get_global_scale();

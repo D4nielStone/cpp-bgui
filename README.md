@@ -276,3 +276,23 @@ Detailed backend documentation is available in
 OpenGL 3, FreeType, Vulkan and the Null backend.
 
 ---
+# Multiline input and syntax highlighting
+
+Use `bgui::input_mode::multiline` to enable newline insertion and vertical
+cursor navigation in an input box. A window can load ordered regex-based
+highlight rules with `use_highlight_config`; the rules are applied to its
+existing input boxes and to input boxes added afterward.
+
+Highlight configuration files use JSON with an ordered `rules` array. Each
+rule has a `pattern` (a C++ ECMAScript regular expression) and a `color` in
+`#RRGGBB` or `#RRGGBBAA` format. Earlier rules take precedence where matches
+overlap. Relative paths are resolved using the regular `assets` search paths.
+
+```json
+{
+  "rules": [
+    { "pattern": "--.*", "color": "#6A9955" },
+    { "pattern": "\\b(local|function|return)\\b", "color": "#569CD6" }
+  ]
+}
+```

@@ -2,6 +2,10 @@
 
 #include "bgui.hpp"
 #include "os/os.hpp"
+#include "utils/syntax_highlight.hpp"
+
+#include <regex>
+#include <stdexcept>
 
 TEST(InputAreaTest, CursorAndBackspaceKeepUtf8CodepointsIntact) {
     bgui::scoped_interface interface;
@@ -34,4 +38,137 @@ TEST(InputAreaTest, CursorAndBackspaceKeepUtf8CodepointsIntact) {
 
     context.m_input_map.clear();
     context.m_char_buffer.clear();
+}
+
+TEST(InputAreaTest, CursorArrowPressMovesOneCharacterInsteadOfPerFrame) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("abcd", "", 0.35f);
+    input.set_focused(true);
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 3U);
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 3U);
+
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::release;
+    input.on_update();
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 2U);
+
+    context.m_input_map.clear();
+}
+
+TEST(InputAreaTest, MultilineEnterAndVerticalArrowsMoveWithinAdjacentLines) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("ab", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    input.set_focused(true);
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::release;
+    input.on_update();
+
+    context.m_input_map[bgui::input_key::enter] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "a\nb");
+    EXPECT_EQ(input.get_cursor_position(), 2U);
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "a\nb");
+
+    context.m_input_map[bgui::input_key::enter] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 1U);
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::down] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 3U);
+
+    context.m_input_map[bgui::input_key::down] = bgui::input_action::release;
+    input.on_update();
+    context.m_input_map[bgui::input_key::up] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 1U);
+
+    context.m_input_map.clear();
+}
+
+TEST(InputAreaTest, DeleteRemovesOneFollowingUtf8Character) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("\xC3\xA9x", "", 0.35f);
+    input.set_focused(true);
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    ASSERT_EQ(input.get_cursor_position(), 2U);
+
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::delete_key] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "\xC3\xA9");
+    EXPECT_EQ(input.get_cursor_position(), 2U);
+
+    context.m_input_map.clear();
+}
+
+TEST(InputAreaTest, MultilineWrapCanBeToggled) {
+    bgui::scoped_interface interface;
+
+    bgui::inputbox input(std::string(800, 'a'), "", 0.35f, nullptr, bgui::input_mode::multiline);
+    EXPECT_TRUE(input.is_wrap_enabled());
+    EXPECT_NE(input.get_label().get_vertical_cursor_position(0, 1), 0U);
+
+    input.set_wrap(false);
+    EXPECT_FALSE(input.is_wrap_enabled());
+    EXPECT_EQ(input.get_label().get_vertical_cursor_position(0, 1), 0U);
+
+    input.set_wrap(true);
+    EXPECT_TRUE(input.is_wrap_enabled());
+    EXPECT_NE(input.get_label().get_vertical_cursor_position(0, 1), 0U);
+}
+
+TEST(InputAreaTest, TextDrawCallsAreClippedToInputBoxRect) {
+    bgui::scoped_interface interface;
+    bgui::inputbox input("clipped", "");
+    input.set_final_rect(20, 30, 40, 15);
+
+    bgui::draw_data data;
+    data.m_clip_rect = {0, 35, 100, 20};
+    input.get_requires(&data);
+
+    ASSERT_GT(data.m_quad_requires.size(), 1U);
+    data.m_quad_requires.pop();
+    while (!data.m_quad_requires.empty()) {
+        EXPECT_EQ(data.m_quad_requires.front().m_clip_rect, (bgui::vec4i{20, 35, 40, 10}));
+        data.m_quad_requires.pop();
+    }
+}
+
+TEST(InputAreaTest, LoadsOrderedRegexHighlightRulesFromJsonAsset) {
+    const auto rules = bgui::load_syntax_highlight_config("lua_highlight.json");
+
+    ASSERT_EQ(rules.size(), 4U);
+    EXPECT_TRUE(std::regex_search(std::string("\"text\""), rules[0].expression));
+    EXPECT_TRUE(std::regex_search(std::string("-- comment"), rules[1].expression));
+    EXPECT_TRUE(std::regex_search(std::string("return"), rules[3].expression));
+    EXPECT_FLOAT_EQ(rules[3].color.r, 0x56 / 255.f);
+    EXPECT_FLOAT_EQ(rules[3].color.g, 0x9C / 255.f);
+}
+
+TEST(InputAreaTest, MissingHighlightConfigurationReportsAnError) {
+    EXPECT_THROW(
+        bgui::load_syntax_highlight_config("missing_highlight_config.json"),
+        std::runtime_error);
 }

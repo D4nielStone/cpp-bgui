@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "pattern": "\"(\\\\.|[^\"\\\\])*\"|'(\\\\.|[^'\\\\])*'",
+      "color": "#CE9178"
+    },
+    {
+      "pattern": "--.*",
+      "color": "#6A9955"
+    },
+    {
+      "pattern": "\\b[0-9]+(\\.[0-9]+)?\\b",
+      "color": "#B5CEA8"
+    },
+    {
+      "pattern": "\\b(and|break|do|else|elseif|end|false|for|function|if|in|local|nil|not|or|repeat|return|then|true|until|while)\\b",
+      "color": "#569CD6"
+    }
+  ]
+}

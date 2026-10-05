@@ -88,7 +88,9 @@ void linear::on_update() {
                     break;
 
                 case mode::match_parent:
-                    final_available[axis] = axis_available;
+                    final_available[axis] = axis == main
+                        ? static_cast<int>(stretch_size)
+                        : axis_available;
                     break;
 
                 case mode::percent:

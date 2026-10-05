@@ -44,7 +44,13 @@ int main() {
         fipt.set_float_callback(bgui::set_global_scale);
         auto fiii = demo_window.add<bgui::inputbox>("", "", 0.4f);
 
-        auto text_editor_window = root.add<bgui::window>("Text Editor", true);
+        auto& text_editor_window = dock->add_window("Text Editor", bgui::dock_area::bottom);
+        auto text_editor = text_editor_window.add<bgui::inputbox>(
+            "-- You can write your code below --", "", 0.4f,
+            [](const std::string& text) {}, bgui::input_mode::multiline);
+        text_editor->style.layout.require_mode(
+            bgui::mode::match_parent, bgui::mode::match_parent);
+        text_editor_window.use_highlight_config("lua_highlight.json");
 
         bgui::load_configuration("ui.cfg");
         bgui::get_context().m_refresh_func = [&](){

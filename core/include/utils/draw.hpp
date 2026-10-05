@@ -5,6 +5,7 @@
 #include <cmath>
 #include <queue>
 #include <vector>
+#include <optional>
 
 namespace bgui{
     struct draw_vertex {
@@ -109,6 +110,7 @@ namespace bgui{
         bgui::vec2 m_uv_min{0, 0};
         bgui::vec2 m_uv_max{1, 1};
         bgui::vec4i m_clip_rect{0, 0, 0, 0};
+        std::optional<bgui::vec4> m_text_color_override;
 
         bool operator==(const draw_require& other) const {
             return m_material == other.m_material &&
@@ -130,8 +132,12 @@ namespace bgui{
         bgui::draw_list m_draw_list;
         bgui::vec4i m_clip_rect{0, 0, 0, 0};
 
-        void enqueue(draw_require require) {
+        void enqueue(
+            draw_require require,
+            std::optional<bgui::vec4> text_color_override = std::nullopt
+        ) {
             require.m_clip_rect = m_clip_rect;
+            require.m_text_color_override = text_color_override;
             m_quad_requires.push(require);
         }
     };

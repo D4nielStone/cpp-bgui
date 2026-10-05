@@ -3,6 +3,7 @@
 #include <iostream>
 #include <codecvt>
 #include <locale>
+#include <algorithm>
 #include <vector>
 
 // Converte UTF-8 -> UTF-32 e também devolve, para cada codepoint,
@@ -38,6 +39,55 @@ std::u32string utf8_to_utf32(const std::string& str, std::vector<size_t>* byte_l
     return result;
 }
 
+namespace {
+    struct cursor_stop {
+        size_t position;
+        float x;
+    };
+
+    std::vector<std::vector<cursor_stop>> build_cursor_rows(
+        const std::string& buffer,
+        const bgui::font& font,
+        float scale,
+        bool wrap_enabled,
+        float wrap_width = 500.f
+    ) {
+        std::vector<std::vector<cursor_stop>> rows(1);
+        rows.front().push_back({0, 0.f});
+
+        std::vector<size_t> byte_lengths;
+        const auto codepoints = utf8_to_utf32(buffer, &byte_lengths);
+        size_t byte_position = 0;
+        float line_x = 0.f;
+        const auto& glyphs = font.chs;
+
+        for (size_t index = 0; index < codepoints.size(); ++index) {
+            const char32_t character = codepoints[index];
+            if (character == U'\n') {
+                byte_position += byte_lengths[index];
+                rows.emplace_back();
+                rows.back().push_back({byte_position, 0.f});
+                line_x = 0.f;
+                continue;
+            }
+
+            float advance = 0.f;
+            if (const auto glyph = glyphs.find(character); glyph != glyphs.end())
+                advance = glyph->second.advance * scale;
+            if (wrap_enabled && line_x + advance > wrap_width && line_x > 0.f) {
+                rows.emplace_back();
+                rows.back().push_back({byte_position, 0.f});
+                line_x = 0.f;
+            }
+
+            line_x += advance;
+            byte_position += byte_lengths[index];
+            rows.back().push_back({byte_position, line_x});
+        }
+        return rows;
+    }
+}
+
 bgui::text::text(const std::string &buffer, float scale) : m_buffer(buffer), m_scale(scale) {
     type = "text";
     set_font(computed_style.visual.font);
@@ -46,6 +96,134 @@ bgui::text::text(const std::string &buffer, float scale) : m_buffer(buffer), m_s
 }
 bgui::text::~text() {
 }
+void bgui::text::set_buffer(const std::string& buffer) {
+    if (m_buffer == buffer)
+        return;
+    m_buffer = buffer;
+    update_highlight_colors();
+}
+
+void bgui::text::set_highlight_rules(
+    std::shared_ptr<const std::vector<syntax_highlight_rule>> rules
+) {
+    m_highlight_rules = std::move(rules);
+    update_highlight_colors();
+}
+
+size_t bgui::text::get_cursor_position_at(float x, float y) const {
+    auto& font_manager = bgui::font_manager::get_instance();
+    if (!font_manager.has_font(computed_style.visual.font))
+        return 0;
+
+    const auto& font = font_manager.get_font(computed_style.visual.font);
+    const float scale = m_scale * bgui::get_global_scale();
+    const float line_height = (font.ascent + font.descent + font.line_gap) * scale;
+    if (line_height <= 0.f)
+        return 0;
+
+    const auto rows = build_cursor_rows(m_buffer, font, scale, m_wrap_enabled);
+    const float row_position = (y - processed_y()) / line_height;
+    const size_t row_index = static_cast<size_t>(std::clamp(
+        static_cast<int>(std::floor(row_position)), 0,
+        static_cast<int>(rows.size() - 1)));
+
+    const int total_width = static_cast<int>(get_text_width(m_buffer));
+    float origin_x = static_cast<float>(processed_x());
+    switch (computed_style.layout.align.x) {
+        case bgui::alignment::center:
+            origin_x += (processed_width() - total_width) / 2;
+            break;
+        case bgui::alignment::end:
+            origin_x += processed_width() - total_width;
+            break;
+        case bgui::alignment::start:
+            break;
+    }
+
+    const float local_x = x - origin_x;
+    const auto& stops = rows[row_index];
+    size_t closest_position = stops.front().position;
+    float closest_distance = std::abs(local_x - stops.front().x);
+    for (const auto& stop : stops) {
+        const float distance = std::abs(local_x - stop.x);
+        if (distance < closest_distance) {
+            closest_position = stop.position;
+            closest_distance = distance;
+        }
+    }
+    return closest_position;
+}
+
+size_t bgui::text::get_vertical_cursor_position(size_t position, int direction) const {
+    auto& font_manager = bgui::font_manager::get_instance();
+    if (direction == 0 || !font_manager.has_font(computed_style.visual.font))
+        return position;
+
+    const auto& font = font_manager.get_font(computed_style.visual.font);
+    const auto rows = build_cursor_rows(
+        m_buffer, font, m_scale * bgui::get_global_scale(), m_wrap_enabled);
+    size_t current_row = rows.size();
+    float current_x = 0.f;
+
+    for (size_t row = 0; row < rows.size(); ++row) {
+        for (const auto& stop : rows[row]) {
+            if (stop.position == position) {
+                current_row = row;
+                current_x = stop.x;
+            }
+        }
+    }
+    if (current_row == rows.size())
+        return position;
+
+    const size_t target_row = direction < 0
+        ? (current_row == 0 ? 0 : current_row - 1)
+        : std::min(current_row + 1, rows.size() - 1);
+    const auto& stops = rows[target_row];
+    size_t closest_position = stops.front().position;
+    float closest_distance = std::abs(current_x - stops.front().x);
+    for (const auto& stop : stops) {
+        const float distance = std::abs(current_x - stop.x);
+        if (distance < closest_distance) {
+            closest_position = stop.position;
+            closest_distance = distance;
+        }
+    }
+    return closest_position;
+}
+
+void bgui::text::update_highlight_colors() {
+    std::vector<size_t> byte_lengths;
+    const std::u32string codepoints = utf8_to_utf32(m_buffer, &byte_lengths);
+    m_highlight_colors.assign(codepoints.size(), std::nullopt);
+    if (!m_highlight_rules || m_highlight_rules->empty())
+        return;
+
+    std::vector<size_t> byte_positions(codepoints.size() + 1, 0);
+    for (size_t index = 0; index < byte_lengths.size(); ++index)
+        byte_positions[index + 1] = byte_positions[index] + byte_lengths[index];
+
+    for (const auto& rule : *m_highlight_rules) {
+        for (std::sregex_iterator match(m_buffer.begin(), m_buffer.end(), rule.expression),
+             end; match != end; ++match) {
+            const size_t match_start = static_cast<size_t>(match->position());
+            const size_t match_end = match_start + static_cast<size_t>(match->length());
+            if (match_start == match_end)
+                continue;
+
+            const auto first_boundary = std::upper_bound(
+                byte_positions.begin(), byte_positions.end(), match_start);
+            size_t index = static_cast<size_t>(first_boundary - byte_positions.begin() - 1);
+            for (; index < codepoints.size(); ++index) {
+                if (byte_positions[index] >= match_end)
+                    break;
+                if (byte_positions[index + 1] > match_start && !m_highlight_colors[index])
+                    m_highlight_colors[index] = rule.color;
+            }
+        }
+    }
+}
+
 void bgui::text::on_update() {
     element::on_update();
     // If the style changes, update the font.
@@ -88,7 +266,7 @@ void bgui::text::calc_content_size(const layer&) {
         }
 
         const float advance = glyph->second.advance * scale;
-        if (line_width + advance > wrap_width && line_width > 0.f) {
+        if (m_wrap_enabled && line_width + advance > wrap_width && line_width > 0.f) {
             max_width = std::max(max_width, line_width);
             line_width = 0.f;
             ++line_count;
@@ -106,7 +284,7 @@ void bgui::text::set_font(const std::string &path) {
     font_manager::get_instance().m_font_queue.push(path);
 }
 
-float bgui::text::get_text_width(const std::string& t) {
+float bgui::text::get_text_width(const std::string& t) const {
     auto& font_manager = bgui::font_manager::get_instance();
     if (!font_manager.has_font(computed_style.visual.font))
         return 0.0f;
@@ -168,7 +346,12 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     float cursor_y = 0.f;
     bool cursor_position_found = false;
 
-    auto draw_glyph = [&](char32_t character, float x, float y) {
+    auto draw_glyph = [&](
+        char32_t character,
+        float x,
+        float y,
+        std::optional<bgui::vec4> color_override
+    ) {
         auto it = chs.find(character);
         if (it == chs.end()) return;
         const auto& ch = it->second;
@@ -193,7 +376,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             m_material, 6,
             { xpos, ypos, scale * ch.size[0], -scale * ch.size[1] },
             ch.uv_min, ch.uv_max,
-        });
+        }, color_override);
     };
 
     for (size_t index = 0; index < codepoints.size(); ++index) {
@@ -236,7 +419,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             cursor_position_found = true;
         }
 
-        draw_glyph(ca, line_x, line_y);
+        const auto color_override =
+            index < m_highlight_colors.size() ? m_highlight_colors[index] : std::nullopt;
+        draw_glyph(ca, line_x, line_y, color_override);
         if (auto it = chs.find(ca); it != chs.end()) {
             line_x += it->second.advance * scale;
         }
@@ -250,8 +435,8 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     }
 
     if (cursor_position_found) {
-        const float caret_offset = std::max(1.f, 0.35f * scale);
-        draw_glyph(U'|', cursor_x + caret_offset, cursor_y);
+        const float caret_offset = scale * font.chs.at(U'|').bearing[0];
+        draw_glyph(U'|', cursor_x - caret_offset, cursor_y, std::nullopt);
     }
 
     max_line_width = std::max(max_line_width, line_x);

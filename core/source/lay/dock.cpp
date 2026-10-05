@@ -195,7 +195,7 @@ namespace bgui {
                     return;
                 const float minimum = std::min(0.5f, 80.f / found->extent);
                 found->ratio = std::clamp(
-                    found->ratio + static_cast<float>(delta) / found->extent,
+                    found->ratio + static_cast<float>(found->after ? -delta : delta) / found->extent,
                     minimum,
                     1.f - minimum
                 );

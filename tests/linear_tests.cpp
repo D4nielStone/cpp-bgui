@@ -67,6 +67,26 @@ TEST(LinearTest, StretchElementsShareRemainingSpace) {
 	EXPECT_EQ(second->processed_height(), 200);
 }
 
+TEST(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
+	linear layout(orientation::vertical);
+	layout.style.layout.require_size(200, 400);
+	layout.style.layout.require_mode(mode::pixel, mode::pixel);
+	layout.style.layout.set_padding(0, 0);
+	layout.compute_style();
+	layout.process_required_size({200, 400});
+
+	auto header = layout.add<mock_element>(200, 50);
+	auto content = layout.add<mock_element>(200, 0, mode::pixel, mode::match_parent);
+	header->compute_style();
+	content->compute_style();
+	layout.on_update();
+
+	EXPECT_EQ(content->processed_y(), 50);
+	EXPECT_EQ(content->processed_height(), 350);
+	EXPECT_LE(content->processed_y() + content->processed_height(),
+			  layout.processed_height());
+}
+
 TEST(LinearTest, PaddingAffectsLayout) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);

@@ -299,6 +299,72 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     EXPECT_EQ(configuration.splits.front().added, "Floating");
 }
 
+TEST(DockTest, RightSideSplitResizesInDragDirection) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
+    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.on_update();
+
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    const auto anchor_rect = anchor.processed_rect();
+    context.m_mouse_position = {
+        anchor_rect.x + anchor_rect.z / 2,
+        anchor_rect.y + anchor_rect.w / 2
+    };
+    floating.get_title().set_drag({5, 0});
+    floating.on_update();
+    dock.on_update();
+
+    bgui::element* right_target = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-drop-zone-right"))
+                right_target = element.get();
+        }
+    }
+    ASSERT_NE(right_target, nullptr);
+    ASSERT_TRUE(right_target->is_enabled());
+    const auto target_rect = right_target->processed_rect();
+    context.m_mouse_position = {
+        target_rect.x + target_rect.z / 2,
+        target_rect.y + target_rect.w / 2
+    };
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
+    dock.on_update();
+    dock.on_update();
+
+    ASSERT_FALSE(floating.is_floating());
+    ASSERT_GT(floating.processed_rect().x, anchor.processed_rect().x);
+    bgui::element* splitter = nullptr;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-splitter") && element->is_enabled() &&
+                element->processed_width() == 6 && element->processed_height() == 600) {
+                splitter = element.get();
+                break;
+            }
+        }
+        if (splitter)
+            break;
+    }
+    ASSERT_NE(splitter, nullptr);
+
+    const int initial_anchor_width = anchor.processed_width();
+    const int initial_added_width = floating.processed_width();
+    splitter->set_drag({30, 0});
+    dock.on_update();
+    dock.on_update();
+
+    EXPECT_GT(anchor.processed_width(), initial_anchor_width);
+    EXPECT_LT(floating.processed_width(), initial_added_width);
+}
+
 // Validates the tab-creation workflow when a floating window is dropped over the
 // center area of another docked window.
 TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
