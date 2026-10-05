@@ -5,9 +5,6 @@
 bgui::checkbox::checkbox(bool* ref, bool actv, const std::string& title, const float scale) : m_ref(ref), m_active(actv), linear(bgui::orientation::horizontal) {
     type = "checkbox";
     recives_input(true);
-    // box should be a button
-    auto& box = add_persistent<bgui::element>();
-    box.add_class("checkbox-box");
     if(title.empty() == false) {
         auto& txt = add_persistent<text>(title, scale);
         txt.add_class("checkbox-txt");
@@ -15,6 +12,8 @@ bgui::checkbox::checkbox(bool* ref, bool actv, const std::string& title, const f
         txt.recives_input(false);
     }
     
+    auto& box = add_persistent<bgui::element>();
+    box.add_class("checkbox-box");
     box.recives_input(false);
 }
 bgui::checkbox::checkbox(const std::string& title, const float scale, const bool actv) : m_ref(nullptr), m_active(actv), linear(bgui::orientation::horizontal) {
@@ -22,10 +21,6 @@ bgui::checkbox::checkbox(const std::string& title, const float scale, const bool
 
     recives_input(true);
 
-    // box should be a button
-    auto& box = add_persistent<bgui::element>();
-    box.add_class("checkbox-box");
-
     if(title.empty() == false) {
         auto& txt = add_persistent<text>(title, scale);
         txt.add_class("checkbox-txt");
@@ -33,6 +28,8 @@ bgui::checkbox::checkbox(const std::string& title, const float scale, const bool
         txt.recives_input(false);
     }
     
+    auto& box = add_persistent<bgui::element>();
+    box.add_class("checkbox-box");
     box.recives_input(false);
 }
 
@@ -65,7 +62,7 @@ void bgui::checkbox::on_mouse_hover() {
 
 void bgui::checkbox::on_update() {
     linear::on_update();
-    auto& box = get_elements()[layer::base][0];
+    auto& box = get_elements()[layer::base][1];
     m_active ? box->set_style_state(state::pressed) : box->set_style_state(state::normal);
 }
 

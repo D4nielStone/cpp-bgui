@@ -1,14 +1,16 @@
 #pragma once
+#include "os/os.hpp"
 #include "os/font.hpp"
 #include "os/asset_manager.hpp"
 #include "elem/element.hpp"
+#include "elem/field.hpp"
 #include "elem/button.hpp"
 #include "elem/checkbox.hpp"
 #include "elem/details.hpp"
 #include "elem/text.hpp"
 #include "elem/image.hpp"
 #include "elem/window.hpp"
-#include "elem/input_area.hpp"
+#include "elem/inputbox.hpp"
 #include "lay/layout.hpp"
 #include "lay/dock.hpp"
 #include "lay/modular.hpp"
@@ -54,6 +56,7 @@ namespace bgui {
     bool load_configuration(const std::string& path);
     bool save_configuration(const std::string& path);
 
+    // RAII interface for BGUI context. This ensures that the BGUI context is properly initialized and cleaned up within a scope.
     class scoped_interface {
     public:
         scoped_interface();

@@ -18,11 +18,11 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     m_icon = &m_header->add_persistent<bgui::image>();
     m_icon->set_size(1.f, 1.f);
     set_icon("bubble.png");
-    m_title = &m_header->add_persistent<bgui::text>(title, 0.35f);
+    m_title = &m_header->add_persistent<bgui::text>(title, 0.4);
     m_title->add_class("window-label");
     m_title->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
     // TODO: switch to image button later
-    m_close_button = &m_header->add_persistent<bgui::button>(" X ", 0.35f, [this](){
+    m_close_button = &m_header->add_persistent<bgui::button>(" X ", 0.4f, [this](){
         auto* parent = get_parent();
         bgui::add_function([this, parent]() {
             if (auto* dock_parent = dynamic_cast<bgui::dock*>(parent))

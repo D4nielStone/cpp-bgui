@@ -11,7 +11,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
     all_tests
     element_tests.cpp
-    input_area_tests.cpp
+    inputbox_tests.cpp
     image_tests.cpp
     linear_tests.cpp
     dock_tests.cpp

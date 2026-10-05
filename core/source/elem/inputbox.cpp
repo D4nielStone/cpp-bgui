@@ -1,9 +1,22 @@
-#include "elem/input_area.hpp"
+#include "elem/inputbox.hpp"
 #include "os/os.hpp"
 #include "bgui.hpp"
 #include <cmath>
 
-namespace {
+namespace {        
+    std::string remove_trailing_zeros(std::string s) {
+        // Remove trailing zeros after the decimal point
+        if (s.find('.') != std::string::npos) {
+            s.erase(s.find_last_not_of('0') + 1);
+
+            // Remove the decimal point if nothing follows it
+            if (!s.empty() && s.back() == '.')
+                s.pop_back();
+        }
+
+        return s;
+    }
+
     size_t previous_utf8_character(const std::string& value, size_t position) {
         if (position == 0) return 0;
         --position;
@@ -25,7 +38,7 @@ namespace {
     }
 }
 
-bgui::input_area::input_area(const std::string& buffer, const float scale, std::function<void(const std::string)> action, const std::string& placeholder, bgui::input_mode mode) :
+bgui::inputbox::inputbox(const std::string& buffer, const std::string& placeholder, const float scale, std::function<void(const std::string)> action, bgui::input_mode mode) :
     linear(), m_placeholder(placeholder), m_input_buffer(buffer),
     m_cursor_position(buffer.size()), m_mode(mode), m_focused(false),
     m_backspace_down(false), m_backspace_next_time(0.f),
@@ -40,15 +53,27 @@ bgui::input_area::input_area(const std::string& buffer, const float scale, std::
     m_text->recives_input(false);
 }
 
-bgui::input_area::~input_area() {
+void bgui::inputbox::set_min_float(float min) {
+    m_min_float = min;
 }
 
-void bgui::input_area::on_pressed() {
+void bgui::inputbox::set_max_float(float max) {
+    m_max_float = max;
+}
+
+void bgui::inputbox::set_float_callback(const std::function<void(float)>& c) {
+    m_float_func = c;
+}
+
+bgui::inputbox::~inputbox() {
+}
+
+void bgui::inputbox::on_pressed() {
     set_focused(true);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
-void bgui::input_area::on_clicked() {
+void bgui::inputbox::on_clicked() {
     const float local_x = static_cast<float>(bgui::get_mouse_position().x - m_text->processed_x());
     size_t closest_position = 0;
     float closest_distance = std::abs(local_x);
@@ -67,23 +92,23 @@ void bgui::input_area::on_clicked() {
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
-void bgui::input_area::on_released() {
+void bgui::inputbox::on_released() {
     set_focused(true);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
-void bgui::input_area::on_mouse_hover() {
+void bgui::inputbox::on_mouse_hover() {
     if (!m_focused) {
         set_style_state(state::hover);
     }
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
-bgui::text& bgui::input_area::get_label() {
+bgui::text& bgui::inputbox::get_label() {
     return *m_text;
 }
 
-void bgui::input_area::on_update() {
+void bgui::inputbox::on_update() {
     auto& ctx = bgui::get_context();
 
     if (m_focused) {
@@ -119,10 +144,24 @@ void bgui::input_area::on_update() {
             move_cursor_right();
         }
 
-        if (m_mode == bgui::input_mode::inputbox && bgui::get_pressed(bgui::input_key::enter)) {
-            bgui::add_function([this]() {
-                m_enter_func(get_buffer());
-            });
+        if (bgui::get_pressed(bgui::input_key::enter)) {
+            switch (m_mode) {
+            case input_mode::inputbox:
+                if(m_enter_func)
+                bgui::add_function([this]() {
+                    m_enter_func(get_buffer());
+                });
+            case input_mode::number:
+                float value = std::stof(get_buffer());
+                float t = std::clamp(value, m_min_float, m_max_float);
+                if(m_float_func)
+                bgui::add_function([this, t]() {    
+                    m_float_func(t);
+                });
+                auto str = std::to_string(t);
+                str = remove_trailing_zeros(str);
+                set_buffer(str);
+            }
         }
     }
 
@@ -133,7 +172,7 @@ void bgui::input_area::on_update() {
     update_display();
 }
 
-void bgui::input_area::update_display() {
+void bgui::inputbox::update_display() {
     if (m_input_buffer.empty() && !m_focused) {
         m_text->set_buffer(m_placeholder);
         m_text->set_cursor(0, false);
@@ -150,7 +189,7 @@ void bgui::input_area::update_display() {
     m_text->computed_style.visual.text.a = 1.f;
 }
 
-void bgui::input_area::set_focused(bool focused) {
+void bgui::inputbox::set_focused(bool focused) {
     if (focused && !m_focused) {
         m_cursor_blink_start = bgui::get_time();
         m_backspace_down = false;
@@ -162,21 +201,21 @@ void bgui::input_area::set_focused(bool focused) {
     set_style_state(focused ? state::focused : state::normal);
 }
 
-void bgui::input_area::move_cursor_left() {
+void bgui::inputbox::move_cursor_left() {
     m_cursor_position = previous_utf8_character(m_input_buffer, m_cursor_position);
 }
 
-void bgui::input_area::move_cursor_right() {
+void bgui::inputbox::move_cursor_right() {
     m_cursor_position = next_utf8_character(m_input_buffer, m_cursor_position);
 }
 
-void bgui::input_area::erase_before_cursor() {
+void bgui::inputbox::erase_before_cursor() {
     if (m_cursor_position == 0) return;
     const size_t previous = previous_utf8_character(m_input_buffer, m_cursor_position);
     m_input_buffer.erase(previous, m_cursor_position - previous);
     m_cursor_position = previous;
 }
 
-void bgui::input_area::get_requires(bgui::draw_data* data) {
+void bgui::inputbox::get_requires(bgui::draw_data* data) {
     linear::get_requires(data);
 }

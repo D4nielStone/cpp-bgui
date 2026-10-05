@@ -9,7 +9,7 @@ TEST(InputAreaTest, CursorAndBackspaceKeepUtf8CodepointsIntact) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::input_area input("", 0.35f, [](const std::string&) {});
+    bgui::inputbox input("", "", 0.35f, [](const std::string&) {});
     input.set_focused(true);
     context.m_char_buffer = "\xC3\xA9";
     input.on_update();

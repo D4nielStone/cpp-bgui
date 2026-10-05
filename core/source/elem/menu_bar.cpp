@@ -4,8 +4,7 @@ namespace bgui {
     bgui::menu_bar::menu_bar(bgui::linear& root)
     : bgui::linear(bgui::orientation::horizontal),
       m_root(root) {
-
-        add_class("window-header");
+        type="menubar";
 
         style.layout.require_mode(
             bgui::mode::match_parent,
@@ -21,7 +20,7 @@ namespace bgui {
 
         auto& title =
             add_persistent<bgui::text>(
-                " Bubble Engine ",
+                " Bubble Engine | ",
                 0.35f
             );
 

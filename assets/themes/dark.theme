@@ -26,7 +26,7 @@ visual.background.normal = 0.094, 0.094, 0.094, 1.0
 visual.border.normal = 0.13, 0.13, 0.13, 1.0
 visual.border.radius = 8
 visual.visible = true
-layout.padding = 0, 0
+layout.padding = 3, 3
 layout.size = 400, 300
 
 [type.element]
@@ -49,7 +49,7 @@ layout.padding = 0, 0
 layout.mode = stretch, wrap_content
 
 =========================
-INPUT AREA
+INPUT BOX
 =========================
 
 [type.inputarea]
@@ -95,6 +95,16 @@ visual.font = default
 layout.mode = wrap_content, wrap_content
 layout.align = center
 
+
+=========================
+MENU BAR
+=========================
+
+[type.menubar]
+visual.border.normal = 0
+
+layout.padding = 4
+
 =========================
 CLASSES
 =========================
@@ -102,10 +112,7 @@ CLASSES
 [class.window-header]
 layout.mode = stretch, wrap_content
 layout.padding = 0, 0
-
-visual.background.normal = 0.105, 0.105, 0.105, 1.0
-visual.border.normal = 0.12, 0.12, 0.12, 1.0
-visual.visible = true
+visual.visible = false
 
 [class.window-button]
 layout.mode = wrap_content, wrap_content
@@ -135,11 +142,12 @@ visual.border.size = 1
 
 layout.margin = 5, 5
 layout.limit_min = 12, 12
-layout.mode = same, match_parent
+layout.mode = pixel, pixel
+layout.size = 10, 10
 
 [class.checkbox-txt]
 layout.mode = stretch, wrap_content
-layout.align = end
+layout.align = start, center
 layout.margin = 1, 1
 
 [class.window-label]
@@ -150,6 +158,10 @@ layout.mode = stretch, wrap_content
 
 [class.resize-handle]
 visual.visible = false
+
+[class.inputbox-label]
+layout.mode = stretch, stretch;
+layout.align = start, center;
 
 =========================
 ACCENT

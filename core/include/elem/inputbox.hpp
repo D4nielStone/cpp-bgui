@@ -6,13 +6,14 @@
 namespace bgui {
     enum class input_mode {
         inputbox,
+        number,
         multiline
     };
 
     /// \brief A text input element.
     /// It allows the user to input text, number ...
-    class input_area : public linear {
-    private:
+    class inputbox : public linear {
+    protected:
         text* m_text;
         std::string m_placeholder, m_input_buffer;
         size_t m_cursor_position;
@@ -21,6 +22,8 @@ namespace bgui {
         bool m_backspace_down;
         float m_backspace_next_time;
         float m_cursor_blink_start;
+        float m_min_float;
+        float m_max_float;
 
         void update_display();
         void move_cursor_left();
@@ -28,13 +31,17 @@ namespace bgui {
         void erase_before_cursor();
     public:
         std::function<void(const std::string)> m_enter_func;
+        std::function<void(const float)> m_float_func = nullptr;
         /// \brief Contructor.
         /// \param buffer The initial text to inject on the buffer.
         /// \param scale The scale of the text.
         /// \param placeholder The message to display when the buffer is empty.
-        explicit input_area(const std::string& buffer, const float scale, std::function<void(const std::string)> action, const std::string& placeholder = "", input_mode mode = input_mode::inputbox);
-        ~input_area();
+        explicit inputbox(const std::string& buffer, const std::string& placeholder = "", const float scale = 1.f, std::function<void(const std::string)> action = nullptr, input_mode mode = input_mode::inputbox);
+        ~inputbox();
         
+        void set_min_float(float f);
+        void set_max_float(float f);
+        void set_float_callback(const std::function<void(const float)>& f);
         void on_clicked() override;
         void on_pressed() override;
         void on_released() override;

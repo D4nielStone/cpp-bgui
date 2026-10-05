@@ -419,20 +419,20 @@ static void shutdown_interface() noexcept {
 
 static void set_keyboard_focus(bgui::element* element) {
     if (s_keyboard_focused == element) {
-        if (auto* input = dynamic_cast<bgui::input_area*>(element)) {
+        if (auto* input = dynamic_cast<bgui::inputbox*>(element)) {
             input->set_focused(true);
         }
         return;
     }
 
-    if (auto* input = dynamic_cast<bgui::input_area*>(s_keyboard_focused)) {
+    if (auto* input = dynamic_cast<bgui::inputbox*>(s_keyboard_focused)) {
         input->set_focused(false);
     } else if (s_keyboard_focused) {
         s_keyboard_focused->set_style_state(bgui::state::normal);
     }
 
     s_keyboard_focused = element;
-    if (auto* input = dynamic_cast<bgui::input_area*>(element)) {
+    if (auto* input = dynamic_cast<bgui::inputbox*>(element)) {
         input->set_focused(true);
     } else if (element) {
         element->set_style_state(bgui::state::focused);

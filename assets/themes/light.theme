@@ -48,7 +48,7 @@ layout.mode               = stretch, wrap_content
 
 
 # =========================
-# INPUT AREA
+# INPUT BOX
 # =========================
 
 [type.inputarea]

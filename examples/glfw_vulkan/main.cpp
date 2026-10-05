@@ -53,7 +53,7 @@ int main() {
             });
         auto fps_text = context->add<bgui::text>("FPS: ", 0.4f);
         auto window_button = context->add<bgui::button>("Button inside window", 0.4f, [](){});
-        auto input_area = context->add<bgui::input_area>("", 0.4f, [](const std::string& s){}, "Input area example");
+        auto inputbox = context->add<bgui::inputbox>("", 0.4f, [](const std::string& s){}, "Input box example");
 
         // Main loop
         while (!glfwWindowShouldClose(window)) {
