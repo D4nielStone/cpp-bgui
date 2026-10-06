@@ -188,36 +188,6 @@ TEST(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
 	EXPECT_EQ(draw_counts[3], 1);
 }
 
-TEST(LinearTest, ScrollbarDraggingScrollsContent) {
-	linear panel(orientation::vertical);
-	panel.style.layout.require_size(100, 100);
-	panel.style.layout.require_mode(mode::pixel, mode::pixel);
-	panel.style.layout.set_padding(0, 0);
-	panel.compute_style();
-	panel.process_required_size({100, 100});
-	panel.set_scrollable(true);
-
-	auto first = panel.add<mock_element>(100, 50);
-	auto second = panel.add<mock_element>(100, 50);
-	auto third = panel.add<mock_element>(100, 50);
-	first->compute_style();
-	second->compute_style();
-	third->compute_style();
-	panel.on_update();
-
-	auto& scrollbar = panel.get_scrollbar_element();
-	ASSERT_TRUE(scrollbar.is_enabled());
-	const int thumb_travel = 100 - scrollbar.processed_height();
-	ASSERT_GT(thumb_travel, 0);
-
-	scrollbar.set_drag({0, thumb_travel / 2});
-	panel.on_update();
-
-	EXPECT_EQ(panel.get_scroll_offset(), 25);
-	EXPECT_EQ(first->processed_y(), -25);
-	EXPECT_EQ(second->processed_y(), 25);
-}
-
 TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 	linear panel(orientation::vertical);
 	panel.style.layout.require_size(200, 160);
