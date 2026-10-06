@@ -409,6 +409,21 @@ TEST(InputAreaTest, LoadsOrderedRegexHighlightRulesFromJsonAsset) {
     EXPECT_FLOAT_EQ(rules[4].color.r, 0xDC / 255.f);
 }
 
+TEST(InputAreaTest, LoadsPythonAndCfgHighlightRulesFromJsonAssets) {
+    const auto python_rules =
+        bgui::load_syntax_highlight_config("python_highlight.json");
+    const auto cfg_rules =
+        bgui::load_syntax_highlight_config("cfg_highlight.json");
+
+    ASSERT_FALSE(python_rules.empty());
+    ASSERT_FALSE(cfg_rules.empty());
+    EXPECT_TRUE(std::regex_search(std::string("# comment"), python_rules[1].expression));
+    EXPECT_TRUE(std::regex_search(std::string("def function_name"), python_rules[3].expression));
+    EXPECT_TRUE(std::regex_search(std::string("; comment"), cfg_rules[0].expression));
+    EXPECT_TRUE(std::regex_search(std::string("[section]"), cfg_rules[1].expression));
+    EXPECT_TRUE(std::regex_search(std::string("key = value"), cfg_rules[2].expression));
+}
+
 TEST(InputAreaTest, MissingHighlightConfigurationReportsAnError) {
     EXPECT_THROW(
         bgui::load_syntax_highlight_config("missing_highlight_config.json"),
