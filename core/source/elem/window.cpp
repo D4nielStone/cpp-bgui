@@ -46,6 +46,7 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
 
 void bgui::window::initialize_context() {
     m_context = &add_persistent<bgui::linear>(bgui::orientation::vertical);
+    m_context->set_scrollable(true);
     m_context->style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
     m_context->style.visual.visible = false;
 }

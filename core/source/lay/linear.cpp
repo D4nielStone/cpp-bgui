@@ -2,14 +2,43 @@
 #include "utils/enums.hpp"
 #include "bgui.hpp"
 #include <algorithm>
+#include <cmath>
 
 using namespace bgui;
 
 linear::linear(const orientation& ori) : m_orientation(ori), layout() {
     type = "linear";
+    m_scrollbar.type = "scrollbar";
+    m_scrollbar.set_parent(this);
+    m_scrollbar.recives_input(true);
+    m_scrollbar.style.visual.background.normal = color{0.45f, 0.45f, 0.45f, 0.85f};
+    m_scrollbar.style.visual.border.normal = color{0.f, 0.f, 0.f, 0.f};
+    m_scrollbar.style.visual.border_radius = 3.f;
+    m_scrollbar.style.visual.border_size = 0.f;
+    m_scrollbar.style.visual.visible = true;
 }
 
 void linear::on_update() {
+    if (m_scrollable && m_orientation == orientation::vertical)
+        m_scroll_content_height = 0;
+
+    const bool vertical = (m_orientation == orientation::vertical);
+    if (m_scrollable && vertical) {
+        const auto mouse = bgui::get_mouse_position();
+        const bool inside =
+            mouse.x >= processed_x() &&
+            mouse.x <= processed_x() + processed_width() &&
+            mouse.y >= processed_y() &&
+            mouse.y <= processed_y() + processed_height();
+        auto& context = bgui::get_context();
+        if (inside && context.m_scroll_delta_y != 0.f) {
+            const float scale = bgui::get_global_scale();
+            m_scroll_offset -= static_cast<int>(std::lround(
+                context.m_scroll_delta_y * 40.f * scale));
+            context.m_scroll_delta_y = 0.f;
+        }
+    }
+
     for(auto& [lay, elems] : m_elements) {
     for (auto& elem : m_elements[lay]) {
         if (elem->is_enabled()) {
@@ -18,9 +47,12 @@ void linear::on_update() {
     }
     calc_content_size(lay);
 
-    if (m_elements[lay].empty()) return;
+    if (m_elements[lay].empty()) {
+        if (m_scrollable && vertical && lay == layer::base)
+            m_scroll_offset = 0;
+        continue;
+    }
 
-    const bool vertical = (m_orientation == orientation::vertical);
     const int main = vertical ? 1 : 0;
     const int cross = vertical ? 0 : 1;
 
@@ -126,6 +158,12 @@ void linear::on_update() {
 
     content_main += pad_main_start + pad_main_end;
 
+    if (m_scrollable && vertical && lay == layer::base) {
+        m_scroll_content_height = content_main;
+        const int max_scroll = std::max(0, content_main - processed_height());
+        m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
+    }
+
     int free_space = available[main] - (content_main - pad_main_start - pad_main_end);
     if (free_space < 0) free_space = 0;
 
@@ -175,7 +213,7 @@ void linear::on_update() {
         if (vertical) {
             elem->set_final_rect(
                 cross_pos + processed_x(),
-                cursor_main + processed_y(),
+                cursor_main + processed_y() - (m_scrollable ? m_scroll_offset : 0),
                 elem->processed_width(),
                 elem->processed_height()
             );
@@ -193,6 +231,87 @@ void linear::on_update() {
             elem->on_update();
     }
     }
+
+    if (m_scrollable && vertical) {
+        const auto drag = m_scrollbar.is_drag();
+        if (drag.y != 0) {
+            const int padding_top = computed_style.layout.padding.y;
+            const int padding_bottom = computed_style.layout.padding.w;
+            const int track_height = std::max(
+                0, processed_height() - padding_top - padding_bottom);
+            const int thumb_travel = std::max(
+                0, track_height - m_scrollbar.processed_height());
+            if (thumb_travel > 0) {
+                const int max_scroll = std::max(
+                    0, m_scroll_content_height - processed_height());
+                m_scroll_offset += static_cast<int>(
+                    static_cast<long long>(drag.y) * max_scroll / thumb_travel);
+                m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
+            }
+            m_scrollbar.set_drag({0, 0});
+        }
+        update_scrollbar_rect();
+    }
+}
+
+void linear::set_scrollable(bool enabled) {
+    if (m_scrollable == enabled)
+        return;
+
+    m_scrollable = enabled;
+    if (!enabled) {
+        m_scroll_offset = 0;
+        m_scroll_content_height = 0;
+        m_scrollbar.set_enable(false);
+    }
+}
+
+void linear::update_scrollbar_rect() {
+    if (!m_scrollable || m_orientation != orientation::vertical ||
+        m_scroll_content_height <= processed_height() || processed_height() <= 0) {
+        m_scrollbar.set_enable(false);
+        return;
+    }
+
+    const int scale = std::max(1, static_cast<int>(std::lround(bgui::get_global_scale())));
+    const int bar_width = std::min(6 * scale, std::max(0, processed_width()));
+    const int padding_top = computed_style.layout.padding.y;
+    const int padding_bottom = computed_style.layout.padding.w;
+    const int track_height = std::max(0, processed_height() - padding_top - padding_bottom);
+    if (track_height <= 0 || m_scroll_content_height <= 0) {
+        m_scrollbar.set_enable(false);
+        return;
+    }
+
+    const int max_scroll = m_scroll_content_height - processed_height();
+    const int thumb_height = std::clamp(
+        static_cast<int>(static_cast<long long>(track_height) * track_height /
+                         m_scroll_content_height),
+        std::min(20 * scale, track_height),
+        track_height
+    );
+    const int thumb_travel = track_height - thumb_height;
+    const int thumb_y = processed_y() + padding_top +
+        static_cast<int>(static_cast<long long>(m_scroll_offset) * thumb_travel / max_scroll);
+
+    m_scrollbar.set_final_rect(
+        processed_x() + processed_width() - bar_width - scale,
+        thumb_y,
+        bar_width,
+        thumb_height
+    );
+    m_scrollbar.set_enable(bar_width > 0 && thumb_height > 0);
+}
+
+void linear::get_requires(bgui::draw_data* data) {
+    layout::get_requires(data);
+    if (!m_scrollbar.is_enabled())
+        return;
+
+    const auto inherited_clip = data->m_clip_rect;
+    data->m_clip_rect = bgui::intersect_rect(inherited_clip, get_children_clip_rect());
+    m_scrollbar.get_requires(data);
+    data->m_clip_rect = inherited_clip;
 }
 
 void linear::calc_content_size(const layer& lay) {

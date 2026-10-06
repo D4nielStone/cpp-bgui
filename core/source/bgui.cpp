@@ -535,6 +535,13 @@ bool update_inputs(bgui::layout &lay){
     float mx = m[0];
     float my = m[1];
 
+    if (lay.clips_children()) {
+        const auto clip = lay.get_children_clip_rect();
+        if (mx < clip.x || mx > clip.x + clip.z ||
+            my < clip.y || my > clip.y + clip.w)
+            return false;
+    }
+
     bool mouse_now = bgui::get_pressed(bgui::input_key::mouse_left);
     bool mouse_click = (mouse_now && !bgui::get_context().m_last_mouse_left);
     bool mouse_released = (!mouse_now && bgui::get_context().m_last_mouse_left);
@@ -548,6 +555,28 @@ bool update_inputs(bgui::layout &lay){
             s_mouse_captured->set_drag(m - bgui::get_context().m_last_mouse_pos);
         }
         return true;
+    }
+
+    if (auto* scrollable = dynamic_cast<bgui::linear*>(&lay)) {
+        auto& scrollbar = scrollable->get_scrollbar_element();
+        const float x = static_cast<float>(scrollbar.processed_x());
+        const float y = static_cast<float>(scrollbar.processed_y());
+        const float w = static_cast<float>(scrollbar.processed_width());
+        const float h = static_cast<float>(scrollbar.processed_height());
+        const bool inside = scrollbar.is_enabled() &&
+            mx >= x && mx <= x + w && my >= y && my <= y + h;
+
+        if (inside) {
+            s_mouse_target = &scrollbar;
+            scrollbar.on_mouse_hover();
+            if (mouse_click) {
+                s_mouse_captured = &scrollbar;
+                set_keyboard_focus(nullptr);
+                scrollbar.on_clicked();
+                scrollbar.on_pressed();
+            }
+            return true;
+        }
     }
 
     if (bgui::get_pressed(bgui::input_key::escape) && s_keyboard_focused) {
@@ -649,6 +678,7 @@ void bgui::on_update() {
     update_inputs(*bgui::s_main_layout);
     clear_stale_mouse_hover(*bgui::s_main_layout, s_mouse_target);
     bgui::s_main_layout->on_update();
+    bgui::get_context().m_scroll_delta_y = 0.f;
 
     if (!s_keyboard_focused) {
         bgui::get_context().m_char_buffer.clear();

@@ -17,6 +17,18 @@ public:
 	void on_update() override {}
 };
 
+class counting_element : public mock_element {
+	int& m_draw_count;
+public:
+	counting_element(int height, int& draw_count)
+		: mock_element(100, height), m_draw_count(draw_count) {}
+
+	void get_requires(draw_data* data) override {
+		++m_draw_count;
+		element::get_requires(data);
+	}
+};
+
 TEST(LinearTest, VerticalLayoutFixedSizes) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
@@ -101,6 +113,109 @@ TEST(LinearTest, PaddingAffectsLayout) {
 
 	EXPECT_EQ(child->processed_x(), 10);
 	EXPECT_EQ(child->processed_y(), 20);
+}
+
+TEST(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
+	linear panel(orientation::vertical);
+	panel.style.layout.require_size(100, 100);
+	panel.style.layout.require_mode(mode::pixel, mode::pixel);
+	panel.style.layout.set_padding(0, 0);
+	panel.compute_style();
+	panel.process_required_size({100, 100});
+	panel.set_scrollable(true);
+
+	auto first = panel.add<mock_element>(100, 50);
+	auto second = panel.add<mock_element>(100, 50);
+	auto third = panel.add<mock_element>(100, 50);
+	first->compute_style();
+	second->compute_style();
+	third->compute_style();
+
+	auto& context = get_context();
+	context.m_mouse_position = {10, 10};
+	context.m_scroll_delta_y = -1.f;
+	panel.on_update();
+
+	EXPECT_EQ(panel.get_scroll_offset(), 40);
+	EXPECT_EQ(first->processed_y(), -40);
+	EXPECT_EQ(second->processed_y(), 10);
+	EXPECT_EQ(third->processed_y(), 60);
+
+	context.m_scroll_delta_y = -10.f;
+	panel.on_update();
+	EXPECT_EQ(panel.get_scroll_offset(), 50);
+	EXPECT_EQ(first->processed_y(), -50);
+
+	context.m_scroll_delta_y = 10.f;
+	panel.on_update();
+	EXPECT_EQ(panel.get_scroll_offset(), 0);
+	EXPECT_EQ(first->processed_y(), 0);
+	context.m_scroll_delta_y = 0.f;
+}
+
+TEST(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
+	linear panel(orientation::vertical);
+	panel.style.layout.require_size(100, 100);
+	panel.style.layout.require_mode(mode::pixel, mode::pixel);
+	panel.style.layout.set_padding(0, 0);
+	panel.compute_style();
+	panel.process_required_size({100, 100});
+	panel.set_scrollable(true);
+
+	int draw_counts[4]{};
+	auto first = panel.add<counting_element>(50, draw_counts[0]);
+	auto second = panel.add<counting_element>(50, draw_counts[1]);
+	auto third = panel.add<counting_element>(50, draw_counts[2]);
+	auto fourth = panel.add<counting_element>(50, draw_counts[3]);
+	first->compute_style();
+	second->compute_style();
+	third->compute_style();
+	fourth->compute_style();
+
+	auto& context = get_context();
+	context.m_mouse_position = {10, 10};
+	context.m_scroll_delta_y = -10.f;
+	panel.on_update();
+	context.m_scroll_delta_y = 0.f;
+
+	draw_data data;
+	data.m_clip_rect = {0, 0, 100, 100};
+	panel.get_requires(&data);
+
+	EXPECT_EQ(draw_counts[0], 0);
+	EXPECT_EQ(draw_counts[1], 0);
+	EXPECT_EQ(draw_counts[2], 1);
+	EXPECT_EQ(draw_counts[3], 1);
+}
+
+TEST(LinearTest, ScrollbarDraggingScrollsContent) {
+	linear panel(orientation::vertical);
+	panel.style.layout.require_size(100, 100);
+	panel.style.layout.require_mode(mode::pixel, mode::pixel);
+	panel.style.layout.set_padding(0, 0);
+	panel.compute_style();
+	panel.process_required_size({100, 100});
+	panel.set_scrollable(true);
+
+	auto first = panel.add<mock_element>(100, 50);
+	auto second = panel.add<mock_element>(100, 50);
+	auto third = panel.add<mock_element>(100, 50);
+	first->compute_style();
+	second->compute_style();
+	third->compute_style();
+	panel.on_update();
+
+	auto& scrollbar = panel.get_scrollbar_element();
+	ASSERT_TRUE(scrollbar.is_enabled());
+	const int thumb_travel = 100 - scrollbar.processed_height();
+	ASSERT_GT(thumb_travel, 0);
+
+	scrollbar.set_drag({0, thumb_travel / 2});
+	panel.on_update();
+
+	EXPECT_EQ(panel.get_scroll_offset(), 25);
+	EXPECT_EQ(first->processed_y(), -25);
+	EXPECT_EQ(second->processed_y(), 25);
 }
 
 TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
