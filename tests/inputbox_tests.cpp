@@ -1,11 +1,37 @@
 #include <gtest/gtest.h>
 
 #include "bgui.hpp"
+#include "os/asset_manager.hpp"
 #include "os/os.hpp"
 #include "utils/syntax_highlight.hpp"
 
 #include <regex>
 #include <stdexcept>
+#include <utility>
+
+namespace {
+    void ensure_test_font() {
+        auto& fonts = bgui::font_manager::get_instance();
+        if (fonts.has_font("default"))
+            return;
+
+        bgui::font test_font;
+        test_font.ascent = 8.f;
+        test_font.descent = 2.f;
+        for (char32_t codepoint = 32; codepoint < 127; ++codepoint) {
+            bgui::character glyph;
+            glyph.size = {8, 10};
+            glyph.bearing = {0, 8};
+            glyph.advance = 8;
+            test_font.chs.emplace(codepoint, glyph);
+        }
+
+        constexpr auto resolution = bgui::font_manager::m_default_resolution;
+        bgui::asset_manager::get_instance().store_font(
+            "input-area-test", resolution, std::move(test_font));
+        fonts.set_default_font("input-area-test", resolution);
+    }
+}
 
 TEST(InputAreaTest, CursorAndBackspaceKeepUtf8CodepointsIntact) {
     bgui::scoped_interface interface;
@@ -286,6 +312,7 @@ TEST(InputAreaTest, ControlArrowsAndDeleteOperateOnWholeWords) {
 
 TEST(InputAreaTest, MultilineWrapCanBeToggled) {
     bgui::scoped_interface interface;
+    ensure_test_font();
 
     bgui::inputbox input(std::string(800, 'a'), "", 0.35f, nullptr, bgui::input_mode::multiline);
     EXPECT_TRUE(input.is_wrap_enabled());
@@ -302,6 +329,8 @@ TEST(InputAreaTest, MultilineWrapCanBeToggled) {
 
 TEST(InputAreaTest, TextDrawCallsAreClippedToInputBoxRect) {
     bgui::scoped_interface interface;
+    ensure_test_font();
+
     bgui::inputbox input("clipped", "");
     input.set_final_rect(20, 30, 40, 15);
 
