@@ -214,6 +214,18 @@ the slider also rejects negative or non-finite steps. A slider's change
 callback runs only when its effective value changes, including changes caused
 by updating its range or step.
 
+### Vector field
+
+`bgui::vector_field` is a composite element for editing a labeled set of
+numeric components. The axis labels determine the component order, and each
+input is accessible through `get_component(index)`.
+
+```cpp
+auto position = win->add<bgui::vector_field>(
+    "Position", std::vector<std::string>{"x:", "y:", "z:"});
+position->get_component(0).set_buffer("1.0");
+```
+
 The GLFW/OpenGL demo also includes a modal progress-bar example. Its worker
 thread publishes progress through an atomic value, and the UI thread applies
 that value to the widget each frame because the modal can be closed while the

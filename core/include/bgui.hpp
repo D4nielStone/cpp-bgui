@@ -11,6 +11,7 @@
 #include "elem/slider.hpp"
 #include "elem/color_picker.hpp"
 #include "elem/progress_bar.hpp"
+#include "elem/vector_field.hpp"
 #include "elem/details.hpp"
 #include "elem/tree.hpp"
 #include "elem/text.hpp"

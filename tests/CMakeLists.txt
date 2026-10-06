@@ -15,6 +15,7 @@ add_executable(
     combo_box_tests.cpp
     tree_tests.cpp
     value_control_tests.cpp
+    vector_field_tests.cpp
     image_tests.cpp
     linear_tests.cpp
     dock_tests.cpp
@@ -39,6 +40,7 @@ target_link_libraries(
 add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
 add_test(NAME InputAreaTests COMMAND all_tests --gtest_filter=InputAreaTest.*)
 add_test(NAME ValueControlTests COMMAND all_tests --gtest_filter=ValueControlTest.*)
+add_test(NAME VectorFieldTests COMMAND all_tests --gtest_filter=VectorFieldTest.*)
 add_test(NAME ComboBoxTests COMMAND all_tests --gtest_filter=ComboBoxTest.*)
 add_test(NAME treeTests COMMAND all_tests --gtest_filter=treeTest.*)
 add_test(NAME InteractionTests COMMAND all_tests --gtest_filter=InteractionTest.*)

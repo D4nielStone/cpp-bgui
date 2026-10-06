@@ -15,9 +15,73 @@ namespace {
         std::atomic_bool cancel{false};
     };
 
-    struct progress_task_ui {
-        std::shared_ptr<async_progress_state> state;
-        bgui::progress_bar* bar;
+    class progress_task_manager {
+    public:
+        void start(bgui::layout& root) {
+            auto& dialog = root.add_persistent<bgui::modal, bgui::layer::overlay>();
+            dialog.add_persistent<bgui::text>(
+                "Working in the background without blocking the UI.",
+                0.4f
+            );
+            auto& progress = dialog.add_persistent<bgui::progress_bar>(0.f, 100.f);
+            progress.style.layout.require_width(bgui::mode::match_parent);
+            progress.style.layout.require_height(bgui::mode::pixel, 20.f);
+
+            auto state = std::make_shared<async_progress_state>();
+            dialog.set_on_confirm([state]() {
+                state->modal_open.store(false, std::memory_order_release);
+            });
+            m_tasks.push_back({state, &progress});
+            m_workers.emplace_back([state]() {
+                using clock = std::chrono::steady_clock;
+                constexpr auto duration = std::chrono::seconds(3);
+                const auto start = clock::now();
+                auto elapsed = clock::duration::zero();
+
+                while (elapsed < duration &&
+                       !state->cancel.load(std::memory_order_acquire)) {
+                    elapsed = clock::now() - start;
+                    const float fraction =
+                        std::chrono::duration<float>(elapsed).count() /
+                        std::chrono::duration<float>(duration).count();
+                    state->progress.store(
+                        std::min(100.f, fraction * 100.f),
+                        std::memory_order_relaxed
+                    );
+                    std::this_thread::sleep_for(std::chrono::milliseconds(16));
+                }
+
+                if (!state->cancel.load(std::memory_order_acquire))
+                    state->progress.store(100.f, std::memory_order_relaxed);
+            });
+        }
+
+        void update() {
+            for (const auto& task : m_tasks) {
+                if (task.state->modal_open.load(std::memory_order_acquire))
+                    task.bar->set_value(
+                        task.state->progress.load(std::memory_order_relaxed)
+                    );
+            }
+        }
+
+        void cancel_and_join() {
+            for (const auto& task : m_tasks)
+                task.state->cancel.store(true, std::memory_order_release);
+            for (auto& worker : m_workers) {
+                if (worker.joinable())
+                    worker.join();
+            }
+        }
+
+    private:
+        struct task_ui {
+            std::shared_ptr<async_progress_state> state;
+            bgui::progress_bar* bar;
+        };
+
+        std::vector<task_ui> m_tasks;
+        std::vector<std::thread> m_workers;
     };
 }
 
@@ -26,8 +90,7 @@ int main() {
     GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Example");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
-    std::vector<std::thread> background_tasks;
-    std::vector<progress_task_ui> progress_task_widgets;
+    progress_task_manager progress_tasks;
     {
         bgui::scoped_interface interface_scope;
         auto& sm = bgui::style_manager::get_instance();
@@ -36,6 +99,7 @@ int main() {
         bgui::enable_proffiling(true);
         // Keep each handle alive while its element should remain in the layout.
         bgui::layout& root = bgui::get_layout();
+
         auto workspace = root.add<bgui::linear>(bgui::orientation::vertical);
         workspace->style.layout.require_mode(
             bgui::mode::match_parent, bgui::mode::match_parent
@@ -57,42 +121,7 @@ int main() {
         auto task_button = panel.add<bgui::button>(
             "Run async task (3s)",
             0.4f,
-            [&root, &background_tasks, &progress_task_widgets]() {
-                auto& dialog = root.add_persistent<bgui::modal, bgui::layer::overlay>();
-                dialog.add_persistent<bgui::text>(
-                    "Working in the background without blocking the UI.",
-                    0.4f
-                );
-                auto& progress = dialog.add_persistent<bgui::progress_bar>(0.f, 100.f);
-                progress.style.layout.require_width(bgui::mode::match_parent);
-                progress.style.layout.require_height(bgui::mode::pixel, 20.f);
-
-                auto state = std::make_shared<async_progress_state>();
-                dialog.set_on_confirm([state]() {
-                    state->modal_open.store(false, std::memory_order_release);
-                });
-                progress_task_widgets.push_back({state, &progress});
-                background_tasks.emplace_back([state]() {
-                    using clock = std::chrono::steady_clock;
-                    const auto start = clock::now();
-                    const auto duration = std::chrono::seconds(3);
-
-                    while (!state->cancel.load(std::memory_order_acquire)) {
-                        const auto elapsed = clock::now() - start;
-                        const float fraction = std::chrono::duration<float>(elapsed).count() / 3.f;
-                        state->progress.store(
-                            std::min(100.f, fraction * 100.f),
-                            std::memory_order_relaxed
-                        );
-                        if (elapsed >= duration)
-                            break;
-                        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-                    }
-
-                    if (!state->cancel.load(std::memory_order_acquire))
-                        state->progress.store(100.f, std::memory_order_relaxed);
-                });
-            }
+            [&root, &progress_tasks]() { progress_tasks.start(root); }
         );
         task_button->style.layout.require_mode(bgui::mode::match_parent, bgui::mode::wrap_content);
         auto panel_text = panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
@@ -108,6 +137,13 @@ int main() {
         auto window_text = demo_window.add<bgui::text>("This is a window widget example.", 0.4f);
         window_text->style.layout.align = bgui::vec<2UL, bgui::alignment>({bgui::alignment::center, bgui::alignment::start});
 
+        auto& win2 = dock->add_window("Vector Field Example", bgui::dock_area::bottom);
+        auto vector2_field = win2.add<bgui::vector_field>(
+            "Vec2", std::vector<std::string>{"x:", "y:"}
+        );
+        auto vector3_field = win2.add<bgui::vector_field>(
+            "Vec3", std::vector<std::string>{"x:", "y:", "z:"}
+        );
         auto value_text = demo_window.add<bgui::text>(
             "Slider and progress bar", 0.4f);
         auto value_slider = demo_window.add<bgui::slider>(
@@ -180,43 +216,6 @@ int main() {
         fipt.set_float_callback(bgui::set_global_scale);
         auto fiii = demo_window.add<bgui::inputbox>("", "", 0.4f);
 
-        const auto add_vector_field = [&demo_window](
-            const std::string& label,
-            const std::vector<std::string>& axes
-        ) {
-            auto vector_field = demo_window.add<bgui::linear>(
-                bgui::orientation::vertical
-            );
-            vector_field->style.layout.require_mode(
-                bgui::mode::match_parent, bgui::mode::wrap_content
-            );
-
-            auto field_label = vector_field->add<bgui::text>(label, 0.4f);
-            field_label->style.layout.require_mode(
-                bgui::mode::match_parent, bgui::mode::wrap_content
-            );
-            field_label->style.layout.align = bgui::vec<2UL, bgui::alignment>(
-                {bgui::alignment::center, bgui::alignment::start}
-            );
-
-            auto values = vector_field->add<bgui::linear>(
-                bgui::orientation::horizontal
-            );
-            values->style.layout.require_mode(
-                bgui::mode::match_parent, bgui::mode::wrap_content
-            );
-
-            for (const auto& axis : axes) {
-                values->add<bgui::text>(axis, 0.4f);
-                auto input = values->add<bgui::inputbox>(
-                    "", "", 0.4f, nullptr, bgui::input_mode::number
-                );
-                input->style.layout.require_width(bgui::mode::stretch);
-            }
-        };
-        add_vector_field("Vec2", {"x:", "y:"});
-        add_vector_field("Vec3", {"x:", "y:", "z:"});
-
         auto& text_editor_window = dock->add_window("Text Editor", bgui::dock_area::bottom);
         auto text_editor = text_editor_window.add<bgui::inputbox>(
             "-- You can write your code below --", "", 0.4f,
@@ -230,10 +229,7 @@ int main() {
         bgui::load_configuration("ui.cfg");
         bgui::get_context().m_refresh_func = [&](){
             bgui::glfw_update(bgui::get_context());
-            for (auto& task : progress_task_widgets) {
-                if (task.state->modal_open.load(std::memory_order_acquire))
-                    task.bar->set_value(task.state->progress.load(std::memory_order_relaxed));
-            }
+            progress_tasks.update();
             bgui::load_font_queue();
             bgui::on_update();
             bgui::gl3_clear();
@@ -242,10 +238,7 @@ int main() {
         };
 
         bgui::glfw_main_loop();
-        for (const auto& task : progress_task_widgets)
-            task.state->cancel.store(true, std::memory_order_release);
-        for (auto& task : background_tasks)
-            task.join();
+        progress_tasks.cancel_and_join();
         bgui::save_configuration("ui.cfg");
     }
     // Cleanup
