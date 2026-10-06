@@ -270,6 +270,52 @@ TEST(InputAreaTest, MultilineControlCAndVUseClipboardCallbacks) {
     context.m_set_clipboard = nullptr;
 }
 
+TEST(InputAreaTest, MultilineControlZUndoAndControlShiftZRedoEdits) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("abc", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    input.set_focused(true);
+    context.m_char_buffer = "X";
+    input.on_update();
+    ASSERT_EQ(input.get_buffer(), "abcX");
+
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "abc");
+    EXPECT_EQ(input.get_cursor_position(), 3U);
+
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::release;
+    input.on_update();
+    context.m_input_map[bgui::input_key::left_shift] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "abcX");
+    EXPECT_EQ(input.get_cursor_position(), 4U);
+
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::release;
+    input.on_update();
+    context.m_input_map[bgui::input_key::left_shift] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::press;
+    input.on_update();
+    ASSERT_EQ(input.get_buffer(), "abc");
+
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::release;
+    input.on_update();
+    context.m_char_buffer = "Y";
+    input.on_update();
+    context.m_input_map[bgui::input_key::left_shift] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::z] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "abcY");
+
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+}
+
 TEST(InputAreaTest, ControlArrowsAndDeleteOperateOnWholeWords) {
     bgui::scoped_interface interface;
     auto& context = bgui::get_context();

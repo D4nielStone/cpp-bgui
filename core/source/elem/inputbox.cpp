@@ -128,7 +128,8 @@ bgui::inputbox::inputbox(const std::string& buffer, const std::string& placehold
     m_backspace_down(false), m_delete_down(false), m_enter_down(false),
     m_left_down(false), m_right_down(false), m_up_down(false), m_down_down(false),
     m_home_down(false), m_end_down(false), m_select_all_down(false),
-    m_copy_down(false), m_cut_down(false), m_paste_down(false), m_tab_down(false),
+    m_copy_down(false), m_cut_down(false), m_paste_down(false),
+    m_undo_down(false), m_redo_down(false), m_tab_down(false),
     m_backspace_next_time(0.f), m_delete_next_time(0.f),
     m_left_next_time(0.f), m_right_next_time(0.f), m_up_next_time(0.f), m_down_next_time(0.f),
     m_home_next_time(0.f), m_end_next_time(0.f),
@@ -231,6 +232,59 @@ void bgui::inputbox::on_update() {
             key_action(input_key::right_shift) == input_action::press ||
             key_action(input_key::right_shift) == input_action::repeat;
 
+        const bool z_held =
+            key_action(input_key::z) == input_action::press ||
+            key_action(input_key::z) == input_action::repeat;
+        const bool undo_down = m_mode == input_mode::multiline &&
+            control_down && !shift_down && z_held;
+        const bool redo_down = m_mode == input_mode::multiline &&
+            control_down && shift_down && z_held;
+        const bool undo_pressed = undo_down && !m_undo_down;
+        const bool redo_pressed = redo_down && !m_redo_down;
+        const bool history_action = undo_down || redo_down;
+        const auto key_held = [&key_action](input_key key) {
+            const input_action action = key_action(key);
+            return action == input_action::press || action == input_action::repeat;
+        };
+        const bool may_edit_buffer = m_mode == input_mode::multiline &&
+            (!ctx.m_char_buffer.empty() ||
+             (control_down && key_action(input_key::x) == input_action::press) ||
+             (control_down && key_held(input_key::v)) ||
+             key_held(input_key::backspace) || key_held(input_key::delete_key) ||
+             key_held(input_key::tab) || key_held(input_key::enter) ||
+             key_held(input_key::keypad_enter));
+        std::optional<edit_state> state_before;
+        if (may_edit_buffer && !history_action) {
+            state_before = edit_state{
+                m_input_buffer, m_cursor_position, m_selection_anchor
+            };
+        }
+        m_undo_down = undo_down;
+        m_redo_down = redo_down;
+
+        if (history_action) {
+            if (undo_pressed && !m_undo_stack.empty()) {
+                m_redo_stack.push_back({
+                    m_input_buffer, m_cursor_position, m_selection_anchor
+                });
+                const edit_state previous = std::move(m_undo_stack.back());
+                m_undo_stack.pop_back();
+                m_input_buffer = previous.buffer;
+                m_cursor_position = previous.cursor_position;
+                m_selection_anchor = previous.selection_anchor;
+            } else if (redo_pressed && !m_redo_stack.empty()) {
+                m_undo_stack.push_back({
+                    m_input_buffer, m_cursor_position, m_selection_anchor
+                });
+                const edit_state next = std::move(m_redo_stack.back());
+                m_redo_stack.pop_back();
+                m_input_buffer = next.buffer;
+                m_cursor_position = next.cursor_position;
+                m_selection_anchor = next.selection_anchor;
+            }
+            ctx.m_char_buffer.clear();
+            m_cursor_blink_start = bgui::get_time();
+        } else {
         if (m_mode == input_mode::multiline) {
             const bool select_all_down = control_down &&
                 key_action(input_key::a) == input_action::press;
@@ -484,6 +538,12 @@ void bgui::inputbox::on_update() {
             }
         }
         m_enter_down = enter_down;
+        }
+
+        if (state_before && m_input_buffer != state_before->buffer) {
+            m_undo_stack.push_back(std::move(*state_before));
+            m_redo_stack.clear();
+        }
     }
 
     linear::on_update();
@@ -534,6 +594,8 @@ void bgui::inputbox::set_focused(bool focused) {
         m_copy_down = false;
         m_cut_down = false;
         m_paste_down = false;
+        m_undo_down = false;
+        m_redo_down = false;
         m_tab_down = false;
     }
     m_focused = focused;

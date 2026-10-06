@@ -5,6 +5,8 @@
 #include <functional>
 #include <memory>
 #include <limits>
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace bgui {
@@ -18,8 +20,15 @@ namespace bgui {
     /// It allows the user to input text, number ...
     class inputbox : public linear {
     protected:
+        struct edit_state {
+            std::string buffer;
+            size_t cursor_position;
+            size_t selection_anchor;
+        };
+
         text* m_text;
         std::string m_placeholder, m_input_buffer;
+        std::vector<edit_state> m_undo_stack, m_redo_stack;
         size_t m_cursor_position;
         size_t m_selection_anchor;
         input_mode m_mode;
@@ -37,6 +46,8 @@ namespace bgui {
         bool m_copy_down;
         bool m_cut_down;
         bool m_paste_down;
+        bool m_undo_down;
+        bool m_redo_down;
         bool m_tab_down;
         float m_backspace_next_time;
         float m_delete_next_time;
@@ -101,6 +112,8 @@ namespace bgui {
             m_input_buffer = buffer;
             m_cursor_position = m_input_buffer.size();
             clear_selection();
+            m_undo_stack.clear();
+            m_redo_stack.clear();
             update_display();
         }
         std::string& get_buffer() { return m_input_buffer; }
