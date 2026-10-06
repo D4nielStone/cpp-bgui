@@ -12,6 +12,7 @@
 #include "elem/color_picker.hpp"
 #include "elem/progress_bar.hpp"
 #include "elem/details.hpp"
+#include "elem/tree.hpp"
 #include "elem/text.hpp"
 #include "elem/image.hpp"
 #include "elem/window.hpp"

@@ -27,6 +27,14 @@ int main() {
         };
         auto panel_text = panel->add<bgui::text>("Linear Layout Example", 0.4f);
         auto panel_button = panel->add<bgui::button>("Button Example", 0.4f, [](){});
+        auto tree = panel->add<bgui::tree>("Project", 0.4f, true);
+        auto& source_tree = tree->add_child("src");
+        source_tree.add_child("main.cpp");
+        source_tree.add_child("ui.cpp");
+        source_tree.set_expanded(true);
+        auto& assets_tree = tree->add_child("assets");
+        assets_tree.add_child("theme.json");
+        assets_tree.set_expanded(true);
         auto demo_window = root.add<bgui::window>("Hello Bubble!");
 
         auto window_text = demo_window->add<bgui::text>("This is a window widget example.", 0.4f);

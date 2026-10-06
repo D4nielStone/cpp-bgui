@@ -32,6 +32,11 @@ layout.size = 400, 300
 [type.element]
 visual.background.normal = 0.094, 0.094, 0.094, 1.0
 
+[type.tree]
+visual.visible = false
+layout.mode = match_parent, wrap_content
+layout.padding = 0
+
 [type.modal]
 visual.background.normal = 0.0, 0.0, 0.0, 0.65
 visual.border.normal = 0.0
@@ -59,6 +64,28 @@ layout.mode = wrap_content, wrap_content
 
 [class.modal-text]
 layout.align = start, start
+
+[class.tree-element-label]
+visual.background.normal = 0.0
+visual.background.hover = 0.165, 0.176, 0.18, 1.0
+visual.background.pressed = 0.216, 0.216, 0.239, 1.0
+visual.border.normal = 0.0
+visual.border.radius = 0
+visual.border.size = 0
+layout.mode = match_parent, wrap_content
+layout.padding = 4, 1
+
+[class.tree-element-label-text]
+visual.background.normal = 0.0
+visual.border.normal = 0.0
+visual.text.normal = 0.8, 0.8, 0.8, 1.0
+layout.mode = stretch, wrap_content
+layout.align = start, center
+layout.padding = 2, 0
+
+[class.tree-element-children]
+visual.background.normal = 0.0
+visual.border.normal = 0.0
 
 =========================
 BUTTON

@@ -203,6 +203,10 @@ the slider also rejects negative or non-finite steps. A slider's change
 callback runs only when its effective value changes, including changes caused
 by updating its range or step.
 
+The GLFW/OpenGL demo also includes a modal progress-bar example. Its worker
+thread publishes progress through an atomic value, and the UI thread applies
+that value to the widget each frame; the worker never accesses UI elements.
+
 ### Color picker
 
 `bgui::color_picker` provides a hue ring and a triangular saturation/value
@@ -239,6 +243,24 @@ The selected index defaults to zero. At least one option is required, and an
 out-of-range selection throws `std::out_of_range`. The callback runs only when
 the effective selection changes.
 
+### Tree element
+
+`bgui::tree` represents an expandable node. Add nested nodes with
+`add_child`, and use `set_expanded` or click a node label to show or hide its
+children:
+
+```cpp
+auto root = panel->add<bgui::tree>("Projects");
+auto& source = root->add_child("Source");
+source.add_child("main.cpp");
+source.add_child("ui.cpp");
+root->set_expanded(true);
+```
+
+Nodes start collapsed by default. Pass `true` as the third constructor
+argument to start expanded. `children()` exposes the node's vertical layout for
+adding other elements.
+
 ### Font families and styles
 
 The FreeType backend keeps loaded fonts in a resolution-aware cache and lets
@@ -259,8 +281,13 @@ family is found, it falls back to the available system fonts.
 
 The first successfully loaded face is registered as the deterministic
 `"default"` fallback used by text widgets and by unresolved font requests.
-Font requests queued by text widgets are processed with
-`bgui::load_font_queue()` before `bgui::on_update()`.
+Font requests queued by text widgets are started on a background worker by
+`bgui::load_font_queue()` before `bgui::on_update()`. FreeType atlas generation
+runs off the UI thread; completed font data is added to the cache and its
+callback is invoked on the thread that calls `load_font_queue()`. Keep calling
+it once per frame so completed requests become available to the UI. Errors
+during queued loads are rethrown from `load_font_queue()`. Direct calls to
+`ft_load_system_font()` and `ft_load_font()` remain synchronous.
 Applications can observe successful loads without owning font memory:
 
 ```cpp

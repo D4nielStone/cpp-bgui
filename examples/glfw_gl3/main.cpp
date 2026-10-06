@@ -1,12 +1,33 @@
 #include <bgui.hpp>
+#include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <iostream>
+#include <memory>
+#include <thread>
+#include <vector>
 #include "elem/menu_bar.hpp"
+
+namespace {
+    struct async_progress_state {
+        std::atomic<float> progress{0.f};
+        std::atomic_bool modal_open{true};
+        std::atomic_bool cancel{false};
+    };
+
+    struct progress_task_ui {
+        std::shared_ptr<async_progress_state> state;
+        bgui::progress_bar* bar;
+    };
+}
 
 int main() {
     // Setup
     GLFWwindow* window = bgui::set_up_glfw(1280, 720, "BGUI GLFW & gl3 Example");
     bgui::set_up_gl3();
     bgui::set_up_freetype();
+    std::vector<std::thread> background_tasks;
+    std::vector<progress_task_ui> progress_task_widgets;
     {
         bgui::scoped_interface interface_scope;
         auto& sm = bgui::style_manager::get_instance();
@@ -32,7 +53,57 @@ int main() {
         auto dock = workspace->add<bgui::dock>();
         auto& demo_window = dock->add_window("Hello Bubble!");
         auto& panel = dock->add_window("Panel", bgui::dock_area::right);
+        auto task_button = panel.add<bgui::button>(
+            "Run async task (3s)",
+            0.4f,
+            [&root, &background_tasks, &progress_task_widgets]() {
+                auto& dialog = root.add_persistent<bgui::modal, bgui::layer::overlay>();
+                dialog.add_persistent<bgui::text>(
+                    "Working in the background without blocking the UI.",
+                    0.4f
+                );
+                auto& progress = dialog.add_persistent<bgui::progress_bar>(0.f, 100.f);
+                progress.style.layout.require_width(bgui::mode::match_parent);
+                progress.style.layout.require_height(bgui::mode::pixel, 20.f);
+
+                auto state = std::make_shared<async_progress_state>();
+                dialog.set_on_confirm([state]() {
+                    state->modal_open.store(false, std::memory_order_release);
+                });
+                progress_task_widgets.push_back({state, &progress});
+                background_tasks.emplace_back([state]() {
+                    using clock = std::chrono::steady_clock;
+                    const auto start = clock::now();
+                    const auto duration = std::chrono::seconds(3);
+
+                    while (!state->cancel.load(std::memory_order_acquire)) {
+                        const auto elapsed = clock::now() - start;
+                        const float fraction = std::chrono::duration<float>(elapsed).count() / 3.f;
+                        state->progress.store(
+                            std::min(100.f, fraction * 100.f),
+                            std::memory_order_relaxed
+                        );
+                        if (elapsed >= duration)
+                            break;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+                    }
+
+                    if (!state->cancel.load(std::memory_order_acquire))
+                        state->progress.store(100.f, std::memory_order_relaxed);
+                });
+            }
+        );
+        task_button->style.layout.require_width(bgui::mode::match_parent);
         auto panel_text = panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
+        auto tree = panel.add<bgui::tree>("Project");
+        auto& source_tree = tree->add_child("src");
+        source_tree.add_child("main.cpp");
+        source_tree.add_child("ui.cpp");
+        auto& assets_tree = tree->add_child("assets");
+        assets_tree.add_child("theme.json");
+        tree->set_expanded(true);
+        source_tree.set_expanded(true);
+        assets_tree.set_expanded(true);
         auto window_text = demo_window.add<bgui::text>("This is a window widget example.", 0.4f);
         window_text->style.layout.align = bgui::vec<2UL, bgui::alignment>({bgui::alignment::center, bgui::alignment::start});
 
@@ -121,6 +192,10 @@ int main() {
         bgui::load_configuration("ui.cfg");
         bgui::get_context().m_refresh_func = [&](){
             bgui::glfw_update(bgui::get_context());
+            for (auto& task : progress_task_widgets) {
+                if (task.state->modal_open.load(std::memory_order_acquire))
+                    task.bar->set_value(task.state->progress.load(std::memory_order_relaxed));
+            }
             bgui::load_font_queue();
             bgui::on_update();
             bgui::gl3_clear();
@@ -129,6 +204,10 @@ int main() {
         };
 
         bgui::glfw_main_loop();
+        for (const auto& task : progress_task_widgets)
+            task.state->cancel.store(true, std::memory_order_release);
+        for (auto& task : background_tasks)
+            task.join();
         bgui::save_configuration("ui.cfg");
     }
     // Cleanup
