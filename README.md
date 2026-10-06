@@ -218,6 +218,27 @@ picker->set_on_change([](const bgui::color& selected) {
 });
 ```
 
+### Combo box
+
+`bgui::combo_box` displays the selected option and opens a dropdown list when
+clicked. Read the selected index or option, change the selection
+programmatically, or observe changes with `set_on_change`:
+
+```cpp
+auto combo = panel->add<bgui::combo_box>(
+    std::vector<std::string>{"Small", "Medium", "Large"});
+combo->set_on_change([](std::size_t index, const std::string& option) {
+    // Apply the selected option.
+});
+
+const std::string& selected = combo->get_selected_option();
+combo->set_selected_index(2);
+```
+
+The selected index defaults to zero. At least one option is required, and an
+out-of-range selection throws `std::out_of_range`. The callback runs only when
+the effective selection changes.
+
 ### Font families and styles
 
 The FreeType backend keeps loaded fonts in a resolution-aware cache and lets

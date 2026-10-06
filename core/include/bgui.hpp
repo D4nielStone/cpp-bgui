@@ -5,6 +5,7 @@
 #include "elem/element.hpp"
 #include "elem/field.hpp"
 #include "elem/button.hpp"
+#include "elem/combo_box.hpp"
 #include "elem/checkbox.hpp"
 #include "elem/menu_bar.hpp"
 #include "elem/slider.hpp"

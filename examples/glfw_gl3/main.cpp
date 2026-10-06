@@ -48,6 +48,15 @@ int main() {
             label->set_buffer("Slider value: " + std::to_string(value));
         });
 
+        auto combo_label = demo_window.add<bgui::text>(
+            "Combo box: Small", 0.4f);
+        auto combo = demo_window.add<bgui::combo_box>(
+            std::vector<std::string>{"Small", "Medium", "Large"});
+        combo->set_on_change([label = &combo_label.get()](
+            std::size_t, const std::string& option) {
+            label->set_buffer("Combo box: " + option);
+        });
+
         auto color_text = demo_window.add<bgui::text>("Color: #FF0000", 0.4f);
         auto color_control = demo_window.add<bgui::color_picker>();
         color_control->style.layout.require_size(150.f, 150.f);

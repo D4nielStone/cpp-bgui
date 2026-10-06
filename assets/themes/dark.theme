@@ -80,6 +80,41 @@ layout.mode = stretch, wrap_content
 INPUT BOX
 =========================
 
+[type.combobox]
+visual.background.normal = 0.135, 0.135, 0.135, 1.0
+visual.background.hover = 0.17, 0.17, 0.17, 1.0
+visual.background.pressed = 0.19, 0.19, 0.19, 1.0
+visual.border.normal = 0.17, 0.17, 0.17, 1.0
+visual.border.radius = 3
+visual.border.size = 1
+layout.padding = 6, 2
+layout.mode = stretch, wrap_content
+
+[class.combo-box-label]
+layout.mode = stretch, wrap_content
+layout.align = start, center
+
+[class.combo-box-indicator]
+layout.mode = wrap_content, wrap_content
+layout.padding = 6, 0
+
+[class.combo-box-popup]
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.border.normal = 0.17, 0.17, 0.17, 1.0
+visual.border.radius = 3
+visual.border.size = 1
+visual.visible = true
+layout.mode = match_parent, wrap_content
+layout.padding = 2
+
+[class.combo-box-option]
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.background.hover = 0.17, 0.17, 0.17, 1.0
+visual.border.normal = 0.12, 0.12, 0.12, 1.0
+visual.border.radius = 0
+layout.padding = 6, 2
+layout.mode = match_parent, wrap_content
+
 [type.inputarea]
 visual.background.normal = 0.13, 0.13, 0.13, 1.0
 visual.background.focused = 0.13, 0.13, 0.13, 1.0

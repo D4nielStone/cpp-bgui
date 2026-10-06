@@ -13,15 +13,15 @@ namespace bgui {
             bgui::layer::overlay
         >(bgui::orientation::vertical);
 
+        m_menu->add_class("combo-box-popup");
         m_menu->set_flex(false);
 
         m_menu->style.layout.require_mode(
             bgui::mode::wrap_content,
             bgui::mode::wrap_content
         );
+        m_menu->style.layout.limit_min = bgui::vec2i{200, 10};
         m_menu->style.visual.visible = true;
-        m_menu->style.visual.background.normal =
-            bgui::color{0.12f, 0.12f, 0.12f, 1.f};
 
         m_menu->set_enable(false);
     }
@@ -39,10 +39,7 @@ namespace bgui {
             }
         );
 
-        button.style.visual.background.normal =
-            bgui::color{0.12f, 0.12f, 0.12f, 1.f};
-
-        button.add_class("context-menu-button");
+        button.add_class("combo-box-option");
 
         return *this;
     }
@@ -66,9 +63,7 @@ namespace bgui {
                 close();
             }
         );
-        button.style.visual.background.normal =
-            bgui::color{0.12f, 0.12f, 0.12f, 1.f};
-        button.add_class("context-menu-button");
+        button.add_class("combo-box-option");
 
         return *this;
     }
