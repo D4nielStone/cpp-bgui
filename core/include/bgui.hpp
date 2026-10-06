@@ -13,6 +13,7 @@
 #include "elem/image.hpp"
 #include "elem/window.hpp"
 #include "elem/inputbox.hpp"
+#include "elem/modal.hpp"
 #include "lay/layout.hpp"
 #include "lay/dock.hpp"
 #include "lay/modular.hpp"
@@ -73,6 +74,7 @@ namespace bgui {
 
     void on_update();
     element* get_mouse_target();
+    void clear_keyboard_focus();
     void set_global_scale(float scale);
     float get_global_scale();
 };

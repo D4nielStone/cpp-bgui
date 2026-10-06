@@ -123,6 +123,149 @@ TEST(InputAreaTest, DeleteRemovesOneFollowingUtf8Character) {
     context.m_input_map.clear();
 }
 
+TEST(InputAreaTest, MultilineHomeEndAndTabEditAtExpectedPositions) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("first\nsecond", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    input.set_focused(true);
+
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 6U);
+
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::release;
+    input.on_update();
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 12U);
+
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 0U);
+
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::tab] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "\tfirst\nsecond");
+    EXPECT_EQ(input.get_cursor_position(), 1U);
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "\tfirst\nsecond");
+
+    context.m_input_map.clear();
+}
+
+TEST(InputAreaTest, ShiftSelectsAndTypingReplacesTheSelectedText) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("abcd", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    input.set_focused(true);
+    context.m_input_map[bgui::input_key::left_shift] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 3U);
+
+    context.m_char_buffer = "X";
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "abcX");
+    EXPECT_EQ(input.get_cursor_position(), 4U);
+
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+}
+
+TEST(InputAreaTest, MultilineControlCAndVUseClipboardCallbacks) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("copy me", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    input.set_focused(true);
+    std::string clipboard;
+    context.m_set_clipboard = [&clipboard](const std::string& text) {
+        clipboard = text;
+    };
+    context.m_get_clipboard = [&clipboard]() {
+        return clipboard;
+    };
+
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::a] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map[bgui::input_key::a] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::c] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(clipboard, "copy me");
+
+    context.m_input_map[bgui::input_key::c] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::a] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map[bgui::input_key::a] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::x] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(clipboard, "copy me");
+    EXPECT_TRUE(input.get_buffer().empty());
+
+    context.m_input_map[bgui::input_key::x] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::v] = bgui::input_action::press;
+    clipboard = "pasted";
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "pasted");
+
+    context.m_input_map.clear();
+    context.m_get_clipboard = nullptr;
+    context.m_set_clipboard = nullptr;
+}
+
+TEST(InputAreaTest, ControlArrowsAndDeleteOperateOnWholeWords) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("one two", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    input.set_focused(true);
+
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+
+    context.m_input_map[bgui::input_key::right] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 4U);
+    context.m_input_map[bgui::input_key::right] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 0U);
+
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::delete_key] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "two");
+    EXPECT_EQ(input.get_cursor_position(), 0U);
+
+    context.m_input_map[bgui::input_key::delete_key] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::release;
+    context.m_input_map[bgui::input_key::backspace] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_TRUE(input.get_buffer().empty());
+    EXPECT_EQ(input.get_cursor_position(), 0U);
+
+    context.m_input_map.clear();
+}
+
 TEST(InputAreaTest, MultilineWrapCanBeToggled) {
     bgui::scoped_interface interface;
 
@@ -159,12 +302,18 @@ TEST(InputAreaTest, TextDrawCallsAreClippedToInputBoxRect) {
 TEST(InputAreaTest, LoadsOrderedRegexHighlightRulesFromJsonAsset) {
     const auto rules = bgui::load_syntax_highlight_config("lua_highlight.json");
 
-    ASSERT_EQ(rules.size(), 4U);
+    ASSERT_EQ(rules.size(), 6U);
     EXPECT_TRUE(std::regex_search(std::string("\"text\""), rules[0].expression));
-    EXPECT_TRUE(std::regex_search(std::string("-- comment"), rules[1].expression));
-    EXPECT_TRUE(std::regex_search(std::string("return"), rules[3].expression));
-    EXPECT_FLOAT_EQ(rules[3].color.r, 0x56 / 255.f);
-    EXPECT_FLOAT_EQ(rules[3].color.g, 0x9C / 255.f);
+    EXPECT_TRUE(std::regex_search(std::string("-- function name"), rules[1].expression));
+    EXPECT_TRUE(std::regex_search(std::string("function"), rules[2].expression));
+    EXPECT_TRUE(std::regex_search(std::string("return"), rules[2].expression));
+    EXPECT_TRUE(std::regex_search(std::string("function my_func"), rules[3].expression));
+    EXPECT_TRUE(std::regex_search(std::string("{"), rules[4].expression));
+    EXPECT_TRUE(std::regex_search(std::string("}"), rules[4].expression));
+    EXPECT_FLOAT_EQ(rules[2].color.r, 0x56 / 255.f);
+    EXPECT_FLOAT_EQ(rules[2].color.g, 0x9C / 255.f);
+    EXPECT_FLOAT_EQ(rules[3].color.r, 0xDC / 255.f);
+    EXPECT_FLOAT_EQ(rules[4].color.r, 0xDC / 255.f);
 }
 
 TEST(InputAreaTest, MissingHighlightConfigurationReportsAnError) {

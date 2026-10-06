@@ -22,6 +22,8 @@ namespace bgui {
         float m_scroll_delta_y{0.f};
         std::unordered_map<input_key, input_action> m_input_map;
         std::string m_char_buffer;
+        std::function<std::string()> m_get_clipboard;
+        std::function<void(const std::string&)> m_set_clipboard;
         std::string m_title{""};
         bool m_last_mouse_left = false;
         cursor m_actual_cursor = cursor::arrow;

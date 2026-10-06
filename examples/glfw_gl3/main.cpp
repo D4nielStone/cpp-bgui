@@ -1,5 +1,6 @@
 #include <bgui.hpp>
 #include <iostream>
+#include "elem/menu_bar.hpp"
 
 int main() {
     // Setup
@@ -13,6 +14,14 @@ int main() {
 
         // Keep each handle alive while its element should remain in the layout.
         bgui::layout& root = bgui::get_layout();
+        auto menubar = root.add<bgui::menubar>();
+        menubar->add_menu("File", 0.4f, [](bgui::menu& menu) {
+            menu.add_item("New", 0.4f, []() { std::cout << "New clicked\n"; });
+            menu.add_item("Open", 0.4f, []() { std::cout << "Open clicked\n"; });
+            menu.add_item("Save", 0.4f, []() { std::cout << "Save clicked\n"; });
+            menu.add_separator();
+            menu.add_item("Exit", 0.4f, []() { std::cout << "Exit clicked\n"; });
+        });
         auto dock = root.add<bgui::dock>();
         auto& demo_window = dock->add_window("Hello Bubble!");
         auto& panel = dock->add_window("Panel", bgui::dock_area::right);
@@ -35,6 +44,29 @@ int main() {
         auto chkbx = demo_window.add<bgui::checkbox>("CheckBox Element", 0.4f, true);
 
         auto btn = demo_window.add<bgui::button>("Button inside window", 0.4f, [](){});
+        auto modal_button = demo_window.add<bgui::button>(
+            "Open modal",
+            0.4f,
+            [&root]() {
+                auto& dialog = root.add_persistent<bgui::modal>();
+                dialog.add_persistent<bgui::text>(
+                    "This dialog fits its content, blocks the interface behind it, "
+                    "and stays open until you confirm.",
+                    0.4f
+                );
+                dialog.add_persistent<bgui::button>(
+                    "Open another modal",
+                    0.4f,
+                    [&root]() {
+                        auto& stacked_dialog = root.add_persistent<bgui::modal>();
+                        stacked_dialog.add_persistent<bgui::text>(
+                            "This modal is stacked above the previous one.",
+                            0.4f
+                        );
+                    }
+                );
+            }
+        );
         auto fi = demo_window.add<bgui::field>("UI Scale", "1", 0.4f);
         auto fii = demo_window.add<bgui::field>("InputBox", "", 0.4f);
         auto& fipt = fi->get_inputbox();
@@ -51,6 +83,7 @@ int main() {
         text_editor->style.layout.require_mode(
             bgui::mode::match_parent, bgui::mode::match_parent);
         text_editor_window.use_highlight_config("lua_highlight.json");
+        text_editor->set_wrap(false);
 
         bgui::load_configuration("ui.cfg");
         bgui::get_context().m_refresh_func = [&](){

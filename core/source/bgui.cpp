@@ -439,6 +439,10 @@ static void set_keyboard_focus(bgui::element* element) {
     }
 }
 
+void bgui::clear_keyboard_focus() {
+    set_keyboard_focus(nullptr);
+}
+
 void bgui::cancel_interactions(bgui::element* subtree) noexcept {
     if (!subtree)
         return;

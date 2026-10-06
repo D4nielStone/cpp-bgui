@@ -4,6 +4,7 @@
 #include "utils/syntax_highlight.hpp"
 #include <functional>
 #include <memory>
+#include <limits>
 #include <vector>
 
 namespace bgui {
@@ -20,6 +21,7 @@ namespace bgui {
         text* m_text;
         std::string m_placeholder, m_input_buffer;
         size_t m_cursor_position;
+        size_t m_selection_anchor;
         input_mode m_mode;
         bool m_focused;
         bool m_backspace_down;
@@ -29,12 +31,21 @@ namespace bgui {
         bool m_right_down;
         bool m_up_down;
         bool m_down_down;
+        bool m_home_down;
+        bool m_end_down;
+        bool m_select_all_down;
+        bool m_copy_down;
+        bool m_cut_down;
+        bool m_paste_down;
+        bool m_tab_down;
         float m_backspace_next_time;
         float m_delete_next_time;
         float m_left_next_time;
         float m_right_next_time;
         float m_up_next_time;
         float m_down_next_time;
+        float m_home_next_time;
+        float m_end_next_time;
         float m_cursor_blink_start;
         float m_min_float;
         float m_max_float;
@@ -46,6 +57,17 @@ namespace bgui {
         void move_cursor_down();
         void erase_before_cursor();
         void erase_at_cursor();
+        void erase_word_before_cursor();
+        void erase_word_at_cursor();
+        void move_cursor_word_left();
+        void move_cursor_word_right();
+        bool erase_selection();
+        void move_cursor_to_line_start(bool document_start);
+        void move_cursor_to_line_end(bool document_end);
+        bool has_selection() const;
+        size_t selection_start() const;
+        size_t selection_end() const;
+        void clear_selection();
     public:
         std::function<void(const std::string)> m_enter_func = nullptr;
         std::function<void(const float)> m_float_func = nullptr;
@@ -64,6 +86,9 @@ namespace bgui {
         );
         void set_wrap(bool enabled) { m_text->set_wrap(enabled); }
         bool is_wrap_enabled() const { return m_text->is_wrap_enabled(); }
+        void set_editor_guides_enabled(bool enabled) {
+            m_text->set_editor_guides_enabled(enabled);
+        }
         void on_clicked() override;
         void on_pressed() override;
         void on_released() override;
@@ -75,6 +100,7 @@ namespace bgui {
         void set_buffer(const std::string& buffer) {
             m_input_buffer = buffer;
             m_cursor_position = m_input_buffer.size();
+            clear_selection();
             update_display();
         }
         std::string& get_buffer() { return m_input_buffer; }

@@ -1,6 +1,7 @@
 #include "elem/inputbox.hpp"
 #include "os/os.hpp"
 #include "bgui.hpp"
+#include <cctype>
 #include <cmath>
 
 namespace {        
@@ -47,6 +48,37 @@ namespace {
         return newline == std::string::npos ? value.size() : newline;
     }
 
+    bool is_word_character(const std::string& value, size_t position) {
+        const auto character = static_cast<unsigned char>(value[position]);
+        return character >= 0x80 || std::isalnum(character) || character == '_';
+    }
+
+    size_t previous_word_boundary(const std::string& value, size_t position) {
+        while (position > 0) {
+            const size_t previous = previous_utf8_character(value, position);
+            if (is_word_character(value, previous))
+                break;
+            position = previous;
+        }
+        while (position > 0) {
+            const size_t previous = previous_utf8_character(value, position);
+            if (!is_word_character(value, previous))
+                break;
+            position = previous;
+        }
+        return position;
+    }
+
+    size_t next_word_boundary(const std::string& value, size_t position) {
+        while (position < value.size() && !is_word_character(value, position))
+            position = next_utf8_character(value, position);
+        while (position < value.size() && is_word_character(value, position))
+            position = next_utf8_character(value, position);
+        while (position < value.size() && !is_word_character(value, position))
+            position = next_utf8_character(value, position);
+        return position;
+    }
+
     template<typename Move>
     void process_repeating_key(
         bgui::input_action action,
@@ -74,11 +106,15 @@ namespace {
 
 bgui::inputbox::inputbox(const std::string& buffer, const std::string& placeholder, const float scale, std::function<void(const std::string)> action, bgui::input_mode mode) :
     linear(), m_placeholder(placeholder), m_input_buffer(buffer),
-    m_cursor_position(buffer.size()), m_mode(mode), m_focused(false),
+    m_cursor_position(buffer.size()), m_selection_anchor(std::numeric_limits<size_t>::max()),
+    m_mode(mode), m_focused(false),
     m_backspace_down(false), m_delete_down(false), m_enter_down(false),
     m_left_down(false), m_right_down(false), m_up_down(false), m_down_down(false),
+    m_home_down(false), m_end_down(false), m_select_all_down(false),
+    m_copy_down(false), m_cut_down(false), m_paste_down(false), m_tab_down(false),
     m_backspace_next_time(0.f), m_delete_next_time(0.f),
     m_left_next_time(0.f), m_right_next_time(0.f), m_up_next_time(0.f), m_down_next_time(0.f),
+    m_home_next_time(0.f), m_end_next_time(0.f),
     m_cursor_blink_start(0.f),
     m_enter_func(action) {
     type = "inputarea";
@@ -138,6 +174,7 @@ void bgui::inputbox::on_clicked() {
         }
         m_cursor_position = closest_position;
     }
+    clear_selection();
     m_cursor_blink_start = bgui::get_time();
     set_focused(true);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
@@ -163,7 +200,67 @@ void bgui::inputbox::on_update() {
     auto& ctx = bgui::get_context();
 
     if (m_focused) {
+        const auto key_action = [&ctx](input_key key) {
+            return ctx.m_input_map[key];
+        };
+        const bool control_down =
+            key_action(input_key::left_control) == input_action::press ||
+            key_action(input_key::left_control) == input_action::repeat ||
+            key_action(input_key::right_control) == input_action::press ||
+            key_action(input_key::right_control) == input_action::repeat;
+        const bool shift_down =
+            key_action(input_key::left_shift) == input_action::press ||
+            key_action(input_key::left_shift) == input_action::repeat ||
+            key_action(input_key::right_shift) == input_action::press ||
+            key_action(input_key::right_shift) == input_action::repeat;
+
+        if (m_mode == input_mode::multiline) {
+            const bool select_all_down = control_down &&
+                key_action(input_key::a) == input_action::press;
+            if (select_all_down && !m_select_all_down) {
+                m_selection_anchor = 0;
+                m_cursor_position = m_input_buffer.size();
+                m_cursor_blink_start = bgui::get_time();
+            }
+            m_select_all_down = select_all_down;
+
+            const bool copy_down = control_down &&
+                key_action(input_key::c) == input_action::press;
+            if (copy_down && !m_copy_down && has_selection() && ctx.m_set_clipboard) {
+                ctx.m_set_clipboard(m_input_buffer.substr(
+                    selection_start(), selection_end() - selection_start()));
+            }
+            m_copy_down = copy_down;
+
+            const bool cut_down = control_down &&
+                key_action(input_key::x) == input_action::press;
+            if (cut_down && !m_cut_down && has_selection() && ctx.m_set_clipboard) {
+                ctx.m_set_clipboard(m_input_buffer.substr(
+                    selection_start(), selection_end() - selection_start()));
+                erase_selection();
+            }
+            m_cut_down = cut_down;
+
+            const bool paste_down = control_down &&
+                (key_action(input_key::v) == input_action::press ||
+                 key_action(input_key::v) == input_action::repeat);
+            if (paste_down && !m_paste_down && ctx.m_get_clipboard) {
+                const std::string clipboard = ctx.m_get_clipboard();
+                erase_selection();
+                m_input_buffer.insert(m_cursor_position, clipboard);
+                m_cursor_position += clipboard.size();
+                m_cursor_blink_start = bgui::get_time();
+            }
+            m_paste_down = paste_down;
+        } else {
+            m_select_all_down = false;
+            m_copy_down = false;
+            m_cut_down = false;
+            m_paste_down = false;
+        }
+
         if (!ctx.m_char_buffer.empty()) {
+            erase_selection();
             m_input_buffer.insert(m_cursor_position, ctx.m_char_buffer);
             m_cursor_position += ctx.m_char_buffer.size();
             ctx.m_char_buffer.clear();
@@ -178,42 +275,112 @@ void bgui::inputbox::on_update() {
         if (!backspace_held) {
             m_backspace_down = false;
         } else if (!m_backspace_down) {
-            erase_before_cursor();
+            if (!erase_selection()) {
+                if (control_down)
+                    erase_word_before_cursor();
+                else
+                    erase_before_cursor();
+            }
             m_backspace_down = true;
             m_backspace_next_time = now + 0.35f;
         } else if (now >= m_backspace_next_time) {
-            erase_before_cursor();
+            if (!erase_selection()) {
+                if (control_down)
+                    erase_word_before_cursor();
+                else
+                    erase_before_cursor();
+            }
             m_backspace_next_time = now + 0.05f;
         }
 
-        const auto process_cursor_key = [this, now](
+        const auto process_cursor_key = [this, now, shift_down](
             input_action action,
             bool& was_down,
             float& next_repeat,
+            input_key key,
             auto move
         ) {
             const size_t previous_position = m_cursor_position;
-            process_repeating_key(action, now, was_down, next_repeat, move);
+            const bool extend = m_mode == input_mode::multiline && shift_down;
+            process_repeating_key(action, now, was_down, next_repeat, [this, extend, key, move]() {
+                if (extend) {
+                    if (m_selection_anchor == std::numeric_limits<size_t>::max())
+                        m_selection_anchor = m_cursor_position;
+                    move();
+                } else if (has_selection()) {
+                    m_cursor_position =
+                        (key == input_key::left || key == input_key::up)
+                        ? selection_start() : selection_end();
+                    clear_selection();
+                } else {
+                    move();
+                    clear_selection();
+                }
+            });
             if (m_cursor_position != previous_position)
                 m_cursor_blink_start = now;
         };
         process_cursor_key(
             ctx.m_input_map[bgui::input_key::left],
-            m_left_down, m_left_next_time, [this]() { move_cursor_left(); });
+            m_left_down, m_left_next_time, input_key::left,
+            [this, control_down]() {
+                if (control_down)
+                    move_cursor_word_left();
+                else
+                    move_cursor_left();
+            });
         process_cursor_key(
             ctx.m_input_map[bgui::input_key::right],
-            m_right_down, m_right_next_time, [this]() { move_cursor_right(); });
+            m_right_down, m_right_next_time, input_key::right,
+            [this, control_down]() {
+                if (control_down)
+                    move_cursor_word_right();
+                else
+                    move_cursor_right();
+            });
         if (m_mode == input_mode::multiline) {
             process_cursor_key(
                 ctx.m_input_map[bgui::input_key::up],
-                m_up_down, m_up_next_time, [this]() { move_cursor_up(); });
+                m_up_down, m_up_next_time, input_key::up,
+                [this]() { move_cursor_up(); });
             process_cursor_key(
                 ctx.m_input_map[bgui::input_key::down],
-                m_down_down, m_down_next_time, [this]() { move_cursor_down(); });
+                m_down_down, m_down_next_time, input_key::down,
+                [this]() { move_cursor_down(); });
         } else {
             m_up_down = false;
             m_down_down = false;
         }
+        const auto process_line_key = [this, &process_cursor_key](
+            input_key key, bool& was_down, float& next_repeat, bool to_start
+        ) {
+            process_cursor_key(
+                bgui::get_context().m_input_map[key], was_down, next_repeat, key,
+                [this, to_start]() {
+                    auto& input = bgui::get_context().m_input_map;
+                    const bool document = input[input_key::left_control] == input_action::press ||
+                        input[input_key::left_control] == input_action::repeat ||
+                        input[input_key::right_control] == input_action::press ||
+                        input[input_key::right_control] == input_action::repeat;
+                    if (to_start)
+                        move_cursor_to_line_start(document);
+                    else
+                        move_cursor_to_line_end(document);
+                });
+        };
+        process_line_key(input_key::home, m_home_down, m_home_next_time, true);
+        process_line_key(input_key::end, m_end_down, m_end_next_time, false);
+
+        const auto tab_action = ctx.m_input_map[input_key::tab];
+        const bool tab_held =
+            tab_action == input_action::press || tab_action == input_action::repeat;
+        if (m_mode == input_mode::multiline && tab_held && !m_tab_down) {
+            erase_selection();
+            m_input_buffer.insert(m_cursor_position, "\t");
+            ++m_cursor_position;
+            m_cursor_blink_start = now;
+        }
+        m_tab_down = m_mode == input_mode::multiline && tab_held;
 
         const auto delete_action = ctx.m_input_map[bgui::input_key::delete_key];
         const bool delete_held =
@@ -222,11 +389,21 @@ void bgui::inputbox::on_update() {
         if (!delete_held) {
             m_delete_down = false;
         } else if (!m_delete_down) {
-            erase_at_cursor();
+            if (!erase_selection()) {
+                if (control_down)
+                    erase_word_at_cursor();
+                else
+                    erase_at_cursor();
+            }
             m_delete_down = true;
             m_delete_next_time = now + 0.35f;
         } else if (now >= m_delete_next_time) {
-            erase_at_cursor();
+            if (!erase_selection()) {
+                if (control_down)
+                    erase_word_at_cursor();
+                else
+                    erase_at_cursor();
+            }
             m_delete_next_time = now + 0.05f;
         }
 
@@ -237,6 +414,7 @@ void bgui::inputbox::on_update() {
             keypad_enter == bgui::input_action::press || keypad_enter == bgui::input_action::repeat;
         if (enter_down && !m_enter_down) {
             if (m_mode == input_mode::multiline) {
+                erase_selection();
                 m_input_buffer.insert(m_cursor_position, "\n");
                 ++m_cursor_position;
                 m_cursor_blink_start = now;
@@ -280,6 +458,7 @@ void bgui::inputbox::on_update() {
 void bgui::inputbox::update_display() {
     if (m_input_buffer.empty() && !m_focused) {
         m_text->set_buffer(m_placeholder);
+        m_text->set_selection(0, 0);
         m_text->set_cursor(0, false);
         m_text->computed_style.visual.text.a = 0.4f;
         return;
@@ -290,6 +469,9 @@ void bgui::inputbox::update_display() {
         1.0f
     );
     m_text->set_buffer(m_input_buffer);
+    m_text->set_selection(
+        has_selection() ? selection_start() : m_cursor_position,
+        has_selection() ? selection_end() : m_cursor_position);
     m_text->set_cursor(m_cursor_position, m_focused && blink_phase < 0.5f);
     m_text->computed_style.visual.text.a = 1.f;
 }
@@ -308,6 +490,13 @@ void bgui::inputbox::set_focused(bool focused) {
         m_right_down = false;
         m_up_down = false;
         m_down_down = false;
+        m_home_down = false;
+        m_end_down = false;
+        m_select_all_down = false;
+        m_copy_down = false;
+        m_cut_down = false;
+        m_paste_down = false;
+        m_tab_down = false;
     }
     m_focused = focused;
     set_style_state(focused ? state::focused : state::normal);
@@ -319,6 +508,14 @@ void bgui::inputbox::move_cursor_left() {
 
 void bgui::inputbox::move_cursor_right() {
     m_cursor_position = next_utf8_character(m_input_buffer, m_cursor_position);
+}
+
+void bgui::inputbox::move_cursor_word_left() {
+    m_cursor_position = previous_word_boundary(m_input_buffer, m_cursor_position);
+}
+
+void bgui::inputbox::move_cursor_word_right() {
+    m_cursor_position = next_word_boundary(m_input_buffer, m_cursor_position);
 }
 
 void bgui::inputbox::move_cursor_up() {
@@ -383,6 +580,62 @@ void bgui::inputbox::erase_at_cursor() {
     const size_t next = next_utf8_character(m_input_buffer, m_cursor_position);
     m_input_buffer.erase(m_cursor_position, next - m_cursor_position);
     m_cursor_blink_start = bgui::get_time();
+}
+
+void bgui::inputbox::erase_word_before_cursor() {
+    if (m_cursor_position == 0)
+        return;
+    const size_t start = previous_word_boundary(m_input_buffer, m_cursor_position);
+    m_input_buffer.erase(start, m_cursor_position - start);
+    m_cursor_position = start;
+    m_cursor_blink_start = bgui::get_time();
+}
+
+void bgui::inputbox::erase_word_at_cursor() {
+    if (m_cursor_position >= m_input_buffer.size())
+        return;
+    const size_t end = next_word_boundary(m_input_buffer, m_cursor_position);
+    m_input_buffer.erase(m_cursor_position, end - m_cursor_position);
+    m_cursor_blink_start = bgui::get_time();
+}
+
+bool bgui::inputbox::erase_selection() {
+    if (!has_selection()) {
+        clear_selection();
+        return false;
+    }
+    const size_t start = selection_start();
+    m_input_buffer.erase(start, selection_end() - start);
+    m_cursor_position = start;
+    clear_selection();
+    m_cursor_blink_start = bgui::get_time();
+    return true;
+}
+
+void bgui::inputbox::move_cursor_to_line_start(bool document_start) {
+    m_cursor_position = document_start ? 0 : line_start(m_input_buffer, m_cursor_position);
+}
+
+void bgui::inputbox::move_cursor_to_line_end(bool document_end) {
+    m_cursor_position = document_end
+        ? m_input_buffer.size() : line_end(m_input_buffer, m_cursor_position);
+}
+
+bool bgui::inputbox::has_selection() const {
+    return m_selection_anchor != std::numeric_limits<size_t>::max() &&
+           m_selection_anchor != m_cursor_position;
+}
+
+size_t bgui::inputbox::selection_start() const {
+    return std::min(m_selection_anchor, m_cursor_position);
+}
+
+size_t bgui::inputbox::selection_end() const {
+    return std::max(m_selection_anchor, m_cursor_position);
+}
+
+void bgui::inputbox::clear_selection() {
+    m_selection_anchor = std::numeric_limits<size_t>::max();
 }
 
 void bgui::inputbox::get_requires(bgui::draw_data* data) {
