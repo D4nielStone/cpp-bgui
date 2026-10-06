@@ -4,6 +4,7 @@ Bubble GUI
 <p align="center"><b><em><q>I moved mountains to align a button.</q></em></b></p>
 
 ![preview](preview.gif)
+![showcase](image.png)
 
 ---
 
