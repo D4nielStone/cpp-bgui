@@ -14,7 +14,14 @@ int main() {
 
         // Keep each handle alive while its element should remain in the layout.
         bgui::layout& root = bgui::get_layout();
-        auto menubar = root.add<bgui::menubar>();
+        auto workspace = root.add<bgui::linear>(bgui::orientation::vertical);
+        workspace->style.layout.require_mode(
+            bgui::mode::match_parent, bgui::mode::match_parent
+        );
+        auto menubar = workspace->add<bgui::menubar>(root);
+        menubar->style.layout.require_height(
+            bgui::mode::wrap_content, 1.f
+        );
         menubar->add_menu("File", 0.4f, [](bgui::menu& menu) {
             menu.add_item("New", 0.4f, []() { std::cout << "New clicked\n"; });
             menu.add_item("Open", 0.4f, []() { std::cout << "Open clicked\n"; });
@@ -22,7 +29,7 @@ int main() {
             menu.add_separator();
             menu.add_item("Exit", 0.4f, []() { std::cout << "Exit clicked\n"; });
         });
-        auto dock = root.add<bgui::dock>();
+        auto dock = workspace->add<bgui::dock>();
         auto& demo_window = dock->add_window("Hello Bubble!");
         auto& panel = dock->add_window("Panel", bgui::dock_area::right);
         auto panel_text = panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
@@ -48,17 +55,16 @@ int main() {
             "Open modal",
             0.4f,
             [&root]() {
-                auto& dialog = root.add_persistent<bgui::modal>();
+                auto& dialog = root.add_persistent<bgui::modal, bgui::layer::overlay>();
                 dialog.add_persistent<bgui::text>(
-                    "This dialog fits its content, blocks the interface behind it, "
-                    "and stays open until you confirm.",
+                    "This dialog fits its content, blocks the interface behind it,\nand stays open until you confirm.",
                     0.4f
                 );
                 dialog.add_persistent<bgui::button>(
                     "Open another modal",
                     0.4f,
                     [&root]() {
-                        auto& stacked_dialog = root.add_persistent<bgui::modal>();
+                        auto& stacked_dialog = root.add_persistent<bgui::modal, bgui::layer::overlay>();
                         stacked_dialog.add_persistent<bgui::text>(
                             "This modal is stacked above the previous one.",
                             0.4f
@@ -84,6 +90,7 @@ int main() {
             bgui::mode::match_parent, bgui::mode::match_parent);
         text_editor_window.use_highlight_config("lua_highlight.json");
         text_editor->set_wrap(false);
+        text_editor->set_editor_guides_enabled(true);
 
         bgui::load_configuration("ui.cfg");
         bgui::get_context().m_refresh_func = [&](){

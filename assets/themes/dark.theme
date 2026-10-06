@@ -32,6 +32,34 @@ layout.size = 400, 300
 [type.element]
 visual.background.normal = 0.094, 0.094, 0.094, 1.0
 
+[type.modal]
+visual.background.normal = 0.0, 0.0, 0.0, 0.65
+visual.border.normal = 0.0
+layout.mode = match_parent, match_parent
+layout.align = center, center
+
+[class.modal-panel]
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.border.normal = 0.32, 0.32, 0.32, 1.0
+visual.border.size = 1
+visual.border.radius = 4
+visual.visible = true
+layout.mode = wrap_content, wrap_content
+layout.padding = 16, 16
+
+[class.modal-content]
+layout.mode = wrap_content, wrap_content
+
+[class.modal-actions]
+layout.mode = stretch, wrap_content
+layout.align = end, start
+
+[class.modal-confirm]
+layout.mode = wrap_content, wrap_content
+
+[class.modal-text]
+layout.align = start, start
+
 =========================
 BUTTON
 =========================
@@ -128,6 +156,7 @@ CLASSES
 =========================
 
 [class.dock-tab]
+layout.mode = stretch, wrap_content
 
 [class.window-header]
 layout.mode = stretch, wrap_content

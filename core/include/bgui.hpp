@@ -6,6 +6,7 @@
 #include "elem/field.hpp"
 #include "elem/button.hpp"
 #include "elem/checkbox.hpp"
+#include "elem/menu_bar.hpp"
 #include "elem/slider.hpp"
 #include "elem/progress_bar.hpp"
 #include "elem/details.hpp"

@@ -102,3 +102,33 @@ TEST(DeclarativeStyleTest, VisibilityIsNotInheritedFromParent) {
 	EXPECT_FALSE(parent.computed_style.visual.visible);
 	EXPECT_TRUE(child.computed_style.visual.visible);
 }
+
+TEST(ModalThemeTest, ModalAndBodyTextStylesComeFromTheme) {
+	bgui::scoped_interface interface;
+	auto& manager = style_manager::get_instance();
+	manager.apply_theme(bgui::dark_theme());
+
+	modal dialog;
+	auto body = dialog.add<text>("A modal message", 0.4f);
+	dialog.compute_style();
+	dialog.content().compute_style();
+	body->compute_style();
+
+	EXPECT_FALSE(dialog.style.layout.size_mode.has_value());
+	EXPECT_FALSE(dialog.style.layout.align.has_value());
+	EXPECT_FALSE(dialog.style.visual.background.normal.has_value());
+	EXPECT_EQ(dialog.computed_style.layout.size_mode.x, mode::match_parent);
+	EXPECT_EQ(dialog.computed_style.layout.align.x, alignment::center);
+	EXPECT_EQ(dialog.content().computed_style.layout.size_mode.x, mode::wrap_content);
+	ASSERT_TRUE(body->has_class("modal-text"));
+	EXPECT_EQ(body->computed_style.layout.align.x, alignment::start);
+
+	manager.apply_theme(bgui::light_theme());
+	dialog.compute_style();
+	dialog.content().compute_style();
+	body->compute_style();
+
+	EXPECT_EQ(dialog.computed_style.layout.size_mode.x, mode::match_parent);
+	EXPECT_EQ(dialog.content().computed_style.layout.size_mode.x, mode::wrap_content);
+	EXPECT_EQ(body->computed_style.layout.align.x, alignment::start);
+}

@@ -506,6 +506,7 @@ float bgui::text::get_text_width(const std::string& t) const {
     const auto& chs = font.chs;
     if (chs.empty()) return 0.0f;
     const float scale = m_scale * bgui::get_global_scale();
+    const float wrap_width = 500.f * bgui::get_global_scale();
 
     float line_x = 0.f;
     float max_line_width = 0.0f;
@@ -517,7 +518,12 @@ float bgui::text::get_text_width(const std::string& t) const {
             continue;
         }
 
-        line_x += glyph_advance(ca, font, scale);
+        const float advance = glyph_advance(ca, font, scale);
+        if (m_wrap_enabled && line_x + advance > wrap_width && line_x > 0.f) {
+            max_line_width = std::max(max_line_width, line_x);
+            line_x = 0.f;
+        }
+        line_x += advance;
     }
 
     // Garante que a última linha (que não termina em '\n') também seja considerada
@@ -673,7 +679,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             continue;
         }
 
-        if (m_wrap_enabled && line_x + advance_this_char > 500.f) {
+        if (m_wrap_enabled &&
+            line_x + advance_this_char > 500.f * bgui::get_global_scale() &&
+            line_x > 0.f) {
             max_line_width = std::max(max_line_width, line_x);
             line_y += (ascent + descent + line_gap);
             line_x = 0.f;

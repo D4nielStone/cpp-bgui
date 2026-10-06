@@ -40,6 +40,24 @@ TEST(InputAreaTest, CursorAndBackspaceKeepUtf8CodepointsIntact) {
     context.m_char_buffer.clear();
 }
 
+TEST(InputAreaTest, NumberModeAcceptsOnlyNumericCharacters) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+
+    bgui::inputbox input("", "", 0.35f, nullptr, bgui::input_mode::number);
+    input.set_focused(true);
+    context.m_char_buffer = "a-12.3x.4";
+    input.on_update();
+
+    EXPECT_EQ(input.get_buffer(), "-12.34");
+    EXPECT_EQ(input.get_cursor_position(), 6U);
+
+    context.m_char_buffer.clear();
+    context.m_input_map.clear();
+}
+
 TEST(InputAreaTest, CursorArrowPressMovesOneCharacterInsteadOfPerFrame) {
     bgui::scoped_interface interface;
     auto& context = bgui::get_context();

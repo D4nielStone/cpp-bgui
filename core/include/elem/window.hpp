@@ -42,6 +42,24 @@ namespace bgui {
             return added;
         }
 
+        template<typename T, layer Lay = layer::base, typename... Args>
+        T& add_persistent(Args&&... args) {
+            if (m_context) {
+                auto& added = m_context->add_persistent<T, Lay>(
+                    std::forward<Args>(args)...
+                );
+                if constexpr (std::is_base_of_v<inputbox, T>) {
+                    if (m_highlight_rules)
+                        added.set_highlight_rules(m_highlight_rules);
+                }
+                return added;
+            }
+
+            return linear::add_persistent<T, Lay>(
+                std::forward<Args>(args)...
+            );
+        }
+
         linear& get_context() { return *m_context; }
 
         void on_update() override;

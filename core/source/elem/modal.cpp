@@ -7,38 +7,26 @@ namespace bgui {
     modal::modal() : linear(orientation::vertical) {
         bgui::clear_keyboard_focus();
         type = "modal";
+        set_flex(false);
         recives_input(true);
-        style.layout.require_mode(mode::match_parent, mode::match_parent);
-        style.layout.align = vec<2UL, alignment>({alignment::center, alignment::center});
-        style.visual.background.normal = color{0.f, 0.f, 0.f, 0.65f};
-        style.visual.border.normal = color{0.f, 0.f, 0.f, 0.f};
 
         set_position(0, 0);
 
         m_panel = &linear::add_persistent<linear>(orientation::vertical);
-        m_panel->style.layout.require_mode(mode::wrap_content, mode::wrap_content);
-        m_panel->style.layout.set_padding(16, 16);
-        m_panel->style.visual.background.normal = color{0.12f, 0.12f, 0.12f, 1.f};
-        m_panel->style.visual.border.normal = color{0.32f, 0.32f, 0.32f, 1.f};
-        m_panel->style.visual.border_size = 1.f;
-        m_panel->style.visual.border_radius = 4.f;
-        m_panel->style.visual.visible = true;
+        m_panel->add_class("modal-panel");
 
         m_content = &m_panel->add_persistent<linear>(orientation::vertical);
-        m_content->style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+        m_content->add_class("modal-content");
 
         m_actions = &m_panel->add_persistent<linear>(orientation::horizontal);
-        m_actions->style.layout.require_mode(mode::stretch, mode::wrap_content);
-        m_actions->style.layout.align = vec<2UL, alignment>(
-            {alignment::end, alignment::start}
-        );
+        m_actions->add_class("modal-actions");
 
         m_confirm_button = &m_actions->add_persistent<button>(
             "Confirmar",
             0.4f,
             [this]() { confirm(); }
         );
-        m_confirm_button->style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+        m_confirm_button->add_class("modal-confirm");
     }
 
     void modal::set_on_confirm(std::function<void()> callback) {

@@ -6,7 +6,7 @@
 namespace bgui {
     class context_menu {
     public:
-        context_menu(bgui::linear& parent, bgui::button& btn);
+        context_menu(bgui::layout& parent, bgui::button& btn);
 
         context_menu& add_button(
             const std::string& name,
@@ -14,6 +14,12 @@ namespace bgui {
         );
 
         context_menu& add_button(const std::string& name);
+        context_menu& add_item(
+            const std::string& name,
+            float scale,
+            const std::function<void()>& fctn
+        );
+        context_menu& add_separator();
 
         void open(int x, int y);
         void close();
@@ -23,7 +29,7 @@ namespace bgui {
 
     private:
         bgui::button& m_button;
-        bgui::linear& m_parent;
+        bgui::layout& m_parent;
         bgui::linear* m_menu = nullptr;
     };
 }

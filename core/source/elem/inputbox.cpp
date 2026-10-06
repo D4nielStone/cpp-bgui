@@ -53,6 +53,23 @@ namespace {
         return character >= 0x80 || std::isalnum(character) || character == '_';
     }
 
+    bool is_valid_number_edit(const std::string& value) {
+        bool has_decimal_point = false;
+        for (size_t i = 0; i < value.size(); ++i) {
+            const char character = value[i];
+            if (character >= '0' && character <= '9')
+                continue;
+            if ((character == '-' || character == '+') && i == 0)
+                continue;
+            if (character == '.' && !has_decimal_point) {
+                has_decimal_point = true;
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
     size_t previous_word_boundary(const std::string& value, size_t position) {
         while (position > 0) {
             const size_t previous = previous_utf8_character(value, position);
@@ -260,9 +277,30 @@ void bgui::inputbox::on_update() {
         }
 
         if (!ctx.m_char_buffer.empty()) {
-            erase_selection();
-            m_input_buffer.insert(m_cursor_position, ctx.m_char_buffer);
-            m_cursor_position += ctx.m_char_buffer.size();
+            if (m_mode == input_mode::number) {
+                const size_t start = has_selection() ? selection_start() : m_cursor_position;
+                const size_t end = has_selection() ? selection_end() : m_cursor_position;
+                std::string candidate = m_input_buffer;
+                candidate.erase(start, end - start);
+                size_t insertion_position = start;
+                for (char character : ctx.m_char_buffer) {
+                    candidate.insert(insertion_position, 1, character);
+                    if (is_valid_number_edit(candidate)) {
+                        ++insertion_position;
+                    } else {
+                        candidate.erase(insertion_position, 1);
+                    }
+                }
+                if (insertion_position != start || !has_selection()) {
+                    m_input_buffer = std::move(candidate);
+                    m_cursor_position = insertion_position;
+                    clear_selection();
+                }
+            } else {
+                erase_selection();
+                m_input_buffer.insert(m_cursor_position, ctx.m_char_buffer);
+                m_cursor_position += ctx.m_char_buffer.size();
+            }
             ctx.m_char_buffer.clear();
             m_cursor_blink_start = bgui::get_time();
         }

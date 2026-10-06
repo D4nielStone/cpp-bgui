@@ -40,6 +40,9 @@ namespace bgui {
 
         template<typename T>
         static void configure_content_item(T& item) {
+            if (item.type == "text")
+                item.add_class("modal-text");
+
             if (!item.style.layout.size_mode) {
                 item.style.layout.require_mode(
                     mode::wrap_content,

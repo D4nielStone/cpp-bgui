@@ -2,11 +2,11 @@
 
 namespace bgui {
     context_menu::context_menu(
-        bgui::linear& parent,
+        bgui::layout& parent,
         bgui::button& button
     )
-        : m_parent(parent),
-        m_button(button) {
+        : m_button(button),
+          m_parent(parent) {
 
         m_menu = &m_parent.add_persistent<
             bgui::linear,
@@ -16,14 +16,12 @@ namespace bgui {
         m_menu->set_flex(false);
 
         m_menu->style.layout.require_mode(
-            bgui::mode::pixel,
-            bgui::mode::pixel
+            bgui::mode::wrap_content,
+            bgui::mode::wrap_content
         );
-
-        m_menu->style.layout.require_size(
-            190.f,
-            0.f
-        );
+        m_menu->style.visual.visible = true;
+        m_menu->style.visual.background.normal =
+            bgui::color{0.12f, 0.12f, 0.12f, 1.f};
 
         m_menu->set_enable(false);
     }
@@ -41,10 +39,8 @@ namespace bgui {
             }
         );
 
-        button.style.layout.require_mode(
-            bgui::mode::match_parent,
-            bgui::mode::wrap_content
-        );
+        button.style.visual.background.normal =
+            bgui::color{0.12f, 0.12f, 0.12f, 1.f};
 
         button.add_class("context-menu-button");
 
@@ -55,6 +51,40 @@ namespace bgui {
         const std::string& name
     ) {
         return add_button(name, []() {});
+    }
+
+    context_menu& context_menu::add_item(
+        const std::string& name,
+        float scale,
+        const std::function<void()>& fctn
+    ) {
+        auto& button = m_menu->add_persistent<bgui::button>(
+            name,
+            scale,
+            [this, fctn]() {
+                fctn();
+                close();
+            }
+        );
+        button.style.visual.background.normal =
+            bgui::color{0.12f, 0.12f, 0.12f, 1.f};
+        button.add_class("context-menu-button");
+
+        return *this;
+    }
+
+    context_menu& context_menu::add_separator() {
+        auto& separator = m_menu->add_persistent<bgui::element>();
+        separator.style.layout.require_mode(
+            bgui::mode::match_parent,
+            bgui::mode::pixel
+        );
+        separator.style.layout.require_height(bgui::mode::pixel, 1.f);
+        separator.style.layout.limit_min = bgui::vec2i{1, 1};
+        separator.style.visual.background.normal =
+            bgui::color{0.35f, 0.35f, 0.35f, 1.f};
+
+        return *this;
     }
 
     void context_menu::open(int x, int y) {
