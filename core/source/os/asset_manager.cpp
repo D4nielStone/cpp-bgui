@@ -97,6 +97,7 @@ namespace {
 
         if (FAILED(result))
             throw std::runtime_error("[AssetManager] Could not decode asset: " + asset_path.string());
+        loaded.m_revision = 1;
         return loaded;
     }
 #else
@@ -122,6 +123,7 @@ namespace {
             throw std::runtime_error("[AssetManager] Could not read asset: " + message);
         }
         png_image_free(&image);
+        loaded.m_revision = 1;
         return loaded;
     }
 #endif

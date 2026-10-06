@@ -48,6 +48,23 @@ int main() {
             label->set_buffer("Slider value: " + std::to_string(value));
         });
 
+        auto color_text = demo_window.add<bgui::text>("Color: #FF0000", 0.4f);
+        auto color_control = demo_window.add<bgui::color_picker>();
+        color_control->style.layout.require_size(150.f, 150.f);
+        color_control->set_on_change([label = &color_text.get()](const bgui::color& value) {
+            const auto channel = [](float component) {
+                constexpr char digits[] = "0123456789ABCDEF";
+                const int byte = static_cast<int>(component * 255.f + 0.5f);
+                std::string result(2, '0');
+                result[0] = digits[(byte >> 4) & 0xF];
+                result[1] = digits[byte & 0xF];
+                return result;
+            };
+            label->set_buffer(
+                "Color: #" + channel(value.r) + channel(value.g) + channel(value.b)
+            );
+        });
+
         auto chkbx = demo_window.add<bgui::checkbox>("CheckBox Element", 0.4f, true);
 
         auto btn = demo_window.add<bgui::button>("Button inside window", 0.4f, [](){});

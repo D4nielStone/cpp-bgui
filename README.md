@@ -203,6 +203,21 @@ the slider also rejects negative or non-finite steps. A slider's change
 callback runs only when its effective value changes, including changes caused
 by updating its range or step.
 
+### Color picker
+
+`bgui::color_picker` provides a hue ring and a triangular saturation/value
+selector. Drag the ring to choose a hue and the triangle to select a tint or
+shade. Its selected RGBA color is available through `get_color()`; use
+`set_color`, `set_hue`, and `set_on_change` to control or observe it.
+
+```cpp
+auto picker = panel->add<bgui::color_picker>();
+picker->style.layout.require_size(160.f, 160.f);
+picker->set_on_change([](const bgui::color& selected) {
+    // Apply selected.r, selected.g, selected.b and selected.a.
+});
+```
+
 ### Font families and styles
 
 The FreeType backend keeps loaded fonts in a resolution-aware cache and lets

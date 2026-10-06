@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 #include "vec.hpp"
@@ -14,12 +15,15 @@ namespace bgui {
         std::vector<unsigned char> m_buffer;
         bgui::vec2 m_offset = {0,0};
         bgui::vec2 m_size = {0,0};
+        // Increment after changing m_buffer; non-zero revisions let backends skip content hashing.
+        std::uint64_t m_revision{0};
 
         bool operator==(const texture& other) const {
             return m_id == other.m_id &&
                 m_external == other.m_external &&
                 m_path == other.m_path &&
-                m_buffer == other.m_buffer;
+                m_buffer == other.m_buffer &&
+                m_revision == other.m_revision;
         }
     };
 } // namespace bgui

@@ -2,6 +2,111 @@
 #include "bgui.hpp"
 #include <limits>
 
+TEST(ValueControlTest, ColorPickerConvertsColorsAndNotifiesChanges) {
+    bgui::color_picker control({0.2f, 0.4f, 0.8f, 0.5f});
+    EXPECT_NEAR(control.get_color().r, 0.2f, 0.001f);
+    EXPECT_NEAR(control.get_color().g, 0.4f, 0.001f);
+    EXPECT_NEAR(control.get_color().b, 0.8f, 0.001f);
+    EXPECT_FLOAT_EQ(control.get_color().a, 0.5f);
+    EXPECT_NEAR(control.get_hue(), 220.f, 0.01f);
+
+    int callback_count = 0;
+    bgui::color callback_color;
+    control.set_on_change([&](const bgui::color& value) {
+        ++callback_count;
+        callback_color = value;
+    });
+    control.set_hue(120.f);
+
+    EXPECT_FLOAT_EQ(control.get_hue(), 120.f);
+    EXPECT_EQ(callback_count, 1);
+    EXPECT_EQ(callback_color, control.get_color());
+    EXPECT_NE(control.get_color(), (bgui::color{0.2f, 0.4f, 0.8f, 0.5f}));
+}
+
+TEST(ValueControlTest, ColorPickerNormalizesInputAndRejectsNonFiniteValues) {
+    bgui::color_picker control;
+    control.set_color({2.f, -1.f, 0.5f, 1.5f});
+
+    EXPECT_EQ(control.get_color(), (bgui::color{1.f, 0.f, 0.5f, 1.f}));
+    control.set_hue(-120.f);
+    EXPECT_FLOAT_EQ(control.get_hue(), 240.f);
+    EXPECT_THROW(
+        control.set_color({0.f, std::numeric_limits<float>::quiet_NaN(), 0.f, 1.f}),
+        std::invalid_argument
+    );
+    EXPECT_THROW(control.set_hue(std::numeric_limits<float>::infinity()), std::invalid_argument);
+}
+
+TEST(ValueControlTest, ColorPickerSelectsHueAndTriangleWithPointer) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    bgui::color_picker control;
+    control.set_final_rect(0, 0, 200, 200);
+
+    context.m_mouse_position = {173, 142};
+    control.on_pressed();
+    EXPECT_NEAR(control.get_hue(), 240.f, 1.f);
+    EXPECT_NEAR(control.get_color().r, 0.f, 0.01f);
+    EXPECT_NEAR(control.get_color().g, 0.f, 0.01f);
+    EXPECT_NEAR(control.get_color().b, 1.f, 0.01f);
+
+    const bgui::color hue_color = control.get_color();
+    control.on_released();
+    context.m_mouse_position = {100, 100};
+    control.on_pressed();
+    EXPECT_NEAR(control.get_color().r, 1.f / 3.f, 0.01f);
+    EXPECT_NEAR(control.get_color().g, 1.f / 3.f, 0.01f);
+    EXPECT_NEAR(control.get_color().b, 2.f / 3.f, 0.01f);
+    EXPECT_NE(control.get_color(), hue_color);
+}
+
+TEST(ValueControlTest, ColorPickerRendersSharedBackendTexture) {
+    bgui::scoped_interface interface;
+    bgui::color_picker control;
+    control.set_final_rect(10, 20, 180, 180);
+    control.compute_style();
+
+    bgui::draw_data data;
+    control.get_requires(&data);
+
+    ASSERT_EQ(data.m_quad_requires.size(), 3U);
+    const auto& draw = data.m_quad_requires.front();
+    EXPECT_EQ(draw.m_rect, (bgui::vec4{10.f, 20.f, 180.f, 180.f}));
+    ASSERT_TRUE(draw.m_material.m_use_tex);
+    EXPECT_EQ(draw.m_material.m_texture.m_size, (bgui::vec2{128.f, 128.f}));
+    EXPECT_EQ(draw.m_material.m_texture.m_buffer.size(), 128U * 128U * 4U);
+    const auto initial_revision = draw.m_material.m_texture.m_revision;
+    const auto initial_palette = draw.m_material.m_texture.m_buffer;
+
+    bgui::draw_data unchanged_data;
+    control.get_requires(&unchanged_data);
+    ASSERT_EQ(unchanged_data.m_quad_requires.size(), 3U);
+    EXPECT_EQ(
+        unchanged_data.m_quad_requires.front().m_material.m_texture.m_revision,
+        initial_revision
+    );
+
+    control.set_color({0.5f, 0.f, 0.f, 1.f});
+    bgui::draw_data selection_data;
+    control.get_requires(&selection_data);
+    ASSERT_EQ(selection_data.m_quad_requires.size(), 3U);
+    EXPECT_EQ(
+        selection_data.m_quad_requires.front().m_material.m_texture.m_buffer,
+        initial_palette
+    );
+
+    control.set_hue(120.f);
+    bgui::draw_data updated_data;
+    control.get_requires(&updated_data);
+    ASSERT_EQ(updated_data.m_quad_requires.size(), 3U);
+    EXPECT_NE(updated_data.m_quad_requires.front().m_material.m_texture.m_buffer, initial_palette);
+    EXPECT_GT(
+        updated_data.m_quad_requires.front().m_material.m_texture.m_revision,
+        initial_revision
+    );
+}
+
 TEST(ValueControlTest, SliderClampsValuesAndSnapsToStep) {
     bgui::slider control(-10.f, 10.f, 1.f);
     EXPECT_FLOAT_EQ(control.get_value(), 1.f);
