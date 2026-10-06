@@ -14,7 +14,7 @@ namespace bgui {
 
         auto& title = add_persistent<bgui::text>(
             " Bubble Engine | ",
-            0.35f
+            0.4f
         );
         title.style.layout.require_mode(
             bgui::mode::wrap_content,

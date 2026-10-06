@@ -4,8 +4,10 @@
 #include "lay/dock.hpp"
 #include <utils/vec.hpp>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -34,6 +36,129 @@ static float s_global_scale = 1.f;
 
 namespace {
     constexpr const char* legacy_configuration_header = "cpp-bgui-ui 1";
+    constexpr const char* profiling_overlay_id = "bgui.profiling_overlay";
+
+    using profiling_clock = std::chrono::steady_clock;
+    bool s_profiling_enabled = false;
+    bool s_has_previous_profile_frame = false;
+    bool s_has_profile_frame_time = false;
+    bool s_has_profile_update_time = false;
+    profiling_clock::time_point s_previous_profile_frame;
+    profiling_clock::time_point s_profile_fps_window;
+    std::uint64_t s_profile_frame_count = 0;
+    float s_profile_frame_time_ms = 0.f;
+    float s_profile_update_time_ms = 0.f;
+    int s_profile_fps = 0;
+    std::size_t s_profile_draw_calls = 0;
+    std::size_t s_profile_geometry_vertices = 0;
+
+    class profiling_overlay final : public bgui::linear {
+        std::array<bgui::text*, 6> m_metrics;
+
+    public:
+        profiling_overlay()
+            : bgui::linear(bgui::orientation::vertical) {
+            id = profiling_overlay_id;
+            recives_input(false);
+            style.layout.require_size(230.f, 142.f);
+            style.layout.set_padding(8, 6);
+            style.visual.background.normal = bgui::color{0.04f, 0.05f, 0.07f, 0.9f};
+            style.visual.border.normal = bgui::color{0.3f, 0.35f, 0.4f, 1.f};
+            style.visual.border_size = 1.f;
+
+            const std::array<const char*, 6> initial_metrics = {
+                "FPS: --", "Frame interval: -- ms", "UI update: -- ms",
+                "Draw calls: --", "Geometry vertices: --", "Resolution: -- x --"
+            };
+            for (std::size_t i = 0; i < initial_metrics.size(); ++i) {
+                m_metrics[i] = &add_persistent<bgui::text>(initial_metrics[i], 0.32f);
+                auto* label = m_metrics[i];
+                label->style.layout.require_mode(
+                    bgui::mode::wrap_content, bgui::mode::wrap_content);
+                label->style.visual.background.normal = bgui::color{0.f, 0.f, 0.f, 0.f};
+                label->style.visual.text.normal = bgui::color{0.92f, 0.94f, 0.97f, 1.f};
+                label->recives_input(false);
+            }
+        }
+
+        void set_metrics(
+            bool has_frame_time,
+            float frame_time_ms,
+            bool has_update_time,
+            float update_time_ms,
+            int fps,
+            std::size_t draw_calls,
+            std::size_t geometry_vertices,
+            const bgui::vec2i& resolution
+        ) {
+            m_metrics[0]->set_buffer(fps > 0
+                ? "FPS: " + std::to_string(fps)
+                : "FPS: --");
+            const auto format_time = [](bool available, float time_ms) {
+                if (!available)
+                    return std::string("-- ms");
+                std::ostringstream value;
+                value << std::fixed << std::setprecision(2) << time_ms << " ms";
+                return value.str();
+            };
+            m_metrics[1]->set_buffer("Frame interval: " +
+                format_time(has_frame_time, frame_time_ms));
+            m_metrics[2]->set_buffer("UI update: " +
+                format_time(has_update_time, update_time_ms));
+            m_metrics[3]->set_buffer("Draw calls: " + std::to_string(draw_calls));
+            m_metrics[4]->set_buffer(
+                "Geometry vertices: " + std::to_string(geometry_vertices));
+            m_metrics[5]->set_buffer(
+                "Resolution: " + std::to_string(resolution.x) + " x " +
+                std::to_string(resolution.y));
+        }
+    };
+
+    profiling_overlay* find_profiling_overlay(bgui::layout& root) {
+        const auto& elements = root.get_elements();
+        const auto overlay_layer = elements.find(bgui::layer::overlay);
+        if (overlay_layer == elements.end())
+            return nullptr;
+        for (const auto& element : overlay_layer->second) {
+            if (element && element->id == profiling_overlay_id)
+                return dynamic_cast<profiling_overlay*>(element.get());
+        }
+        return nullptr;
+    }
+
+    profiling_overlay* ensure_profiling_overlay(bgui::layout& root) {
+        if (auto* existing = find_profiling_overlay(root))
+            return existing;
+        return &root.add_persistent<profiling_overlay, bgui::layer::overlay>();
+    }
+
+    void remove_profiling_overlay(bgui::layout& root) {
+        const auto& elements = root.get_elements();
+        const auto overlay_layer = elements.find(bgui::layer::overlay);
+        if (overlay_layer == elements.end())
+            return;
+        bgui::element* overlay = nullptr;
+        for (const auto& element : overlay_layer->second) {
+            if (element && element->id == profiling_overlay_id) {
+                overlay = element.get();
+                break;
+            }
+        }
+        if (overlay)
+            root.remove(overlay);
+    }
+
+    void reset_profiling_metrics() {
+        s_has_previous_profile_frame = false;
+        s_has_profile_frame_time = false;
+        s_has_profile_update_time = false;
+        s_profile_frame_count = 0;
+        s_profile_frame_time_ms = 0.f;
+        s_profile_update_time_ms = 0.f;
+        s_profile_fps = 0;
+        s_profile_draw_calls = 0;
+        s_profile_geometry_vertices = 0;
+    }
 
     using configuration_sections = std::map<std::string, std::map<std::string, std::string>>;
     void collect_docks(bgui::layout& current, std::vector<bgui::dock*>& docks);
@@ -407,6 +532,8 @@ bool bgui::save_configuration(const std::string& path) {
 static void shutdown_interface() noexcept {
     if (bgui::s_main_layout)
         bgui::cancel_interactions(bgui::s_main_layout.get());
+    s_profiling_enabled = false;
+    reset_profiling_metrics();
     init_trigger = false;
     s_keyboard_focused = nullptr;
     s_mouse_target = nullptr;
@@ -603,6 +730,8 @@ bool update_inputs(bgui::layout &lay){
 
             if (!elem->is_enabled())
                 continue;
+            if (elem->id == profiling_overlay_id)
+                continue;
 
             if (auto* cast = elem->as_layout())
                 if(update_inputs(*cast)) {
@@ -656,16 +785,75 @@ bool update_inputs(bgui::layout &lay){
     return false;
 }
 // Updates the main layout
+void bgui::enable_proffiling(bool enabled) {
+    if (s_profiling_enabled == enabled)
+        return;
+
+    s_profiling_enabled = enabled;
+    reset_profiling_metrics();
+    if (!enabled) {
+        if (s_main_layout)
+            remove_profiling_overlay(*s_main_layout);
+        return;
+    }
+
+    if (init_trigger && s_main_layout) {
+        s_profile_fps_window = profiling_clock::now();
+        ensure_profiling_overlay(*s_main_layout);
+    }
+}
+
 void bgui::on_update() {
     if(!init_trigger) throw std::runtime_error("[BGUI] You must initialize the library.");
 
+    const auto update_start = s_profiling_enabled
+        ? profiling_clock::now()
+        : profiling_clock::time_point{};
     bgui::vec2i w_size = bgui::get_context_size();
+    if (s_profiling_enabled) {
+        const auto now = profiling_clock::now();
+        if (s_has_previous_profile_frame) {
+            s_profile_frame_time_ms =
+                std::chrono::duration<float, std::milli>(now - s_previous_profile_frame).count();
+            s_has_profile_frame_time = true;
+            ++s_profile_frame_count;
+            const float elapsed =
+                std::chrono::duration<float>(now - s_profile_fps_window).count();
+            if (elapsed >= 1.f) {
+                s_profile_fps = static_cast<int>(s_profile_frame_count / elapsed);
+                s_profile_frame_count = 0;
+                s_profile_fps_window = now;
+            }
+        } else {
+            s_profile_fps_window = now;
+            s_has_previous_profile_frame = true;
+        }
+        s_previous_profile_frame = now;
+
+    }
 
     // the main layout must to be resized based on the window size by default.
     while(!s_functions.empty()) {
         auto& f = s_functions.front();
         f();
         s_functions.pop();
+    }
+
+    if (s_profiling_enabled) {
+        auto* overlay = ensure_profiling_overlay(*s_main_layout);
+        overlay->set_metrics(
+            s_has_profile_frame_time,
+            s_profile_frame_time_ms,
+            s_has_profile_update_time,
+            s_profile_update_time_ms,
+            s_profile_fps,
+            s_profile_draw_calls,
+            s_profile_geometry_vertices,
+            w_size);
+        const float scale = bgui::get_global_scale();
+        const int margin = static_cast<int>(8.f * scale);
+        const int width = static_cast<int>(230.f * scale);
+        overlay->set_position(std::max(0, w_size.x - width - margin), margin);
     }
 
     // cascade style
@@ -691,6 +879,14 @@ void bgui::on_update() {
     if(!get_draw_data()->m_quad_requires.empty()) bgui::detail::log_out() << "[BGUI] Warning: draw data not empty at beginning of frame.\nMake sure you are resetting draw data each frame.\n";
     get_draw_data()->m_clip_rect = {0, 0, w_size.x, w_size.y};
     bgui::s_main_layout->get_requires(get_draw_data());
+    if (s_profiling_enabled) {
+        const auto update_end = profiling_clock::now();
+        s_profile_update_time_ms =
+            std::chrono::duration<float, std::milli>(update_end - update_start).count();
+        s_has_profile_update_time = true;
+        s_profile_draw_calls = get_draw_data()->m_quad_requires.size();
+        s_profile_geometry_vertices = get_draw_data()->m_draw_list.get_vertices().size();
+    }
 }
 
 bgui::element* bgui::get_mouse_target() {

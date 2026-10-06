@@ -32,7 +32,8 @@ int main() {
         bgui::scoped_interface interface_scope;
         auto& sm = bgui::style_manager::get_instance();
         sm.apply_theme(bgui::dark_theme());
-
+        bgui::set_logs_enabled(false);
+        bgui::enable_proffiling(true);
         // Keep each handle alive while its element should remain in the layout.
         bgui::layout& root = bgui::get_layout();
         auto workspace = root.add<bgui::linear>(bgui::orientation::vertical);
@@ -93,7 +94,7 @@ int main() {
                 });
             }
         );
-        task_button->style.layout.require_width(bgui::mode::match_parent);
+        task_button->style.layout.require_mode(bgui::mode::match_parent, bgui::mode::wrap_content);
         auto panel_text = panel.add<bgui::text>("Linear Layout Example\nYou can add more widgets here.", 0.4f);
         auto tree = panel.add<bgui::tree>("Project");
         auto& source_tree = tree->add_child("src");
@@ -178,6 +179,43 @@ int main() {
         fipt.set_max_float(1.6);
         fipt.set_float_callback(bgui::set_global_scale);
         auto fiii = demo_window.add<bgui::inputbox>("", "", 0.4f);
+
+        const auto add_vector_field = [&demo_window](
+            const std::string& label,
+            const std::vector<std::string>& axes
+        ) {
+            auto vector_field = demo_window.add<bgui::linear>(
+                bgui::orientation::vertical
+            );
+            vector_field->style.layout.require_mode(
+                bgui::mode::match_parent, bgui::mode::wrap_content
+            );
+
+            auto field_label = vector_field->add<bgui::text>(label, 0.4f);
+            field_label->style.layout.require_mode(
+                bgui::mode::match_parent, bgui::mode::wrap_content
+            );
+            field_label->style.layout.align = bgui::vec<2UL, bgui::alignment>(
+                {bgui::alignment::center, bgui::alignment::start}
+            );
+
+            auto values = vector_field->add<bgui::linear>(
+                bgui::orientation::horizontal
+            );
+            values->style.layout.require_mode(
+                bgui::mode::match_parent, bgui::mode::wrap_content
+            );
+
+            for (const auto& axis : axes) {
+                values->add<bgui::text>(axis, 0.4f);
+                auto input = values->add<bgui::inputbox>(
+                    "", "", 0.4f, nullptr, bgui::input_mode::number
+                );
+                input->style.layout.require_width(bgui::mode::stretch);
+            }
+        };
+        add_vector_field("Vec2", {"x:", "y:"});
+        add_vector_field("Vec3", {"x:", "y:", "z:"});
 
         auto& text_editor_window = dock->add_window("Text Editor", bgui::dock_area::bottom);
         auto text_editor = text_editor_window.add<bgui::inputbox>(

@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "bgui.hpp"
+#include <atomic>
 #include <limits>
+#include <thread>
 
 TEST(ValueControlTest, ColorPickerConvertsColorsAndNotifiesChanges) {
     bgui::color_picker control({0.2f, 0.4f, 0.8f, 0.5f});
@@ -237,6 +239,26 @@ TEST(ValueControlTest, ProgressBarClampsValuesAndSupportsRanges) {
     EXPECT_FLOAT_EQ(control.get_minimum(), -10.f);
     EXPECT_FLOAT_EQ(control.get_maximum(), 10.f);
     EXPECT_FLOAT_EQ(control.get_value(), 10.f);
+}
+
+TEST(ValueControlTest, ProgressBarValueCanBeUpdatedFromAnotherThread) {
+    bgui::progress_bar control(0.f, 100.f);
+    std::atomic_bool finished{false};
+    std::thread worker([&]() {
+        for (int value = 0; value <= 100000; ++value)
+            control.set_value(static_cast<float>(value % 101));
+        control.set_value(100.f);
+        finished.store(true, std::memory_order_release);
+    });
+
+    while (!finished.load(std::memory_order_acquire)) {
+        const float value = control.get_value();
+        EXPECT_GE(value, 0.f);
+        EXPECT_LE(value, 100.f);
+    }
+    worker.join();
+
+    EXPECT_FLOAT_EQ(control.get_value(), 100.f);
 }
 
 TEST(ValueControlTest, ProgressBarRejectsInvalidRangesAndValues) {

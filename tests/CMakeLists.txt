@@ -19,6 +19,7 @@ add_executable(
     linear_tests.cpp
     dock_tests.cpp
     style_tests.cpp
+    profiling_tests.cpp
 )
 
 target_include_directories(all_tests
@@ -46,6 +47,7 @@ add_test(NAME ImageTests COMMAND all_tests --gtest_filter=ImageTest.*)
 add_test(NAME LinearTests COMMAND all_tests --gtest_filter=LinearTest.*)
 add_test(NAME DockTests COMMAND all_tests --gtest_filter=DockTest.*)
 add_test(NAME StyleTests COMMAND all_tests --gtest_filter=StyleVisualTest.*:DeclarativeStyleTest.*)
+add_test(NAME ProfilingTests COMMAND all_tests --gtest_filter=ProfilingTest.*)
 
 if(WIN32)
   # On Windows, do not link pthreads

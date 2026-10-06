@@ -102,6 +102,17 @@ BGUI logs are enabled by default in Debug builds and disabled in other build con
 bgui::set_logs_enabled(false);
 ```
 
+Enable the built-in profiling overlay to show rolling FPS, frame interval, BGUI
+update duration, generated draw calls and geometry vertices, and window
+resolution. The update duration does not include rendering, buffer swapping, or
+GPU time. Profiling is off by default and can be hidden again at runtime:
+
+```cpp
+bgui::enable_proffiling(true);
+// ...
+bgui::enable_proffiling(false);
+```
+
 - Configure the layout as you want
 
 ```cpp
@@ -205,7 +216,12 @@ by updating its range or step.
 
 The GLFW/OpenGL demo also includes a modal progress-bar example. Its worker
 thread publishes progress through an atomic value, and the UI thread applies
-that value to the widget each frame; the worker never accesses UI elements.
+that value to the widget each frame because the modal can be closed while the
+worker is running. When a progress bar is guaranteed to outlive its worker,
+`set_value()` and `get_value()` may also be called directly from background
+threads. Configure its range before starting workers and do not change the
+range while they are updating the value; all other widget and UI operations
+remain on the UI thread.
 
 ### Color picker
 

@@ -46,13 +46,16 @@ void bgui::progress_bar::set_range(float minimum, float maximum) {
     validate_range(minimum, maximum);
     m_minimum = minimum;
     m_maximum = maximum;
-    m_value = std::clamp(m_value, minimum, maximum);
+    m_value.store(
+        std::clamp(m_value.load(std::memory_order_relaxed), minimum, maximum),
+        std::memory_order_relaxed
+    );
 }
 
 void bgui::progress_bar::set_value(float value) {
     if (!std::isfinite(value))
         throw std::invalid_argument("[BGUI] Progress bar value must be finite.");
-    m_value = std::clamp(value, m_minimum, m_maximum);
+    m_value.store(std::clamp(value, m_minimum, m_maximum), std::memory_order_relaxed);
 }
 
 void bgui::progress_bar::get_requires(bgui::draw_data* calls) {
@@ -67,8 +70,9 @@ void bgui::progress_bar::get_requires(bgui::draw_data* calls) {
         return;
 
     const bool vertical = m_orientation == orientation::vertical;
+    const float value = m_value.load(std::memory_order_relaxed);
     const float ratio = static_cast<float>(
-        (static_cast<double>(m_value) - m_minimum) /
+        (static_cast<double>(value) - m_minimum) /
         (static_cast<double>(m_maximum) - m_minimum)
     );
     const float cross_extent = vertical ? width : height;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "elem/element.hpp"
+#include <atomic>
 
 namespace bgui {
     class progress_bar : public element {
@@ -14,7 +15,7 @@ namespace bgui {
 
         float get_minimum() const noexcept { return m_minimum; }
         float get_maximum() const noexcept { return m_maximum; }
-        float get_value() const noexcept { return m_value; }
+        float get_value() const noexcept { return m_value.load(std::memory_order_relaxed); }
         orientation get_orientation() const noexcept { return m_orientation; }
 
         void set_range(float minimum, float maximum);
@@ -24,7 +25,7 @@ namespace bgui {
     private:
         float m_minimum;
         float m_maximum;
-        float m_value;
+        std::atomic<float> m_value;
         orientation m_orientation;
         material m_fill_material;
     };
