@@ -19,18 +19,18 @@ bgui::combo_box::combo_box(
         throw std::out_of_range("[BGUI] Combo box selected index is out of range.");
 
     type = "combobox";
-    recives_input(true);
+    receives_input(true);
 
-    m_selected_label = &add_persistent<text>(
+    m_selected_label = &add<text>(
         m_options[m_selected_index],
         scale
     );
     m_selected_label->add_class("combo-box-label");
-    m_selected_label->recives_input(false);
+    m_selected_label->receives_input(false);
 
-    auto& indicator = add_persistent<text>("v", scale);
+    auto& indicator = add<text>("v", scale);
     indicator.add_class("combo-box-indicator");
-    indicator.recives_input(false);
+    indicator.receives_input(false);
 }
 
 bgui::combo_box::~combo_box() {
@@ -46,7 +46,7 @@ void bgui::combo_box::ensure_options_menu() {
     while (m_overlay_parent->get_parent())
         m_overlay_parent = m_overlay_parent->get_parent();
 
-    m_options_menu = &m_overlay_parent->add_persistent<linear, layer::overlay>(
+    m_options_menu = &m_overlay_parent->add<linear, layer::overlay>(
         bgui::orientation::vertical
     );
     m_options_menu->add_class("combo-box-popup");
@@ -59,7 +59,7 @@ void bgui::combo_box::ensure_options_menu() {
     m_options_menu->set_enable(false);
 
     for (std::size_t index = 0; index < m_options.size(); ++index) {
-        auto& option = m_options_menu->add_persistent<button>(
+        auto& option = m_options_menu->add<button>(
             m_options[index],
             m_scale,
             [this, index]() {

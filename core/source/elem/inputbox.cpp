@@ -138,10 +138,10 @@ bgui::inputbox::inputbox(const std::string& buffer, const std::string& placehold
     type = "inputarea";
     if (m_mode == input_mode::inputbox)
         style.layout.align = {alignment::start, alignment::center};
-    recives_input(true);
-    m_text = &add_persistent<text>(m_input_buffer.empty() ? m_placeholder : m_input_buffer, scale);
+    receives_input(true);
+    m_text = &add<text>(m_input_buffer.empty() ? m_placeholder : m_input_buffer, scale);
     m_text->add_class("inputarea-txt");
-    m_text->recives_input(false);
+    m_text->receives_input(false);
     m_text->set_wrap(m_mode == input_mode::multiline);
 }
 

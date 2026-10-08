@@ -15,8 +15,8 @@ field::field(
       m_inputbox(nullptr)
 {
     style.layout.require_mode(mode::stretch, mode::wrap_content);
-    m_label = &add_persistent<bgui::text>(label, scale);
+    m_label = &add<bgui::text>(label, scale);
     m_label->add_class("inputbox-label");
-    m_inputbox = &add_persistent<bgui::inputbox>(buffer, placeholder, scale, action, mode);
+    m_inputbox = &add<bgui::inputbox>(buffer, placeholder, scale, action, mode);
 }
 }

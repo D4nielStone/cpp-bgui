@@ -10,7 +10,7 @@ linear::linear(const orientation& ori) : m_orientation(ori), layout() {
     type = "linear";
     m_scrollbar.type = "scrollbar";
     m_scrollbar.set_parent(this);
-    m_scrollbar.recives_input(true);
+    m_scrollbar.receives_input(true);
     m_scrollbar.style.visual.background.normal = color{0.45f, 0.45f, 0.45f, 0.85f};
     m_scrollbar.style.visual.border.normal = color{0.f, 0.f, 0.f, 0.f};
     m_scrollbar.style.visual.border_radius = 3.f;

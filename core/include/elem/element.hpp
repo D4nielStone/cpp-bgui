@@ -35,7 +35,7 @@ namespace bgui {
         // The graphical material (shader, colors, textures) used for rendering the element.
         material m_material;
         // Flag indicating if the element should process mouse/keyboard input. Not strictly style, but related to interaction.
-        bool m_recives_input{true};
+        bool m_receives_input{true};
         
         vec2i m_last_drag{0, 0}, m_content_size{0, 0};
 
@@ -200,16 +200,16 @@ namespace bgui {
          * @brief Enables or disables input reception for the element.
          * @param b True to enable input, false to disable.
          */
-        void recives_input(bool b) {
-            m_recives_input = b;
+        void receives_input(bool b) {
+            m_receives_input = b;
         };
 
         /**
          * @brief Checks if the element is currently set to receive input.
          * @return True if input is enabled, false otherwise.
          */
-        bool recives_input() const {
-            return m_recives_input;
+        bool receives_input() const {
+            return m_receives_input;
         }
 
         /**

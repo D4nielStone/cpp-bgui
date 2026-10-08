@@ -42,7 +42,7 @@ public:
     ~layout() override;
 
     template<typename T, layer Lay = layer::base, typename... Args>
-    scoped_element<T> add(Args&&... args) {
+    scoped_element<T> add_scoped(Args&&... args) {
         return scoped_element<T>(
             this,
             &insert_element<T, Lay>(
@@ -52,7 +52,7 @@ public:
     }
 
     template<typename T, layer Lay = layer::base, typename... Args>
-    T& add_persistent(Args&&... args) {
+    T& add(Args&&... args) {
         return insert_element<T, Lay>(
             std::forward<Args>(args)...
         );

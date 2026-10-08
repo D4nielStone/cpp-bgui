@@ -11,14 +11,14 @@ namespace bgui {
         type = "tree";
         style.layout.require_mode(mode::match_parent, mode::wrap_content);
 
-        m_label_button = &add_persistent<button>("", scale, [this]() {
+        m_label_button = &add<button>("", scale, [this]() {
             set_expanded(!m_expanded);
         });
         m_label_button->style.layout.require_mode(mode::match_parent, mode::wrap_content);
         m_label_button->add_class("tree-element-label");
         m_label_button->get_label().add_class("tree-element-label-text");
 
-        m_children = &add_persistent<linear>(orientation::vertical);
+        m_children = &add<linear>(orientation::vertical);
         m_children->style.layout.require_mode(mode::match_parent, mode::wrap_content);
         m_children->style.layout.set_padding(12, 0);
         m_children->add_class("tree-element-children");
@@ -27,7 +27,7 @@ namespace bgui {
     }
 
     tree& tree::add_child(const std::string& label) {
-        auto& child = m_children->add_persistent<tree>(label, m_scale);
+        auto& child = m_children->add<tree>(label, m_scale);
         child.style.layout.require_mode(mode::match_parent, mode::wrap_content);
         return child;
     }

@@ -7,7 +7,7 @@ namespace bgui {
         type = "image";
         m_material.m_use_tex = true;
         m_material.m_shader_tag = "ui::image";
-        recives_input(false);
+        receives_input(false);
         style.layout.require_mode(mode::wrap_content, mode::wrap_content);
     }
 

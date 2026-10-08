@@ -8,7 +8,7 @@ namespace bgui {
         : m_button(button),
           m_parent(parent) {
 
-        m_menu = &m_parent.add_persistent<
+        m_menu = &m_parent.add<
             bgui::linear,
             bgui::layer::overlay
         >(bgui::orientation::vertical);
@@ -30,7 +30,7 @@ namespace bgui {
         const std::string& name,
         const std::function<void()>& fctn
     ) {
-        auto& button = m_menu->add_persistent<bgui::button>(
+        auto& button = m_menu->add<bgui::button>(
             name,
             0.35f,
             [this, fctn]() {
@@ -55,7 +55,7 @@ namespace bgui {
         float scale,
         const std::function<void()>& fctn
     ) {
-        auto& button = m_menu->add_persistent<bgui::button>(
+        auto& button = m_menu->add<bgui::button>(
             name,
             scale,
             [this, fctn]() {
@@ -69,7 +69,7 @@ namespace bgui {
     }
 
     context_menu& context_menu::add_separator() {
-        auto& separator = m_menu->add_persistent<bgui::element>();
+        auto& separator = m_menu->add<bgui::element>();
         separator.style.layout.require_mode(
             bgui::mode::match_parent,
             bgui::mode::pixel

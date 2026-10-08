@@ -6,13 +6,13 @@
 bgui::button::button(const std::string& name,
                      float scale,
                      const std::function<void()>& f)
-    : m_label(&add_persistent<text>(name, scale)),
+    : m_label(&add<text>(name, scale)),
       m_function(f),
       linear(bgui::orientation::horizontal)
 {
     type = "button";
-    recives_input(true);
-    m_label->recives_input(false);
+    receives_input(true);
+    m_label->receives_input(false);
 }
 
 bgui::button::~button() {

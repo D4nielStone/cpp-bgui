@@ -41,7 +41,7 @@ bgui::slider::slider(
         throw std::invalid_argument("[BGUI] Slider orientation is invalid.");
     m_value = normalize_value(value);
     type = "slider";
-    recives_input(true);
+    receives_input(true);
 }
 
 float bgui::slider::normalize_value(float value) const {

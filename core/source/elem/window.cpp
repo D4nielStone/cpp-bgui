@@ -18,17 +18,17 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
     set_position(20, 20);
 
     // testing the header:
-    m_header = &add_persistent<bgui::linear>(bgui::orientation::horizontal);
+    m_header = &add<bgui::linear>(bgui::orientation::horizontal);
     m_header->add_class("window-header");
     m_header->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
-    m_icon = &m_header->add_persistent<bgui::image>();
+    m_icon = &m_header->add<bgui::image>();
     m_icon->set_size(1.f, 1.f);
     set_icon("bubble.png");
-    m_title = &m_header->add_persistent<bgui::text>(title, 0.4);
+    m_title = &m_header->add<bgui::text>(title, 0.4);
     m_title->add_class("window-label");
     m_title->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
     // TODO: switch to image button later
-    m_close_button = &m_header->add_persistent<bgui::button>(" X ", 0.4f, [this](){
+    m_close_button = &m_header->add<bgui::button>(" X ", 0.4f, [this](){
         auto* parent = get_parent();
         bgui::add_function([this, parent]() {
             if (auto* dock_parent = dynamic_cast<bgui::dock*>(parent))
@@ -45,7 +45,7 @@ bgui::window::window(const char* title, bool floating) : linear(bgui::orientatio
 }
 
 void bgui::window::initialize_context() {
-    m_context = &add_persistent<bgui::linear>(bgui::orientation::vertical);
+    m_context = &add<bgui::linear>(bgui::orientation::vertical);
     m_context->set_scrollable(true);
     m_context->style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
     m_context->style.visual.visible = false;

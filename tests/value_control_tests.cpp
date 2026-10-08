@@ -230,7 +230,7 @@ TEST(ValueControlTest, DarkThemeProvidesIntrinsicSliderHeight) {
 
 TEST(ValueControlTest, ProgressBarClampsValuesAndSupportsRanges) {
     bgui::progress_bar control(0.f, 100.f, 50.f);
-    EXPECT_FALSE(control.recives_input());
+    EXPECT_FALSE(control.receives_input());
     EXPECT_FLOAT_EQ(control.get_value(), 50.f);
 
     control.set_value(120.f);

@@ -12,15 +12,15 @@ namespace bgui {
         modal();
 
         template<typename T, layer Lay = layer::base, typename... Args>
-        scoped_element<T> add(Args&&... args) {
-            auto item = m_content->add<T, Lay>(std::forward<Args>(args)...);
+        scoped_element<T> add_scoped(Args&&... args) {
+            auto item = m_content->add_scoped<T, Lay>(std::forward<Args>(args)...);
             configure_content_item(*item);
             return item;
         }
 
         template<typename T, layer Lay = layer::base, typename... Args>
-        T& add_persistent(Args&&... args) {
-            T& item = m_content->add_persistent<T, Lay>(
+        T& add(Args&&... args) {
+            T& item = m_content->add<T, Lay>(
                 std::forward<Args>(args)...
             );
             configure_content_item(item);

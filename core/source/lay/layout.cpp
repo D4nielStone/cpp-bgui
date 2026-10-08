@@ -6,7 +6,7 @@ using namespace bgui;
 
 layout::layout() : element() {
     type = "layout";
-    recives_input(false);
+    receives_input(false);
 };
 
 layout::~layout() {

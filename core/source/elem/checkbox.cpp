@@ -4,33 +4,33 @@
 
 bgui::checkbox::checkbox(bool* ref, bool actv, const std::string& title, const float scale) : m_ref(ref), m_active(actv), linear(bgui::orientation::horizontal) {
     type = "checkbox";
-    recives_input(true);
+    receives_input(true);
     if(title.empty() == false) {
-        auto& txt = add_persistent<text>(title, scale);
+        auto& txt = add<text>(title, scale);
         txt.add_class("checkbox-txt");
         label = &txt;
-        txt.recives_input(false);
+        txt.receives_input(false);
     }
     
-    auto& box = add_persistent<bgui::element>();
+    auto& box = add<bgui::element>();
     box.add_class("checkbox-box");
-    box.recives_input(false);
+    box.receives_input(false);
 }
 bgui::checkbox::checkbox(const std::string& title, const float scale, const bool actv) : m_ref(nullptr), m_active(actv), linear(bgui::orientation::horizontal) {
     type = "checkbox";
 
-    recives_input(true);
+    receives_input(true);
 
     if(title.empty() == false) {
-        auto& txt = add_persistent<text>(title, scale);
+        auto& txt = add<text>(title, scale);
         txt.add_class("checkbox-txt");
         label = &txt;
-        txt.recives_input(false);
+        txt.receives_input(false);
     }
     
-    auto& box = add_persistent<bgui::element>();
+    auto& box = add<bgui::element>();
     box.add_class("checkbox-box");
-    box.recives_input(false);
+    box.receives_input(false);
 }
 
 void bgui::checkbox::on_clicked() {

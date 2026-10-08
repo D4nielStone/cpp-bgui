@@ -8,20 +8,20 @@ namespace bgui {
         bgui::clear_keyboard_focus();
         type = "modal";
         set_flex(false);
-        recives_input(true);
+        receives_input(true);
 
         set_position(0, 0);
 
-        m_panel = &linear::add_persistent<linear>(orientation::vertical);
+        m_panel = &linear::add<linear>(orientation::vertical);
         m_panel->add_class("modal-panel");
 
-        m_content = &m_panel->add_persistent<linear>(orientation::vertical);
+        m_content = &m_panel->add<linear>(orientation::vertical);
         m_content->add_class("modal-content");
 
-        m_actions = &m_panel->add_persistent<linear>(orientation::horizontal);
+        m_actions = &m_panel->add<linear>(orientation::horizontal);
         m_actions->add_class("modal-actions");
 
-        m_confirm_button = &m_actions->add_persistent<button>(
+        m_confirm_button = &m_actions->add<button>(
             "Confirmar",
             0.4f,
             [this]() { confirm(); }

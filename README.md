@@ -109,9 +109,9 @@ resolution. The update duration does not include rendering, buffer swapping, or
 GPU time. Profiling is off by default and can be hidden again at runtime:
 
 ```cpp
-bgui::enable_proffiling(true);
+bgui::enable_profiling(true);
 // ...
-bgui::enable_proffiling(false);
+bgui::enable_profiling(false);
 ```
 
 - Configure the layout as you want
@@ -120,7 +120,7 @@ bgui::enable_proffiling(false);
     bgui::layout& root = bgui::get_layout();
 
     // Keep each handle alive while its element should remain in the layout.
-    auto panel = root.add<bgui::linear>(bgui::orientation::vertical);
+    auto panel = root.add_scoped<bgui::linear>(bgui::orientation::vertical);
     panel->style.layout.set_padding(10, 2);
     panel->require_width(bgui::mode::pixel, 300.f);
     panel->require_height(bgui::mode::match_parent);
@@ -128,42 +128,42 @@ bgui::enable_proffiling(false);
     // layout are invisible by default
     panel->set_visible(true);
 
-    auto txt = panel->add<bgui::text>("Linear Layout Example", 0.35f);
+    auto txt = panel->add_scoped<bgui::text>("Linear Layout Example", 0.35f);
     txt->require_width(bgui::mode::match_parent);
     txt->set_alignment(bgui::alignment::center);
-    auto button = panel->add<bgui::button>("Button Example", 0.35f, [](){});
+    auto button = panel->add_scoped<bgui::button>("Button Example", 0.35f, [](){});
     button->require_width(bgui::mode::match_parent);
 
     // window widget
-    auto win = root.add<bgui::window>("Hello Bubble!");
-    auto window2 = root.add<bgui::window>("win2");
-    auto window3 = root.add<bgui::window>("win3");
-    auto window4 = root.add<bgui::window>("win4");
+    auto win = root.add_scoped<bgui::window>("Hello Bubble!");
+    auto window2 = root.add_scoped<bgui::window>("win2");
+    auto window3 = root.add_scoped<bgui::window>("win3");
+    auto window4 = root.add_scoped<bgui::window>("win4");
     win->get_context().style.layout.set_padding(10, 10);
-    auto window_text = win->add<bgui::text>("This is a window widget example.", 0.35f);
-    auto txt2 = win->add<bgui::text>("Centered text", 0.35f);
+    auto window_text = win->add_scoped<bgui::text>("This is a window widget example.", 0.35f);
+    auto txt2 = win->add_scoped<bgui::text>("Centered text", 0.35f);
     txt2->set_alignment(bgui::alignment::center);
     txt2->require_width(bgui::mode::stretch);
-    auto button2 = win->add<bgui::button>("Button inside window", 0.35f, [](){});
+    auto button2 = win->add_scoped<bgui::button>("Button inside window", 0.35f, [](){});
     button2->require_width(bgui::mode::match_parent);
 
     // Slider and progress bar share an explicit value range.
-    auto progress = win->add<bgui::progress_bar>(0.f, 100.f, 35.f);
-    auto slider = win->add<bgui::slider>(0.f, 100.f, 35.f);
+    auto progress = win->add_scoped<bgui::progress_bar>(0.f, 100.f, 35.f);
+    auto slider = win->add_scoped<bgui::slider>(0.f, 100.f, 35.f);
     slider->set_step(5.f);
     slider->set_on_change([&progress](float value) {
         progress->set_value(value);
     });
 
     // Put vertical controls in a row with an explicit height.
-    auto vertical_controls = win->add<bgui::linear>(bgui::orientation::horizontal);
+    auto vertical_controls = win->add_scoped<bgui::linear>(bgui::orientation::horizontal);
     vertical_controls->style.layout.require_width(bgui::mode::match_parent);
     vertical_controls->style.layout.require_height(bgui::mode::pixel, 110.f);
-    auto vertical_slider = vertical_controls->add<bgui::slider>(
+    auto vertical_slider = vertical_controls->add_scoped<bgui::slider>(
         -1.f, 1.f, 0.f, bgui::orientation::vertical);
     vertical_slider->style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
     vertical_slider->style.layout.require_size(28.f, 110.f);
-    auto vertical_progress = vertical_controls->add<bgui::progress_bar>(
+    auto vertical_progress = vertical_controls->add_scoped<bgui::progress_bar>(
         0.f, 1.f, 0.65f, bgui::orientation::vertical);
     vertical_progress->style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
     vertical_progress->style.layout.require_size(28.f, 110.f);
@@ -181,8 +181,8 @@ Their appearance follows the `[type.slider]` and `[type.progressbar]`
 sections of the active theme.
 
 ```cpp
-auto progress = panel->add<bgui::progress_bar>(0.f, 100.f, 25.f);
-auto slider = panel->add<bgui::slider>(0.f, 100.f, 25.f);
+auto progress = panel->add_scoped<bgui::progress_bar>(0.f, 100.f, 25.f);
+auto slider = panel->add_scoped<bgui::slider>(0.f, 100.f, 25.f);
 
 slider->set_step(5.f); // Snap to multiples of 5 from the minimum.
 slider->set_on_change([&progress](float value) {
@@ -196,9 +196,9 @@ const float minimum = slider->get_minimum();
 const float maximum = slider->get_maximum();
 const float step = slider->get_step();
 
-auto vertical = panel->add<bgui::slider>(
+auto vertical = panel->add_scoped<bgui::slider>(
     0.f, 1.f, 0.5f, bgui::orientation::vertical);
-auto vertical_progress = panel->add<bgui::progress_bar>(
+auto vertical_progress = panel->add_scoped<bgui::progress_bar>(
     0.f, 1.f, 0.5f, bgui::orientation::vertical);
 ```
 
@@ -222,7 +222,7 @@ numeric components. The axis labels determine the component order, and each
 input is accessible through `get_component(index)`.
 
 ```cpp
-auto position = win->add<bgui::vector_field>(
+auto position = win->add_scoped<bgui::vector_field>(
     "Position", std::vector<std::string>{"x:", "y:", "z:"});
 position->get_component(0).set_buffer("1.0");
 ```
@@ -244,7 +244,7 @@ shade. Its selected RGBA color is available through `get_color()`; use
 `set_color`, `set_hue`, and `set_on_change` to control or observe it.
 
 ```cpp
-auto picker = panel->add<bgui::color_picker>();
+auto picker = panel->add_scoped<bgui::color_picker>();
 picker->style.layout.require_size(160.f, 160.f);
 picker->set_on_change([](const bgui::color& selected) {
     // Apply selected.r, selected.g, selected.b and selected.a.
@@ -258,7 +258,7 @@ clicked. Read the selected index or option, change the selection
 programmatically, or observe changes with `set_on_change`:
 
 ```cpp
-auto combo = panel->add<bgui::combo_box>(
+auto combo = panel->add_scoped<bgui::combo_box>(
     std::vector<std::string>{"Small", "Medium", "Large"});
 combo->set_on_change([](std::size_t index, const std::string& option) {
     // Apply the selected option.
@@ -279,7 +279,7 @@ the effective selection changes.
 children:
 
 ```cpp
-auto root = panel->add<bgui::tree>("Projects");
+auto root = panel->add_scoped<bgui::tree>("Projects");
 auto& source = root->add_child("Source");
 source.add_child("main.cpp");
 source.add_child("ui.cpp");

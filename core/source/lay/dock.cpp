@@ -79,19 +79,19 @@ namespace bgui {
         style.layout.require_mode(mode::match_parent, mode::match_parent);
         style.layout.padding = vec4i{0};
 
-        m_area_splitters[0] = &add_persistent<dock_splitter, layer::base>(
+        m_area_splitters[0] = &add<dock_splitter, layer::base>(
             true, [this](const int delta) { resize_area(dock_area::left, delta); });
-        m_area_splitters[1] = &add_persistent<dock_splitter, layer::base>(
+        m_area_splitters[1] = &add<dock_splitter, layer::base>(
             true, [this](const int delta) { resize_area(dock_area::right, delta); });
-        m_area_splitters[2] = &add_persistent<dock_splitter, layer::base>(
+        m_area_splitters[2] = &add<dock_splitter, layer::base>(
             false, [this](const int delta) { resize_area(dock_area::top, delta); });
-        m_area_splitters[3] = &add_persistent<dock_splitter, layer::base>(
+        m_area_splitters[3] = &add<dock_splitter, layer::base>(
             false, [this](const int delta) { resize_area(dock_area::bottom, delta); });
 
         constexpr std::array<const char*, 5> names{ "left", "right", "top", "bottom", "center" };
         for (std::size_t index = 0; index < m_drop_targets.size(); ++index) {
-            auto& target = add_persistent<element, layer::base>();
-            target.recives_input(false);
+            auto& target = add<element, layer::base>();
+            target.receives_input(false);
             target.set_enable(false);
             target.style.visual.background.normal = bgui::color{0.15f, 0.55f, 1.f, 0.45f};
             target.style.visual.border.normal = bgui::color{0.25f, 0.75f, 1.f, 1.f};
@@ -104,8 +104,8 @@ namespace bgui {
             m_drop_targets[index] = &target;
         }
 
-        auto& preview = add_persistent<element, layer::base>();
-        preview.recives_input(false);
+        auto& preview = add<element, layer::base>();
+        preview.receives_input(false);
         preview.set_enable(false);
         preview.style.visual.background.normal = bgui::color{0.15f, 0.55f, 1.f, 0.32f};
         preview.style.visual.border.normal = bgui::color{0.25f, 0.75f, 1.f, 1.f};
@@ -125,7 +125,7 @@ namespace bgui {
     }
 
     window& dock::add_window(const std::string& title, const dock_area area) {
-        auto& value = add_persistent<window>(title.c_str(), false);
+        auto& value = add<window>(title.c_str(), false);
         register_window(value, area);
         return value;
     }
@@ -185,7 +185,7 @@ namespace bgui {
         register_window(added, area);
         m_nested_splits.push_back({&anchor, &added, horizontal, after});
         auto& split = m_nested_splits.back();
-        split.splitter = &add_persistent<dock_splitter, layer::base>(
+        split.splitter = &add<dock_splitter, layer::base>(
             horizontal, [this, anchor_ptr = &anchor, added_ptr = &added](const int delta) {
                 const auto found = std::find_if(m_nested_splits.begin(), m_nested_splits.end(),
                     [anchor_ptr, added_ptr](const nested_split& candidate) {
@@ -232,7 +232,7 @@ namespace bgui {
 
         for (std::size_t index = group->buttons.size(); index < group->windows.size(); ++index) {
             auto* tab_window = group->windows[index];
-            auto& tab = add_persistent<button, layer::base>(
+            auto& tab = add<button, layer::base>(
                 tab_window->get_title().get_buffer(), 0.4f,
                 [this, host = group->anchor, tab_window]() {
                     const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [host](const tab_group& candidate) {
@@ -372,7 +372,7 @@ namespace bgui {
         }
         while (value.splitters.size() < count) {
             const std::size_t split_index = value.splitters.size();
-            auto& splitter = add_persistent<dock_splitter, layer::base>(
+            auto& splitter = add<dock_splitter, layer::base>(
                 is_horizontal_panel(area),
                 [this, area, split_index](const int delta) {
                     resize_panel_split(area, split_index, delta);

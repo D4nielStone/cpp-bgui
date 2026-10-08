@@ -12,7 +12,7 @@ namespace bgui {
         );
         style.layout.padding = bgui::vec4i{12, 0, 8, 0};
 
-        auto& title = add_persistent<bgui::text>(
+        auto& title = add<bgui::text>(
             " Bubble Engine | ",
             0.4f
         );
@@ -43,7 +43,7 @@ namespace bgui {
         m_menus.push_back(nullptr);
         const auto menu_index = m_menus.size() - 1;
 
-        auto& button = add_persistent<bgui::button>(
+        auto& button = add<bgui::button>(
             name,
             0.35f,
             [this, menu_index]() {
@@ -71,7 +71,7 @@ namespace bgui {
         const std::string& name,
         const std::function<void()>& fctn
     ) {
-        auto& button = add_persistent<bgui::button>(name, 0.35f, fctn);
+        auto& button = add<bgui::button>(name, 0.35f, fctn);
         button.add_class("window-button");
         button.style.layout.require_mode(
             bgui::mode::wrap_content,
@@ -91,7 +91,7 @@ namespace bgui {
         m_menus.push_back(nullptr);
         const auto menu_index = m_menus.size() - 1;
 
-        auto& button = add_persistent<bgui::button>(
+        auto& button = add<bgui::button>(
             name,
             scale,
             [this, menu_index]() {

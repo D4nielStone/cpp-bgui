@@ -7,7 +7,7 @@ TEST(ProfilingTest, OverlayIsOptInAndCanBeToggled) {
 
     EXPECT_EQ(root.get_elements().count(bgui::layer::overlay), 0U);
 
-    bgui::enable_proffiling();
+    bgui::enable_profiling();
     ASSERT_EQ(root.get_elements().count(bgui::layer::overlay), 1U);
     auto& overlays = root.get_elements().at(bgui::layer::overlay);
     ASSERT_EQ(overlays.size(), 1U);
@@ -18,6 +18,6 @@ TEST(ProfilingTest, OverlayIsOptInAndCanBeToggled) {
     ASSERT_NE(overlay_layout, nullptr);
     ASSERT_EQ(overlay_layout->get_elements().at(bgui::layer::base).size(), 6U);
 
-    bgui::enable_proffiling(false);
+    bgui::enable_profiling(false);
     EXPECT_TRUE(root.get_elements().at(bgui::layer::overlay).empty());
 }

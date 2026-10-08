@@ -35,7 +35,7 @@ namespace {
 // divider between the left pane and the central area.
 TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& dock = bgui::get_layout().add<bgui::dock>();
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -77,8 +77,8 @@ TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
 // insertion order is different from the expected z-order.
 TEST(DockTest, FloatingWindowsStayAbovePinnedWindowsRegardlessOfInsertionOrder) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& floating = dock.add<bgui::window>("Floating", true);
     auto& pinned = dock.add_window("Pinned", bgui::dock_area::center);
     dock.compute_style();
     dock.process_required_size({900, 600});
@@ -107,9 +107,9 @@ TEST(DockTest, FloatingWindowsStayAbovePinnedWindowsRegardlessOfInsertionOrder) 
 // Confirms that focusing a floating window raises it to the top of the dock stack.
 TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
-    auto& focused = dock.add_persistent<bgui::window>("Focused", true);
-    auto& other = dock.add_persistent<bgui::window>("Other", true);
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& focused = dock.add<bgui::window>("Focused", true);
+    auto& other = dock.add<bgui::window>("Other", true);
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -135,8 +135,8 @@ TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
 // and highlight the center preview while it is being moved.
 TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& floating = dock.add<bgui::window>("Floating", true);
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -196,8 +196,8 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
 // the dock layout instead of lingering in an invalid intermediate state.
 TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& floating = dock.add<bgui::window>("Floating", true);
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -239,9 +239,9 @@ TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
 // should split the hovered panel and persist the split configuration.
 TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& dock = bgui::get_layout().add<bgui::dock>();
     auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& floating = dock.add<bgui::window>("Floating", true);
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -301,9 +301,9 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
 
 TEST(DockTest, RightSideSplitResizesInDragDirection) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& dock = bgui::get_layout().add<bgui::dock>();
     auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& floating = dock.add<bgui::window>("Floating", true);
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -369,9 +369,9 @@ TEST(DockTest, RightSideSplitResizesInDragDirection) {
 // center area of another docked window.
 TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& dock = bgui::get_layout().add<bgui::dock>();
     auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& floating = dock.add<bgui::window>("Floating", true);
     dock.compute_style();
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
@@ -441,7 +441,7 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
 // floating window and re-enables the normal window controls.
 TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     bgui::scoped_interface interface;
-    auto& dock = bgui::get_layout().add_persistent<bgui::dock>();
+    auto& dock = bgui::get_layout().add<bgui::dock>();
     auto& panel = dock.add_window("Panel", bgui::dock_area::center);
 
     auto* close = find_button(panel, "window-close-button");
@@ -490,9 +490,9 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
 TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
     bgui::scoped_interface interface;
     auto& root = bgui::set_layout<bgui::layout>();
-    auto& dock = root.add_persistent<bgui::dock>();
+    auto& dock = root.add<bgui::dock>();
     auto& left = dock.add_window("Left", bgui::dock_area::left);
-    auto& floating = dock.add_persistent<bgui::window>("Floating", true);
+    auto& floating = dock.add<bgui::window>("Floating", true);
     floating.set_final_rect(45, 55, 280, 190);
 
     auto saved = dock.get_configuration();

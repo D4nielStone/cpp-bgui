@@ -94,7 +94,7 @@ TEST(DeclarativeStyleTest, VisibilityIsNotInheritedFromParent) {
 
 	layout parent;
 	parent.style.visual.visible = false;
-	auto& child = parent.add_persistent<element>();
+	auto& child = parent.add<element>();
 
 	parent.compute_style();
 	child.compute_style();
@@ -109,7 +109,7 @@ TEST(ModalThemeTest, ModalAndBodyTextStylesComeFromTheme) {
 	manager.apply_theme(bgui::dark_theme());
 
 	modal dialog;
-	auto body = dialog.add<text>("A modal message", 0.4f);
+	auto body = dialog.add_scoped<text>("A modal message", 0.4f);
 	dialog.compute_style();
 	dialog.content().compute_style();
 	body->compute_style();

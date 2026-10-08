@@ -26,7 +26,7 @@ public:
 class capture_probe final : public element {
 public:
 	explicit capture_probe(int& release_count) : m_release_count(release_count) {
-		recives_input(true);
+		receives_input(true);
 	}
 
 	void on_released() override {
@@ -129,7 +129,7 @@ TEST(ElementTest, ScopedElementIsRemovedWhenHandleLeavesScope) {
 	EXPECT_TRUE(root.get_elements().empty());
 
 	{
-		auto handle = root.add<element>();
+		auto handle = root.add_scoped<element>();
 		EXPECT_TRUE(handle);
 		EXPECT_EQ(root.get_elements().at(layer::base).size(), 1U);
 	}
@@ -145,7 +145,7 @@ TEST(InteractionTest, RemovingCapturedElementAndAncestorCancelsCapture) {
 	context.m_input_map[input_key::mouse_left] = input_action::press;
 
 	int direct_release_count = 0;
-	auto& direct = root.add_persistent<capture_probe>(direct_release_count);
+	auto& direct = root.add<capture_probe>(direct_release_count);
 	direct.set_final_rect(0, 0, 50, 50);
 	bgui::on_update();
 	EXPECT_EQ(bgui::get_mouse_target(), &direct);
@@ -157,10 +157,10 @@ TEST(InteractionTest, RemovingCapturedElementAndAncestorCancelsCapture) {
 	EXPECT_EQ(direct_release_count, 0);
 
 	context.m_input_map[input_key::mouse_left] = input_action::press;
-	auto& parent = root.add_persistent<layout>();
+	auto& parent = root.add<layout>();
 	parent.set_final_rect(0, 0, 200, 200);
 	int nested_release_count = 0;
-	auto& nested = parent.add_persistent<capture_probe>(nested_release_count);
+	auto& nested = parent.add<capture_probe>(nested_release_count);
 	nested.set_final_rect(0, 0, 50, 50);
 	bgui::on_update();
 	EXPECT_EQ(bgui::get_mouse_target(), &nested);

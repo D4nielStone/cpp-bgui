@@ -146,7 +146,7 @@ namespace {
 
 bgui::color_picker::color_picker(const bgui::color& initial_color) {
     type = "color_picker";
-    recives_input(true);
+    receives_input(true);
     style.layout.require_size(180.f, 180.f);
     m_material.m_use_tex = true;
     m_material.m_shader_tag = "ui::image";

@@ -33,8 +33,8 @@ namespace bgui {
         ~window()=default;
 
         template<typename T, layer Lay = layer::base, typename... Args>
-        scoped_element<T> add(Args&&... args) {
-            auto added = m_context->add<T, Lay>(std::forward<Args>(args)...);
+        scoped_element<T> add_scoped(Args&&... args) {
+            auto added = m_context->add_scoped<T, Lay>(std::forward<Args>(args)...);
             if constexpr (std::is_base_of_v<inputbox, T>) {
                 if (m_highlight_rules)
                     added->set_highlight_rules(m_highlight_rules);
@@ -43,9 +43,9 @@ namespace bgui {
         }
 
         template<typename T, layer Lay = layer::base, typename... Args>
-        T& add_persistent(Args&&... args) {
+        T& add(Args&&... args) {
             if (m_context) {
-                auto& added = m_context->add_persistent<T, Lay>(
+                auto& added = m_context->add<T, Lay>(
                     std::forward<Args>(args)...
                 );
                 if constexpr (std::is_base_of_v<inputbox, T>) {
@@ -55,7 +55,7 @@ namespace bgui {
                 return added;
             }
 
-            return linear::add_persistent<T, Lay>(
+            return linear::add<T, Lay>(
                 std::forward<Args>(args)...
             );
         }

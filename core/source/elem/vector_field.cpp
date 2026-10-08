@@ -9,19 +9,19 @@ namespace bgui {
         type = "vector_field";
         style.layout.require_mode(mode::match_parent, mode::wrap_content);
 
-        auto& field_label = add_persistent<text>(label, scale);
+        auto& field_label = add<text>(label, scale);
         field_label.style.layout.require_mode(mode::match_parent, mode::wrap_content);
         field_label.style.layout.align = vec<2UL, alignment>(
             {alignment::center, alignment::start}
         );
 
-        auto& values = add_persistent<linear>(orientation::horizontal);
+        auto& values = add<linear>(orientation::horizontal);
         values.style.layout.require_mode(mode::match_parent, mode::wrap_content);
 
         m_components.reserve(axes.size());
         for (const auto& axis : axes) {
-            values.add_persistent<text>(axis, scale);
-            auto& input = values.add_persistent<inputbox>(
+            values.add<text>(axis, scale);
+            auto& input = values.add<inputbox>(
                 "", "", scale, nullptr, input_mode::number
             );
             input.style.layout.require_width(mode::stretch);

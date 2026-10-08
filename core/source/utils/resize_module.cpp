@@ -141,7 +141,7 @@ namespace bgui {
         for (int vertical : {-1, 0, 1}) {
             for (int horizontal : {-1, 0, 1}) {
                 if (horizontal == 0 && vertical == 0) continue;
-                owner.add_persistent<resize_handle, layer::overlay>(&owner, horizontal, vertical);
+                owner.add<resize_handle, layer::overlay>(&owner, horizontal, vertical);
             }
         }
     }

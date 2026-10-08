@@ -59,7 +59,7 @@ namespace {
         profiling_overlay()
             : bgui::linear(bgui::orientation::vertical) {
             id = profiling_overlay_id;
-            recives_input(false);
+            receives_input(false);
             style.layout.require_size(230.f, 142.f);
             style.layout.set_padding(8, 6);
             style.visual.background.normal = bgui::color{0.04f, 0.05f, 0.07f, 0.9f};
@@ -71,13 +71,13 @@ namespace {
                 "Draw calls: --", "Geometry vertices: --", "Resolution: -- x --"
             };
             for (std::size_t i = 0; i < initial_metrics.size(); ++i) {
-                m_metrics[i] = &add_persistent<bgui::text>(initial_metrics[i], 0.32f);
+                m_metrics[i] = &add<bgui::text>(initial_metrics[i], 0.32f);
                 auto* label = m_metrics[i];
                 label->style.layout.require_mode(
                     bgui::mode::wrap_content, bgui::mode::wrap_content);
                 label->style.visual.background.normal = bgui::color{0.f, 0.f, 0.f, 0.f};
                 label->style.visual.text.normal = bgui::color{0.92f, 0.94f, 0.97f, 1.f};
-                label->recives_input(false);
+                label->receives_input(false);
             }
         }
 
@@ -129,7 +129,7 @@ namespace {
     profiling_overlay* ensure_profiling_overlay(bgui::layout& root) {
         if (auto* existing = find_profiling_overlay(root))
             return existing;
-        return &root.add_persistent<profiling_overlay, bgui::layer::overlay>();
+        return &root.add<profiling_overlay, bgui::layer::overlay>();
     }
 
     void remove_profiling_overlay(bgui::layout& root) {
@@ -751,11 +751,11 @@ bool update_inputs(bgui::layout &lay){
                 my <= y + h;
 
                 if (inside) {
-                if(!elem->recives_input()) {
+                if(!elem->receives_input()) {
                     // A non-interactive child bubbles the hit to its
                     // interactive parent, but a front-most sibling blocks
                     // elements behind it from receiving the click.
-                    if (elem->get_parent() && elem->get_parent()->recives_input()) {
+                    if (elem->get_parent() && elem->get_parent()->receives_input()) {
                         return false;
                     }
                     if (mouse_click && s_keyboard_focused) {
@@ -785,7 +785,7 @@ bool update_inputs(bgui::layout &lay){
     return false;
 }
 // Updates the main layout
-void bgui::enable_proffiling(bool enabled) {
+void bgui::enable_profiling(bool enabled) {
     if (s_profiling_enabled == enabled)
         return;
 

@@ -39,7 +39,7 @@ bgui::progress_bar::progress_bar(
         throw std::invalid_argument("[BGUI] Progress bar orientation is invalid.");
     m_value = std::clamp(value, minimum, maximum);
     type = "progressbar";
-    recives_input(false);
+    receives_input(false);
 }
 
 void bgui::progress_bar::set_range(float minimum, float maximum) {

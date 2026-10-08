@@ -22,12 +22,12 @@ int main() {
         auto& root = bgui::set_layout<bgui::linear>(
             bgui::orientation::vertical
         );
-        auto& menu_bar = root.add_persistent<bgui::menu_bar>(root);
+        auto& menu_bar = root.add<bgui::menu_bar>(root);
         menu_bar.style.layout.require_height(
             bgui::mode::wrap_content
         );
 
-        auto& workspace = root.add_persistent<bgui::dock>();
+        auto& workspace = root.add<bgui::dock>();
         workspace.style.layout.require_mode(
             bgui::mode::match_parent,
             bgui::mode::stretch
@@ -37,13 +37,13 @@ int main() {
             "Widget gallery",
             bgui::dock_area::center
         );
-        auto& floating = workspace.add_persistent<bgui::window>(
+        auto& floating = workspace.add<bgui::window>(
             "Floating window",
             true
         );
         floating.set_position(770, 95);
 
-        auto& status = gallery.add_persistent<bgui::text>(
+        auto& status = gallery.add<bgui::text>(
             "Ready — drag the dock dividers or window tabs to rearrange the workspace.",
             0.35f
         );
@@ -52,22 +52,22 @@ int main() {
             bgui::mode::wrap_content
         );
 
-        gallery.add_persistent<bgui::text>(
+        gallery.add<bgui::text>(
             "Widgets",
             0.55f
         );
-        gallery.add_persistent<bgui::text>(
+        gallery.add<bgui::text>(
             "Buttons, fields, editable text, selectors, progress indicators, "
             "images, and nested layouts.",
             0.36f
         );
 
-        auto& click_count = gallery.add_persistent<bgui::text>(
+        auto& click_count = gallery.add<bgui::text>(
             "Button clicks: 0",
             0.38f
         );
         int button_clicks = 0;
-        auto& action_button = gallery.add_persistent<bgui::button>(
+        auto& action_button = gallery.add<bgui::button>(
             "Click me",
             0.4f,
             [&click_count, &button_clicks]() {
@@ -80,7 +80,7 @@ int main() {
         action_button.id = "showcase-action";
         action_button.add_class("primary");
 
-        auto& theme_toggle = gallery.add_persistent<bgui::checkbox>(
+        auto& theme_toggle = gallery.add<bgui::checkbox>(
             "Dark theme",
             0.38f,
             true
@@ -88,7 +88,7 @@ int main() {
         theme_toggle.set_on_change([&styles](bool dark) {
             styles.apply_theme(dark ? bgui::dark_theme() : bgui::light_theme());
         });
-        auto& enable_toggle = gallery.add_persistent<bgui::checkbox>(
+        auto& enable_toggle = gallery.add<bgui::checkbox>(
             "Enable theme switch",
             0.38f,
             true
@@ -97,11 +97,11 @@ int main() {
             theme_toggle.set_enable(enabled);
         });
 
-        auto& selection_text = gallery.add_persistent<bgui::text>(
+        auto& selection_text = gallery.add<bgui::text>(
             "Selected: OpenGL",
             0.38f
         );
-        auto& renderer_combo = gallery.add_persistent<bgui::combo_box>(
+        auto& renderer_combo = gallery.add<bgui::combo_box>(
             std::vector<std::string>{"OpenGL", "Vulkan", "Custom"},
             0.38f
         );
@@ -111,18 +111,18 @@ int main() {
             }
         );
 
-        auto& progress_label = gallery.add_persistent<bgui::text>(
+        auto& progress_label = gallery.add<bgui::text>(
             "Progress: 35%",
             0.38f
         );
-        auto& progress = gallery.add_persistent<bgui::progress_bar>(
+        auto& progress = gallery.add<bgui::progress_bar>(
             0.f,
             100.f,
             35.f
         );
         progress.style.layout.require_width(bgui::mode::match_parent);
         progress.style.layout.require_height(bgui::mode::pixel, 14.f);
-        auto& progress_slider = gallery.add_persistent<bgui::slider>(
+        auto& progress_slider = gallery.add<bgui::slider>(
             0.f,
             100.f,
             35.f
@@ -139,7 +139,7 @@ int main() {
             }
         );
 
-        auto& color_label = gallery.add_persistent<bgui::text>(
+        auto& color_label = gallery.add<bgui::text>(
             "Color picker (click or drag inside the palette):",
             0.35f
         );
@@ -147,7 +147,7 @@ int main() {
             bgui::mode::match_parent,
             bgui::mode::wrap_content
         );
-        auto& color_picker = gallery.add_persistent<bgui::color_picker>(
+        auto& color_picker = gallery.add<bgui::color_picker>(
             bgui::color{0.2f, 0.55f, 0.9f, 1.f}
         );
         color_picker.style.layout.require_size(150.f, 110.f);
@@ -160,7 +160,7 @@ int main() {
             );
         });
 
-        gallery.add_persistent<bgui::field>(
+        gallery.add<bgui::field>(
             "Name",
             "",
             0.36f,
@@ -169,7 +169,7 @@ int main() {
             },
             "Type a name and press Enter"
         );
-        auto& editor = gallery.add_persistent<bgui::inputbox>(
+        auto& editor = gallery.add<bgui::inputbox>(
             "print('Hello from cpp-bgui')\n",
             "Multiline editor",
             0.34f,
@@ -185,27 +185,27 @@ int main() {
         editor.set_editor_guides_enabled(true);
         gallery.use_highlight_config("lua_highlight.json");
 
-        auto& position = gallery.add_persistent<bgui::vector_field>(
+        auto& position = gallery.add<bgui::vector_field>(
             "Position",
             std::vector<std::string>{"X", "Y", "Z"},
             0.34f
         );
         position.style.layout.require_width(bgui::mode::match_parent);
 
-        auto& about = gallery.add_persistent<bgui::details>(
+        auto& about = gallery.add<bgui::details>(
             "Details / collapsible content",
             true
         );
-        about.content().add_persistent<bgui::text>(
+        about.content().add<bgui::text>(
             "Details can show or hide nested content.",
             0.34f
         );
 
-        auto& modal = root.add_persistent<
+        auto& modal = root.add<
             bgui::modal,
             bgui::layer::overlay
         >();
-        modal.add_persistent<bgui::text>(
+        modal.add<bgui::text>(
             "This modal is an overlay. Confirm to close it.",
             0.38f
         );
@@ -214,7 +214,7 @@ int main() {
             status.set_buffer("Modal confirmed and closed.");
         });
         modal.set_enable(false);
-        gallery.add_persistent<bgui::button>(
+        gallery.add<bgui::button>(
             "Show modal",
             0.38f,
             [&modal]() {
@@ -222,7 +222,7 @@ int main() {
             }
         );
 
-        auto& image = gallery.add_persistent<bgui::image>(
+        auto& image = gallery.add<bgui::image>(
             "bubble.png",
             [&status](const std::string& path) {
                 status.set_buffer("Image clicked: " + path);
@@ -280,11 +280,11 @@ int main() {
             );
         });
 
-        floating.add_persistent<bgui::text>(
+        floating.add<bgui::text>(
             "This window can be dragged, resized, docked, or closed.",
             0.36f
         );
-        floating.add_persistent<bgui::button>(
+        floating.add<bgui::button>(
             "Focus gallery",
             0.36f,
             [&workspace, &gallery]() {

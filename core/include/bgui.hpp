@@ -79,7 +79,7 @@ namespace bgui {
 
     void on_update();
     // Show or hide the built-in frame timing and FPS overlay.
-    void enable_proffiling(bool enabled = true);
+    void enable_profiling(bool enabled = true);
     element* get_mouse_target();
     void clear_keyboard_focus();
     void set_global_scale(float scale);

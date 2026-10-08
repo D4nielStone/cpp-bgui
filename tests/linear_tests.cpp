@@ -35,8 +35,8 @@ TEST(LinearTest, VerticalLayoutFixedSizes) {
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
 	layout.process_required_size({200, 400});
 
-	auto first = layout.add<mock_element>(100, 50);
-	auto second = layout.add<mock_element>(100, 75);
+	auto first = layout.add_scoped<mock_element>(100, 50);
+	auto second = layout.add_scoped<mock_element>(100, 75);
 	first->compute_style();
 	second->compute_style();
 	layout.on_update();
@@ -51,8 +51,8 @@ TEST(LinearTest, HorizontalLayoutFixedSizes) {
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
 	layout.process_required_size({400, 200});
 
-	auto first = layout.add<mock_element>(50, 100);
-	auto second = layout.add<mock_element>(75, 100);
+	auto first = layout.add_scoped<mock_element>(50, 100);
+	auto second = layout.add_scoped<mock_element>(75, 100);
 	first->compute_style();
 	second->compute_style();
 	layout.on_update();
@@ -69,8 +69,8 @@ TEST(LinearTest, StretchElementsShareRemainingSpace) {
 	layout.compute_style();
 	layout.process_required_size({200, 400});
 
-	auto first = layout.add<mock_element>(100, 0, mode::pixel, mode::stretch);
-	auto second = layout.add<mock_element>(100, 0, mode::pixel, mode::stretch);
+	auto first = layout.add_scoped<mock_element>(100, 0, mode::pixel, mode::stretch);
+	auto second = layout.add_scoped<mock_element>(100, 0, mode::pixel, mode::stretch);
 	first->compute_style();
 	second->compute_style();
 	layout.on_update();
@@ -87,8 +87,8 @@ TEST(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
 	layout.compute_style();
 	layout.process_required_size({200, 400});
 
-	auto header = layout.add<mock_element>(200, 50);
-	auto content = layout.add<mock_element>(200, 0, mode::pixel, mode::match_parent);
+	auto header = layout.add_scoped<mock_element>(200, 50);
+	auto content = layout.add_scoped<mock_element>(200, 0, mode::pixel, mode::match_parent);
 	header->compute_style();
 	content->compute_style();
 	layout.on_update();
@@ -107,7 +107,7 @@ TEST(LinearTest, PaddingAffectsLayout) {
 	layout.compute_style();
 	layout.process_required_size({200, 400});
 
-	auto child = layout.add<mock_element>(100, 50);
+	auto child = layout.add_scoped<mock_element>(100, 50);
 	child->compute_style();
 	layout.on_update();
 
@@ -124,9 +124,9 @@ TEST(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
 	panel.process_required_size({100, 100});
 	panel.set_scrollable(true);
 
-	auto first = panel.add<mock_element>(100, 50);
-	auto second = panel.add<mock_element>(100, 50);
-	auto third = panel.add<mock_element>(100, 50);
+	auto first = panel.add_scoped<mock_element>(100, 50);
+	auto second = panel.add_scoped<mock_element>(100, 50);
+	auto third = panel.add_scoped<mock_element>(100, 50);
 	first->compute_style();
 	second->compute_style();
 	third->compute_style();
@@ -163,10 +163,10 @@ TEST(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
 	panel.set_scrollable(true);
 
 	int draw_counts[4]{};
-	auto first = panel.add<counting_element>(50, draw_counts[0]);
-	auto second = panel.add<counting_element>(50, draw_counts[1]);
-	auto third = panel.add<counting_element>(50, draw_counts[2]);
-	auto fourth = panel.add<counting_element>(50, draw_counts[3]);
+	auto first = panel.add_scoped<counting_element>(50, draw_counts[0]);
+	auto second = panel.add_scoped<counting_element>(50, draw_counts[1]);
+	auto third = panel.add_scoped<counting_element>(50, draw_counts[2]);
+	auto fourth = panel.add_scoped<counting_element>(50, draw_counts[3]);
 	first->compute_style();
 	second->compute_style();
 	third->compute_style();
