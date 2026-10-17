@@ -8,7 +8,7 @@ namespace bgui {
         explicit vector_field(
             const std::string& label,
             const std::vector<std::string>& axes,
-            float scale = 0.4f
+            float scale = 0.3
         );
 
         std::size_t get_component_count() const noexcept {

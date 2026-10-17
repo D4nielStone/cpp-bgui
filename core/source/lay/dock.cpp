@@ -124,8 +124,8 @@ namespace bgui {
         return m_panels[panel_index(area)];
     }
 
-    window& dock::add_window(const std::string& title, const dock_area area) {
-        auto& value = add<window>(title.c_str(), false);
+    window& dock::add_window(const std::string& title, const dock_area area, float scale) {
+        auto& value = add<window>(title.c_str(), scale, false);
         register_window(value, area);
         return value;
     }
@@ -233,7 +233,7 @@ namespace bgui {
         for (std::size_t index = group->buttons.size(); index < group->windows.size(); ++index) {
             auto* tab_window = group->windows[index];
             auto& tab = add<button, layer::base>(
-                tab_window->get_title().get_buffer(), 0.4f,
+                tab_window->get_title().get_buffer(), 0.3,
                 [this, host = group->anchor, tab_window]() {
                     const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [host](const tab_group& candidate) {
                         return candidate.anchor == host;

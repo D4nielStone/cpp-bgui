@@ -11,37 +11,58 @@ bgui::window::window() : linear(bgui::orientation::vertical) {
     initialize_context();
 }
 
-bgui::window::window(const char* title, bool floating) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr), m_icon(nullptr) {
+bgui::window::window(const char* title, float font_scale, bool floating) : linear(bgui::orientation::vertical), m_title(nullptr), m_header(nullptr), m_icon(nullptr) {
     type = "window";
     // window widget experiment
-    //TODO:: add parse init config for window
     set_position(20, 20);
+m_header = &add<bgui::linear>(bgui::orientation::horizontal);
+m_header->add_class("window-header");
+m_header->style.layout.require_mode(
+    bgui::mode::stretch,
+    bgui::mode::wrap_content
+);
 
-    // testing the header:
-    m_header = &add<bgui::linear>(bgui::orientation::horizontal);
-    m_header->add_class("window-header");
-    m_header->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
-    m_icon = &m_header->add<bgui::image>();
-    m_icon->set_size(1.f, 1.f);
-    set_icon("bubble.png");
-    m_title = &m_header->add<bgui::text>(title, 0.4);
-    m_title->add_class("window-label");
-    m_title->style.layout.require_mode(bgui::mode::stretch, bgui::mode::wrap_content);
-    // TODO: switch to image button later
-    m_close_button = &m_header->add<bgui::button>(" X ", 0.4f, [this](){
+m_icon = &m_header->add<bgui::image>();
+m_icon->set_size(1.f, 1.f);
+set_icon("bubble.png");
+
+m_title = &m_header->add<bgui::text>(title, 0.3);
+m_title->add_class("window-label");
+m_title->style.layout.require_mode(
+    bgui::mode::stretch,
+    bgui::mode::wrap_content
+);
+
+m_close_button = &m_header->add<bgui::traffic_light>(
+    bgui::traffic_light_type::close,
+    [this]() {
         auto* parent = get_parent();
+
         bgui::add_function([this, parent]() {
             if (auto* dock_parent = dynamic_cast<bgui::dock*>(parent))
                 dock_parent->remove_window(this);
             else if (parent)
                 parent->remove(this);
         });
-    });
-    m_close_button->add_class("window-button");
-    m_close_button->add_class("window-close-button");
+    }
+);
 
-    initialize_context();
-    set_floating(floating);
+m_minimize_button = &m_header->add<bgui::traffic_light>(
+    bgui::traffic_light_type::minimize,
+    [this]() {
+        // Integrar com o sistema de minimização da BGUI.
+    }
+);
+
+m_maximize_button = &m_header->add<bgui::traffic_light>(
+    bgui::traffic_light_type::maximize,
+    [this]() {
+        // Integrar com o sistema de maximização/restauração da BGUI.
+    }
+);
+
+initialize_context();
+set_floating(floating);
 }
 
 void bgui::window::initialize_context() {

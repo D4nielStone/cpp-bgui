@@ -23,7 +23,7 @@ namespace bgui {
 
         m_confirm_button = &m_actions->add<button>(
             "Confirmar",
-            0.4f,
+            0.3,
             [this]() { confirm(); }
         );
         m_confirm_button->add_class("modal-confirm");

@@ -69,7 +69,7 @@ int main() {
         int button_clicks = 0;
         auto& action_button = gallery.add<bgui::button>(
             "Click me",
-            0.4f,
+            0.3,
             [&click_count, &button_clicks]() {
                 ++button_clicks;
                 click_count.set_buffer(

@@ -558,7 +558,7 @@ void bgui::inputbox::update_display() {
         m_text->set_buffer(m_placeholder);
         m_text->set_selection(0, 0);
         m_text->set_cursor(0, false);
-        m_text->computed_style.visual.text.a = 0.4f;
+        m_text->computed_style.visual.text.a = 0.3;
         return;
     }
 

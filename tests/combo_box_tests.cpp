@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 TEST(ComboBoxTest, InitializesSelectionAndNotifiesOnlyWhenSelectionChanges) {
-    bgui::combo_box control({"Apple", "Orange", "Pear"}, 0.4f, 1);
+    bgui::combo_box control({"Apple", "Orange", "Pear"}, 0.3, 1);
     EXPECT_EQ(control.get_selected_index(), 1U);
     EXPECT_EQ(control.get_selected_option(), "Orange");
 
@@ -33,7 +33,7 @@ TEST(ComboBoxTest, InitializesSelectionAndNotifiesOnlyWhenSelectionChanges) {
 TEST(ComboBoxTest, RejectsEmptyOptionsAndInvalidSelectionIndices) {
     EXPECT_THROW(bgui::combo_box({}), std::invalid_argument);
     EXPECT_THROW(
-        bgui::combo_box({"First", "Second"}, 0.4f, 2),
+        bgui::combo_box({"First", "Second"}, 0.3, 2),
         std::out_of_range
     );
 

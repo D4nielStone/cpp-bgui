@@ -14,7 +14,7 @@ namespace bgui {
     public:
         explicit combo_box(
             const std::vector<std::string>& options,
-            float scale = 0.4f,
+            float scale = 0.3,
             std::size_t selected_index = 0
         );
         ~combo_box() override;

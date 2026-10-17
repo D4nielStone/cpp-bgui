@@ -109,7 +109,7 @@ TEST(ModalThemeTest, ModalAndBodyTextStylesComeFromTheme) {
 	manager.apply_theme(bgui::dark_theme());
 
 	modal dialog;
-	auto body = dialog.add_scoped<text>("A modal message", 0.4f);
+	auto body = dialog.add_scoped<text>("A modal message", 0.3);
 	dialog.compute_style();
 	dialog.content().compute_style();
 	body->compute_style();

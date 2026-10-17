@@ -7,7 +7,7 @@ namespace bgui {
     public:
         explicit tree(
             const std::string& label,
-            float scale = 0.4f,
+            float scale = 0.3,
             bool expanded = false
         );
 

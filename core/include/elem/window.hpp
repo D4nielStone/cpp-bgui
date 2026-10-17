@@ -2,6 +2,7 @@
 #include "lay/linear.hpp"
 #include "elem/image.hpp"
 #include "elem/inputbox.hpp"
+#include "elem/traffic_light.hpp"
 #include "elem/text.hpp"
 #include "utils/syntax_highlight.hpp"
 #include <memory>
@@ -10,15 +11,17 @@
 #include <utility>
 
 namespace bgui {
-    class button;
-
     class window : public linear {
     private:
-        text* m_title{nullptr};
-        linear* m_header{nullptr};
+    
+    bgui::linear* m_header = nullptr;
+    bgui::image* m_icon = nullptr;
+    bgui::text* m_title = nullptr;
+
+    bgui::traffic_light* m_close_button = nullptr;
+    bgui::traffic_light* m_minimize_button = nullptr;
+    bgui::traffic_light* m_maximize_button = nullptr;
         linear* m_context{nullptr};
-        image* m_icon{nullptr};
-        button* m_close_button{nullptr};
         float m_icon_aspect_ratio = 1.f;
         int m_icon_height = 0;
         std::shared_ptr<const std::vector<syntax_highlight_rule>> m_highlight_rules;
@@ -29,7 +32,7 @@ namespace bgui {
         void initialize_context();
     public:
         window();
-        window(const char* title, bool floating = true);
+        window(const char* title, float font_scale = 0.3, bool floating = true);
         ~window()=default;
 
         template<typename T, layer Lay = layer::base, typename... Args>

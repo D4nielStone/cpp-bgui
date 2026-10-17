@@ -58,7 +58,7 @@ namespace bgui {
 
         dock();
 
-        window& add_window(const std::string& title, dock_area area = dock_area::center);
+        window& add_window(const std::string& title, dock_area area = dock_area::center, float scale = 1.0f);
         bool remove_window(window* value);
         void focus_window(window* value);
         configuration get_configuration();
