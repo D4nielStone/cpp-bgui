@@ -210,6 +210,54 @@ namespace bgui {
             }
             return result;
         }
+
+        vec<3, T> cross(const vec<3, T>& other) const {
+            return vec<3, T>{
+                y * other.z - z * other.y,
+                z * other.x - x * other.z,
+                x * other.y - y * other.x
+            };
+        }
+
+        vec<3, T> normalized() const {
+            T len = std::sqrt(x * x + y * y + z * z);
+            if (len > 0) {
+                return vec<3, T>{x / len, y / len, z / len};
+            }
+            return vec<3, T>{0, 0, 0};
+        }
+
+        vec<3, T> operator+=(const vec<3, T>& other) {
+            x += other.x;
+            y += other.y;
+            z += other.z;
+            return *this;
+        }
+
+        vec<3, T> operator-=(const vec<3, T>& other) {
+            x -= other.x;
+            y -= other.y;
+            z -= other.z;
+            return *this;
+        }
+
+        vec<3, T> operator/=(const T& scalar) {
+            x /= scalar;
+            y /= scalar;
+            z /= scalar;
+            return *this;
+        }
+
+        vec<3, T> operator*=(const T& scalar) {
+            x *= scalar;
+            y *= scalar;
+            z *= scalar;
+            return *this;
+        }
+
+        float length() const {
+            return std::sqrt(x * x + y * y + z * z);
+        }
     };
 
     template<typename T>

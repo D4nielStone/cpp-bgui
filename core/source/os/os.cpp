@@ -33,7 +33,7 @@ bgui::mat4 bgui::get_projection() {
 }
 
 bool bgui::get_pressed(const bgui::input_key& k) {
-    if(bgui::get_context().m_input_map[k] == bgui::input_action::press) return true;
+    if(bgui::get_context().m_input_map[k] == bgui::input_action::press || bgui::get_context().m_input_map[k] == bgui::input_action::repeat) return true;
     return false;
 }
 
