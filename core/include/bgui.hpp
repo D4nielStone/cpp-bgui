@@ -16,6 +16,7 @@
 #include "elem/tree.hpp"
 #include "elem/text.hpp"
 #include "elem/image.hpp"
+#include "elem/icon.hpp"
 #include "elem/window.hpp"
 #include "elem/inputbox.hpp"
 #include "elem/modal.hpp"

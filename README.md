@@ -48,6 +48,21 @@ You can find the latest version on the [**Releases**](https://github.com/D4nielS
 **Bubble GUI uses the power of C++ templates to create an intuitive and easy-to-use API.**  
 After initializing the library, you can set the main layout and add UI elements to it.
 
+### Nerd Font icons
+
+When FreeType is enabled, BGUI loads its bundled Nerd Font alongside the default
+font. Add an icon to a layout with its supported name:
+
+```cpp
+auto& folder_icon = panel.add<bgui::icon>("folder");
+auto& open_folder_icon = panel.add<bgui::icon>("folder_open");
+```
+
+The icon element also supports names such as `file`, `search`, `settings`,
+`home`, `save`, `play`, `pause`, `stop`, `warning`, `info`, `bug`, `code`,
+`eye`, `eye_closed`, `trash`, and directional arrows. Unknown names throw
+`std::invalid_argument`.
+
 ### Example
 
 *Using GLFW & Opengl:*
