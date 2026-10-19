@@ -55,7 +55,7 @@ namespace bgui {
             );
         }
 
-        void on_update() override {
+        void arrange() override {
             const auto& padding = computed_style.layout.padding;
             const auto& margin = m_label->computed_style.layout.margin;
             const int x = processed_x() + padding.x + margin.x;
@@ -74,7 +74,7 @@ namespace bgui {
             m_label->set_final_rect(
                 x, y, m_label->processed_width(), m_label->processed_height()
             );
-            m_label->on_update();
+            m_label->arrange();
         }
 
         void on_pressed() override {
@@ -351,6 +351,7 @@ namespace bgui {
             separator.add_class("dock-tab-separator");
             separator.receives_input(false);
             separator.set_flex(false);
+            separator.style.visual.visible = false;
             tab.cascade_style();
             group.tabs.push_back(&tab);
             group.active_indicators.push_back(&active_indicator);
@@ -1062,6 +1063,48 @@ namespace bgui {
 
     void dock::on_update() {
         sync_windows();
+        for (auto& group : m_tab_groups) {
+            for (std::size_t index = 0; index < group.windows.size(); ++index) {
+                auto* tab = group.tabs[index];
+                auto* tab_window = group.windows[index];
+                const auto drag = tab->is_drag();
+                if (drag.x != 0 || drag.y != 0) {
+                    group.active = tab_window;
+                    focus_window(tab_window);
+                    if (m_tab_dragged_window != tab_window) {
+                        const auto pointer = bgui::get_mouse_position();
+                        m_tab_drag_offset = {
+                            pointer.x - tab->processed_x(),
+                            pointer.y - tab->processed_y()
+                        };
+                        m_tab_dragged_window = tab_window;
+                    }
+                }
+
+                const bool active = tab_window == group.active;
+                if (active) {
+                    tab->add_class("dock-tab-active");
+                    tab->get_label().add_class("dock-tab-label-active");
+                } else {
+                    tab->remove_class("dock-tab-active");
+                    tab->get_label().remove_class("dock-tab-label-active");
+                }
+                auto* indicator = group.active_indicators[index];
+                indicator->style.visual.visible = active;
+                indicator->mark_style_dirty();
+                tab->set_enable(true);
+                tab_window->set_enable(active);
+                if (active)
+                    tab_window->get_title().set_drag(drag);
+                tab->set_drag({0, 0});
+            }
+            group.overflow->set_enable(true);
+        }
+
+        layout::on_update();
+    }
+
+    void dock::arrange() {
 
         const auto padding = computed_style.layout.padding;
         const int scale = std::max(1, static_cast<int>(std::round(get_global_scale())));
@@ -1277,7 +1320,6 @@ namespace bgui {
                         }
                     }
                     split.splitter->set_enable(true);
-                    split.splitter->on_update();
                     arrange_window(split.added, added_bounds);
                 }
 
@@ -1287,7 +1329,7 @@ namespace bgui {
                 if (group == m_tab_groups.end()) {
                     value->set_enable(true);
                     value->set_final_rect(remaining.x, remaining.y, remaining.z, remaining.w);
-                    value->on_update();
+                    value->arrange();
                     return;
                 }
 
@@ -1295,6 +1337,14 @@ namespace bgui {
                 for (auto* tab : group->tabs)
                     tab_height = std::max(tab_height, tab->preferred_height());
                 tab_height = std::min(tab_height, std::max(0, remaining.w));
+                const auto scaled_pixels = [](const int logical_pixels) {
+                    return std::max(
+                        1,
+                        static_cast<int>(std::lround(
+                            logical_pixels * bgui::get_global_scale()
+                        ))
+                    );
+                };
                 int tab_x = remaining.x;
                 const int overflow_width = std::min(
                     remaining.z,
@@ -1310,7 +1360,6 @@ namespace bgui {
                 group->overflow->set_final_rect(
                     tab_right, remaining.y, overflow_width, tab_height
                 );
-                group->overflow->on_update();
                 for (std::size_t tab_index = 0; tab_index < group->windows.size(); ++tab_index) {
                     auto* tab_window = group->windows[tab_index];
                     auto* tab = group->tabs[tab_index];
@@ -1338,56 +1387,34 @@ namespace bgui {
                     tab->set_final_rect(
                         tab_x, remaining.y, width, tab_height
                     );
-                    tab->on_update();
-
-                    const auto tab_drag = tab->is_drag();
-                    if (tab_drag.x != 0 || tab_drag.y != 0) {
-                        group->active = tab_window;
-                        focus_window(tab_window);
-                        if (m_tab_dragged_window != tab_window) {
-                            const auto pointer = bgui::get_mouse_position();
-                            m_tab_drag_offset = {
-                                pointer.x - tab->processed_x(),
-                                pointer.y - tab->processed_y()
-                            };
-                            m_tab_dragged_window = tab_window;
-                        }
-                    }
-
+                    tab->arrange();
                     const bool active = tab_window == group->active;
-                    if (active) {
-                        tab->add_class("dock-tab-active");
-                        tab->get_label().add_class("dock-tab-label-active");
-                    } else {
-                        tab->remove_class("dock-tab-active");
-                        tab->get_label().remove_class("dock-tab-label-active");
-                    }
-                    tab->mark_style_dirty();
 
                     auto* indicator = group->active_indicators[tab_index];
-                    indicator->style.visual.visible = active;
                     indicator->set_final_rect(
-                        tab_x, remaining.y, width, std::max(2, 2 * scale)
+                        tab_x, remaining.y, width, std::max(2, scaled_pixels(2))
                     );
-                    indicator->mark_style_dirty();
 
                     auto* separator = group->separators[tab_index];
+                    const bool show_separator = group->windows.size() > 1;
+                    if (separator->style.visual.visible != show_separator) {
+                        separator->style.visual.visible = show_separator;
+                        separator->mark_style_dirty();
+                    }
                     separator->set_final_rect(
-                        tab_x + width - std::max(1, scale),
-                        remaining.y + std::max(3, 3 * scale),
-                        std::max(1, scale),
-                        std::max(0, tab_height - std::max(6, 6 * scale))
+                        tab_x + width - scaled_pixels(1),
+                        remaining.y + scaled_pixels(3),
+                        scaled_pixels(1),
+                        std::max(0, tab_height - scaled_pixels(6))
                     );
                     tab_window->set_enable(active);
                     if (active) {
-                        tab_window->get_title().set_drag(tab_drag);
                         tab_window->set_final_rect(
                             remaining.x, remaining.y + tab_height, remaining.z,
                             std::max(0, remaining.w - tab_height)
                         );
-                        tab_window->on_update();
+                        tab_window->arrange();
                     }
-                    tab->set_drag({0, 0});
                     tab_x += width;
                 }
             };
@@ -1411,7 +1438,6 @@ namespace bgui {
                         : vec4i{panel.bounds.x, cursor + extent, panel.bounds.z, m_splitter_size};
                     panel.splitters[window_index]->set_enable(true);
                     panel.splitters[window_index]->set_bounds(splitter_rect);
-                    panel.splitters[window_index]->on_update();
                 }
 
                 cursor += extent + m_splitter_size;
@@ -1433,12 +1459,12 @@ namespace bgui {
                 if (auto* value = dynamic_cast<window*>(element.get())) {
                     if (value->is_floating()) {
                         value->process_required_size(processed_size());
-                        value->on_update();
+                        value->arrange();
                     }
                     continue;
                 }
                 element->process_required_size(processed_size());
-                element->on_update();
+                element->arrange();
             }
         }
 
@@ -1467,24 +1493,4 @@ namespace bgui {
         });
     }
 
-    void dock::arrange() {
-        for (auto& [lay, elements] : get_elements()) {
-            for (auto& child : elements) {
-                if (!child || !child->is_enabled())
-                    continue;
-
-                if (auto* value = dynamic_cast<window*>(child.get());
-                    value && value->is_floating())
-                    value->process_required_size(processed_size());
-                else if (!dynamic_cast<window*>(child.get()) &&
-                         !dynamic_cast<dock_splitter*>(child.get()) &&
-                         !child->has_class("dock-drop-zone") &&
-                         !child->has_class("dock-drop-preview") &&
-                         !child->has_class("dock-tab"))
-                    child->process_required_size(processed_size());
-
-                child->arrange();
-            }
-        }
-    }
 }

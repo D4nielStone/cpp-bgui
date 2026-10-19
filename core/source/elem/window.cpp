@@ -64,18 +64,23 @@ bgui::window::window(const char* title, float font_scale, bool floating)
             });
         }
     );
+    m_close_button->add_class("window-close-button");
 
     m_minimize_button = &controls.add<bgui::traffic_light>(
         bgui::traffic_light_type::minimize,
         [this]() {
+            minimize();
         }
     );
+    m_minimize_button->add_class("window-minimize-button");
 
     m_maximize_button = &controls.add<bgui::traffic_light>(
         bgui::traffic_light_type::maximize,
         [this]() {
+            maximize();
         }
     );
+    m_maximize_button->add_class("window-maximize-button");
 
     initialize_context();
     set_floating(floating);
@@ -96,10 +101,18 @@ void bgui::window::on_update() {
         const auto drag = m_title->is_drag();
 
         if (drag[0] || drag[1]) {
+            if (m_maximized && m_restore_rect.z > 0 && m_restore_rect.w > 0) {
+                m_maximized = false;
+                set_floating_rect(m_restore_rect);
+            }
             set_position(
                 processed_x() + drag[0],
                 processed_y() + drag[1]
             );
+            if (m_minimized) {
+                m_minimized_rect.x += drag[0];
+                m_minimized_rect.y += drag[1];
+            }
             m_dragging = true;
         } else if (!bgui::get_pressed(bgui::input_key::mouse_left)) {
             m_dragging = false;
@@ -184,6 +197,67 @@ void bgui::window::use_highlight_config(const std::string& path) {
     }
 }
 
+void bgui::window::set_floating_rect(const vec4i& rect) {
+    const float scale = bgui::get_global_scale();
+    if (scale <= 0.f || rect.z <= 0 || rect.w <= 0)
+        return;
+
+    set_position(rect.x, rect.y);
+    style.layout.require_mode(bgui::mode::pixel, bgui::mode::pixel);
+    style.layout.require_size(rect.z / scale, rect.w / scale);
+    mark_style_dirty();
+}
+
+void bgui::window::minimize() {
+    if (!m_floating || !m_context || !m_header)
+        return;
+
+    if (m_minimized) {
+        m_minimized = false;
+        m_context->set_enable(true);
+        set_floating_rect(m_minimized_rect);
+        return;
+    }
+
+    const auto rect = processed_rect();
+    const int header_height = m_header->processed_height();
+    if (rect.z <= 0 || rect.w <= 0 || header_height <= 0)
+        return;
+
+    m_minimized_rect = rect;
+    m_minimized = true;
+    m_context->set_enable(false);
+    set_floating_rect({rect.x, rect.y, rect.z, header_height});
+}
+
+void bgui::window::maximize() {
+    if (!m_floating || !get_parent())
+        return;
+
+    const auto current_rect = m_minimized ? m_minimized_rect : processed_rect();
+    if (current_rect.z <= 0 || current_rect.w <= 0)
+        return;
+
+    if (m_minimized) {
+        m_minimized = false;
+        m_context->set_enable(true);
+    }
+
+    if (m_maximized) {
+        m_maximized = false;
+        set_floating_rect(m_restore_rect);
+        return;
+    }
+
+    const auto parent_rect = get_parent()->processed_rect();
+    if (parent_rect.z <= 0 || parent_rect.w <= 0)
+        return;
+
+    m_restore_rect = current_rect;
+    m_maximized = true;
+    set_floating_rect(parent_rect);
+}
+
 void bgui::window::set_floating(bool floating) {
     if (floating && !m_floating) {
         const float scale = bgui::get_global_scale();
@@ -206,6 +280,12 @@ void bgui::window::set_floating(bool floating) {
     }
 
     m_floating = floating;
+    if (!floating) {
+        m_minimized = false;
+        m_maximized = false;
+        if (m_context)
+            m_context->set_enable(true);
+    }
     set_flex(!floating);
 
     if (m_close_button) {

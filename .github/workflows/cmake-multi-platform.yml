@@ -7,6 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        backend: [core, opengl]
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +32,7 @@ jobs:
       - name: Configure CMake
         run: >
           cmake -S . -B out
-          -DBGUI_USE_OPENGL=OFF
+          -DBGUI_USE_OPENGL=${{ matrix.backend == 'opengl' }}
           -DBGUI_USE_VULKAN=OFF
           -DBGUI_USE_GLFW=OFF
           -DBGUI_BUILD_EXAMPLES=OFF

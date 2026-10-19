@@ -50,27 +50,37 @@ int element::processed_height() const {
 }
 
 void element::set_final_rect(const int x, const int y, const int w, const int h) {
+    const vec4i next_rect{x, y, w, h};
+    if (m_arranged_rect == next_rect && (s_geometry_frame_active || m_rect == next_rect))
+        return;
     m_arranged_rect = {x, y, w, h};
     if (!s_geometry_frame_active)
         m_rect = m_arranged_rect;
+    mark_layout_dirty();
 }
 
 void element::set_position(const int x, const int y) {
+    if (m_arranged_rect.x == x && m_arranged_rect.y == y)
+        return;
     m_arranged_rect.x = x;
     m_arranged_rect.y = y;
     if (!s_geometry_frame_active) {
         m_rect.x = x;
         m_rect.y = y;
     }
+    mark_layout_dirty();
 }
 
 void element::set_final_size(const int width, const int height) {
+    if (m_arranged_rect.z == width && m_arranged_rect.w == height)
+        return;
     m_arranged_rect.z = width;
     m_arranged_rect.w = height;
     if (!s_geometry_frame_active) {
         m_rect.z = width;
         m_rect.w = height;
     }
+    mark_layout_dirty();
 }
 
 vec2i element::processed_position() const {
@@ -97,10 +107,20 @@ void element::commit_geometry() {
 
 void element::mark_style_dirty() {
     m_style_dirty = true;
+    mark_layout_dirty();
 
     if (auto* lay = as_layout()) {
         lay->mark_children_style_dirty();
     }
+}
+
+void element::mark_layout_dirty() {
+    if (s_arranging_geometry)
+        return;
+
+    m_layout_dirty = true;
+    if (m_parent)
+        m_parent->mark_layout_dirty();
 }
 
 void element::add_class(const std::string& cls) {
@@ -131,7 +151,17 @@ void element::clear_classes() {
 }
 
 void element::set_enable(bool b){
+    if (m_enabled == b)
+        return;
+
     m_enabled = b;
+    mark_layout_dirty();
+    if (!m_enabled) {
+        bgui::cancel_interactions(this);
+        set_style_state(state::disabled);
+    } else if (get_style_state() == state::disabled) {
+        set_style_state(state::normal);
+    }
 }
 
 void element::on_update() {
@@ -249,10 +279,16 @@ void element::process_required_size(const bgui::vec2i& available) {
 
     // Step 6: Set final rect dimensions into arranged rect when in geometry frame,
     // otherwise publish directly into the visible rect.
-    m_arranged_rect.z = static_cast<int>(w);
-    m_arranged_rect.w = static_cast<int>(h);
+    const int next_width = static_cast<int>(w);
+    const int next_height = static_cast<int>(h);
+    const bool size_changed =
+        m_arranged_rect.z != next_width || m_arranged_rect.w != next_height;
+    m_arranged_rect.z = next_width;
+    m_arranged_rect.w = next_height;
     if (!s_geometry_frame_active) {
         m_rect.z = m_arranged_rect.z;
         m_rect.w = m_arranged_rect.w;
     }
+    if (size_changed)
+        mark_layout_dirty();
 }

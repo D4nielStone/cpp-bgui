@@ -172,6 +172,55 @@ TEST(InteractionTest, RemovingCapturedElementAndAncestorCancelsCapture) {
 	context.m_input_map.clear();
 }
 
+TEST(InteractionTest, DisablingCapturedElementCancelsCapture) {
+	bgui::scoped_interface interface;
+	auto& root = bgui::get_layout();
+	auto& context = bgui::get_context();
+	context.m_input_map.clear();
+	context.m_mouse_position = {10, 10};
+	context.m_input_map[input_key::mouse_left] = input_action::press;
+
+	int release_count = 0;
+	auto& target = root.add<capture_probe>(release_count);
+	target.set_final_rect(0, 0, 50, 50);
+	bgui::on_update();
+	ASSERT_EQ(bgui::get_mouse_target(), &target);
+
+	target.set_enable(false);
+	EXPECT_EQ(target.get_style_state(), state::disabled);
+	EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+
+	context.m_input_map[input_key::mouse_left] = input_action::release;
+	bgui::on_update();
+	EXPECT_EQ(release_count, 0);
+
+	target.set_enable(true);
+	EXPECT_EQ(target.get_style_state(), state::normal);
+	context.m_input_map.clear();
+}
+
+TEST(InteractionTest, DisablingFocusedInputClearsKeyboardFocus) {
+	bgui::scoped_interface interface;
+	auto& root = bgui::get_layout();
+	auto& context = bgui::get_context();
+	context.m_input_map.clear();
+	context.m_mouse_position = {10, 10};
+	context.m_input_map[input_key::mouse_left] = input_action::press;
+
+	auto& target = root.add<inputbox>("input");
+	target.set_final_rect(0, 0, 100, 30);
+	bgui::on_update();
+	ASSERT_TRUE(target.is_focused());
+
+	target.set_enable(false);
+	EXPECT_FALSE(target.is_focused());
+	EXPECT_EQ(target.get_style_state(), state::disabled);
+
+	context.m_input_map[input_key::mouse_left] = input_action::release;
+	bgui::on_update();
+	context.m_input_map.clear();
+}
+
 TEST(ConfigurationTest, ReplacesExistingFileWithoutLeavingTemporaryFiles) {
 	bgui::scoped_interface interface;
 	const auto path = std::filesystem::temp_directory_path() / "bgui-configuration-atomic-test.cfg";

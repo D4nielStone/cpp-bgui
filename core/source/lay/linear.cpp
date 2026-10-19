@@ -142,11 +142,9 @@ void linear::arrange() {
 
     for(auto& [lay, elems] : m_elements) {
     for (auto& elem : m_elements[lay]) {
-        if (!elem || !elem->is_enabled())
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
-        if (elem->is_enabled()) {
-            elem->calc_content_size(lay);
-        }
+        elem->calc_content_size(lay);
     }
     calc_content_size(lay);
 
@@ -169,32 +167,34 @@ void linear::arrange() {
     available.y -= (computed_style.layout.padding.y + computed_style.layout.padding.w);
 
     float fixed_main = 0.f;
+    int flexible_margins = 0;
     int stretch_count = 0;
 
     for (auto& elem : m_elements[lay]) {
-        if (!elem->is_enabled())
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
 
         auto mreq = elem->computed_style.layout.size_mode[main];
+        const int margin_main_start = elem->computed_style.layout.margin[main];
+        const int margin_main_end = elem->computed_style.layout.margin[main + 2];
 
-        if (mreq == mode::pixel || mreq == mode::wrap_content || mreq == mode::same) {
-            int margin_main_start = elem->computed_style.layout.margin[main];
-            int margin_main_end = elem->computed_style.layout.margin[main + 2];
+        if (mreq == mode::stretch || mreq == mode::match_parent) {
+            flexible_margins += margin_main_start + margin_main_end;
+            ++stretch_count;
+        } else {
             vec2i elem_available = available;
             elem_available[main] -= margin_main_start + margin_main_end;
             elem_available[main] = std::max(0, elem_available[main]);
             elem->process_required_size(elem_available);
             fixed_main += elem->processed_size()[main];
-            fixed_main += margin_main_start;
-            fixed_main += margin_main_end;
-        } else {
-            stretch_count++;
+            fixed_main += margin_main_start + margin_main_end;
         }
     }
 
     float stretch_size = 0.f;
     if (stretch_count > 0) {
-        stretch_size = (available[main] - fixed_main) / stretch_count;
+        stretch_size =
+            (available[main] - fixed_main - flexible_margins) / stretch_count;
         if (stretch_size < 0.f) stretch_size = 0.f;
     }
 
@@ -202,6 +202,12 @@ void linear::arrange() {
         if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
         vec2i final_available = elem->processed_size();
+        if (elem->computed_style.layout.size_mode[main] == mode::percent) {
+            const int margin_before = elem->computed_style.layout.margin[main];
+            const int margin_after = elem->computed_style.layout.margin[main + 2];
+            final_available[main] = std::max(
+                0, available[main] - margin_before - margin_after);
+        }
 
         for (int axis = 0; axis < 2; ++axis) {
             auto req = elem->computed_style.layout.size_mode[axis];
@@ -216,6 +222,8 @@ void linear::arrange() {
                 case mode::stretch:
                     if (axis == main) {
                         final_available[axis] = static_cast<int>(stretch_size);
+                    } else {
+                        final_available[axis] = axis_available;
                     }
                     break;
 
@@ -427,25 +435,28 @@ void linear::calc_content_size(const layer& lay) {
     }
 
     for (auto& elem : m_elements[lay]) {
-        if (!elem->is_enabled())
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
 
         const auto& margin = elem->computed_style.layout.margin;
 
         const auto content_size = elem->get_content_size();
-        const int elem_w =
-            (elem->computed_style.layout.size_mode[0] == mode::wrap_content ||
-             elem->computed_style.layout.size_mode[0] == mode::stretch
-                ? content_size.x
-                : elem->processed_width()) +
-            margin.x + margin.z;
-
-        const int elem_h =
-            (elem->computed_style.layout.size_mode[1] == mode::wrap_content ||
-             elem->computed_style.layout.size_mode[1] == mode::stretch
-                ? content_size.y
-                : elem->processed_height()) +
-            margin.y + margin.w;
+        const auto measure_axis = [&](const int axis) {
+            const auto& layout = elem->computed_style.layout;
+            if (layout.size_mode[axis] == mode::wrap_content ||
+                layout.size_mode[axis] == mode::stretch)
+                return content_size[axis];
+            if (layout.size_mode[axis] == mode::pixel) {
+                return std::clamp(
+                    static_cast<int>(layout.size[axis]),
+                    layout.limit_min[axis],
+                    layout.limit_max[axis]
+                );
+            }
+            return elem->processed_size()[axis];
+        };
+        const int elem_w = measure_axis(0) + margin.x + margin.z;
+        const int elem_h = measure_axis(1) + margin.y + margin.w;
 
         if (vertical) {
             content_h += elem_h;

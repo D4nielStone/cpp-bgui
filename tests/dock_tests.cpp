@@ -30,6 +30,13 @@ namespace {
         return nullptr;
     }
 
+    void update_dock(bgui::dock& value) {
+        value.on_update();
+        bgui::element::begin_arranging();
+        value.arrange();
+        bgui::element::end_arranging();
+    }
+
 }
 
 // Ensures pinned dock windows remain tiled and can be resized by dragging a
@@ -44,7 +51,7 @@ TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
     auto& left = dock.add_window("Left", bgui::dock_area::left);
     auto& center = dock.add_window("Center", bgui::dock_area::center);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     EXPECT_FALSE(left.is_floating());
     EXPECT_FALSE(center.is_floating());
@@ -68,8 +75,8 @@ TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
 
     const int initial_width = left.processed_width();
     left_divider->set_drag({40, 0});
-    dock.on_update();
-    dock.on_update();
+    update_dock(dock);
+    update_dock(dock);
     std::cout << left.processed_width() << " " << initial_width << "\n";
     EXPECT_GT(left.processed_width(), initial_width);
 }
@@ -85,7 +92,7 @@ TEST(DockTest, FloatingWindowsStayAbovePinnedWindowsRegardlessOfInsertionOrder) 
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     const auto& elements = dock.get_elements()[bgui::layer::base];
     const auto floating_position = std::find_if(elements.begin(), elements.end(), [&floating](const auto& element) {
@@ -117,7 +124,7 @@ TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
     dock.cascade_style();
 
     dock.focus_window(&focused);
-    dock.on_update();
+    update_dock(dock);
 
     const auto& elements = dock.get_elements()[bgui::layer::base];
     const auto focused_position = std::find_if(elements.begin(), elements.end(), [&focused](const auto& element) {
@@ -151,7 +158,7 @@ TEST(DockTest, DockTabsStayBelowFloatingWindows) {
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
     dock.focus_window(&focused_floating);
-    dock.on_update();
+    update_dock(dock);
 
     const auto& elements = dock.get_elements()[bgui::layer::base];
     const auto floating_position = std::find_if(elements.begin(), elements.end(), [&floating](const auto& element) {
@@ -174,6 +181,93 @@ TEST(DockTest, DockTabsStayBelowFloatingWindows) {
     EXPECT_EQ(tab_count, 2u);
 }
 
+TEST(DockTest, TabIndicatorAndSeparatorUseScaledDimensions) {
+    bgui::scoped_interface interface;
+    bgui::set_global_scale(1.5f);
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.add_window("Anchor", bgui::dock_area::center);
+    dock.add_window("Second", bgui::dock_area::center);
+    auto configuration = dock.get_configuration();
+    configuration.tab_groups.push_back({
+        "Anchor", "Anchor", {"Anchor", "Second"}
+    });
+    dock.apply_configuration(configuration);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    update_dock(dock);
+
+    int indicator_height = 0;
+    int tab_height = 0;
+    int separator_width = 0;
+    int separator_height = 0;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (!element->has_class("dock-tab"))
+                continue;
+            tab_height = element->processed_height();
+            for (auto& [tab_layer, children] : element->as_layout()->get_elements()) {
+                for (auto& child : children) {
+                    if (child->has_class("dock-tab-active-indicator"))
+                        indicator_height = child->processed_height();
+                    if (child->has_class("dock-tab-separator")) {
+                        separator_width = child->processed_width();
+                        separator_height = child->processed_height();
+                        EXPECT_TRUE(child->style.visual.visible.value_or(false));
+                    }
+                }
+            }
+            break;
+        }
+    }
+    bgui::set_global_scale(1.f);
+
+    EXPECT_EQ(indicator_height, 3);
+    EXPECT_EQ(separator_width, 2);
+    EXPECT_EQ(separator_height, tab_height - 9);
+}
+
+TEST(DockTest, TabSeparatorIsHiddenWhenOnlyOneTabRemains) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.add_window("Anchor", bgui::dock_area::center);
+    auto& second = dock.add_window("Second", bgui::dock_area::center);
+    auto configuration = dock.get_configuration();
+    configuration.tab_groups.push_back({
+        "Anchor", "Anchor", {"Anchor", "Second"}
+    });
+    dock.apply_configuration(configuration);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    ASSERT_TRUE(dock.remove_window(&second));
+    const auto remaining = dock.get_configuration();
+    EXPECT_TRUE(remaining.tab_groups.empty());
+    update_dock(dock);
+
+    bool found_separator = false;
+    std::size_t tab_count = 0;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (!element->has_class("dock-tab"))
+                continue;
+            ++tab_count;
+            for (auto& [tab_layer, children] : element->as_layout()->get_elements()) {
+                for (auto& child : children) {
+                    if (!child->has_class("dock-tab-separator"))
+                        continue;
+                    found_separator = true;
+                    EXPECT_FALSE(child->style.visual.visible.value_or(true));
+                }
+            }
+        }
+    }
+    EXPECT_EQ(tab_count, 1u);
+    EXPECT_TRUE(found_separator);
+}
+
 // Covers the drag-preview path: a floating window should expose valid drop targets
 // and highlight the center preview while it is being moved.
 TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
@@ -189,7 +283,7 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     bgui::get_context().m_mouse_position = {200, 200};
     floating.get_title().set_drag({25, 0});
     floating.on_update();
-    dock.on_update();
+    update_dock(dock);
 
     std::vector<bgui::element*> targets;
     for (auto& [lay, elements] : dock.get_elements()) {
@@ -220,7 +314,7 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
         center_rect.x + center_rect.z / 2,
         center_rect.y + center_rect.w / 2
     };
-    dock.on_update();
+    update_dock(dock);
     EXPECT_TRUE(preview->is_enabled());
     EXPECT_EQ(preview->processed_rect().x, dock.processed_x());
     EXPECT_EQ(preview->processed_rect().y, dock.processed_y());
@@ -230,7 +324,7 @@ TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
     bgui::get_context().m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
     floating.get_title().set_drag({0, 0});
     floating.on_update();
-    dock.on_update();
+    update_dock(dock);
     for (auto* target : targets)
         EXPECT_FALSE(target->is_enabled());
 }
@@ -250,7 +344,7 @@ TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
     context.m_mouse_position = {450, 300};
     floating.get_title().set_drag({25, 0});
-    dock.on_update();
+    update_dock(dock);
     ASSERT_TRUE(floating.is_dragging());
 
     bgui::element* center_target = nullptr;
@@ -269,8 +363,8 @@ TEST(DockTest, FloatingWindowSnapsToDropAreaWhenReleased) {
     };
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 
-    dock.on_update();
-    dock.on_update();
+    update_dock(dock);
+    update_dock(dock);
 
     EXPECT_FALSE(floating.is_floating());
     EXPECT_EQ(floating.processed_rect().x, dock.processed_x());
@@ -289,7 +383,7 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     auto& context = bgui::get_context();
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
@@ -300,7 +394,7 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     };
     floating.get_title().set_drag({5, 0});
     floating.on_update();
-    dock.on_update();
+    update_dock(dock);
 
     bgui::element* left_target = nullptr;
     for (auto& [lay, elements] : dock.get_elements()) {
@@ -318,8 +412,8 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     };
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 
-    dock.on_update();
-    dock.on_update();
+    update_dock(dock);
+    update_dock(dock);
 
     EXPECT_FALSE(floating.is_floating());
     EXPECT_LT(floating.processed_rect().x, anchor.processed_rect().x);
@@ -335,7 +429,7 @@ TEST(DockTest, FloatingWindowSplitsHoveredDockOnSideDrop) {
     dock.apply_configuration({});
     ASSERT_TRUE(bgui::load_configuration(config_path.string()));
     std::filesystem::remove(config_path);
-    dock.on_update();
+    update_dock(dock);
     configuration = dock.get_configuration();
     ASSERT_EQ(configuration.splits.size(), 1u);
     EXPECT_EQ(configuration.splits.front().anchor, "Anchor");
@@ -351,7 +445,7 @@ TEST(DockTest, RightSideSplitResizesInDragDirection) {
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     auto& context = bgui::get_context();
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
@@ -362,7 +456,7 @@ TEST(DockTest, RightSideSplitResizesInDragDirection) {
     };
     floating.get_title().set_drag({5, 0});
     floating.on_update();
-    dock.on_update();
+    update_dock(dock);
 
     bgui::element* right_target = nullptr;
     for (auto& [lay, elements] : dock.get_elements()) {
@@ -379,8 +473,8 @@ TEST(DockTest, RightSideSplitResizesInDragDirection) {
         target_rect.y + target_rect.w / 2
     };
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
-    dock.on_update();
-    dock.on_update();
+    update_dock(dock);
+    update_dock(dock);
 
     ASSERT_FALSE(floating.is_floating());
     ASSERT_GT(floating.processed_rect().x, anchor.processed_rect().x);
@@ -401,8 +495,8 @@ TEST(DockTest, RightSideSplitResizesInDragDirection) {
     const int initial_anchor_width = anchor.processed_width();
     const int initial_added_width = floating.processed_width();
     splitter->set_drag({30, 0});
-    dock.on_update();
-    dock.on_update();
+    update_dock(dock);
+    update_dock(dock);
 
     EXPECT_GT(anchor.processed_width(), initial_anchor_width);
     EXPECT_LT(floating.processed_width(), initial_added_width);
@@ -419,7 +513,7 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     auto& context = bgui::get_context();
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
@@ -430,7 +524,7 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     };
     floating.get_title().set_drag({5, 0});
     floating.on_update();
-    dock.on_update();
+    update_dock(dock);
 
     bgui::element* center_target = nullptr;
     for (auto& [lay, elements] : dock.get_elements()) {
@@ -448,8 +542,8 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     };
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 
-    dock.on_update();
-    dock.on_update();
+    update_dock(dock);
+    update_dock(dock);
 
     EXPECT_FALSE(anchor.is_enabled());
     EXPECT_FALSE(floating.is_floating());
@@ -544,7 +638,7 @@ TEST(DockTest, TabWidthsReserveEachTabsMinimumWidth) {
     }
 
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     std::size_t tabs = 0;
     for (auto& [lay, elements] : dock.get_elements()) {
@@ -575,11 +669,11 @@ TEST(DockTest, SingleRemainingTabKeepsItsStripOverflowAndTextHeight) {
     });
     dock.apply_configuration(configuration);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     ASSERT_TRUE(dock.remove_window(&removed));
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     std::size_t tab_count = 0;
     std::size_t overflow_count = 0;
@@ -613,7 +707,7 @@ TEST(DockTest, SingleRemainingTabKeepsItsStripOverflowAndTextHeight) {
     EXPECT_TRUE(anchor.is_enabled());
 
     dock.apply_configuration(restored);
-    dock.on_update();
+    update_dock(dock);
     tab_count = 0;
     overflow_count = 0;
     for (auto& [layer, elements] : dock.get_elements()) {
@@ -644,7 +738,7 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     dock.process_required_size({900, 600});
     dock.set_final_rect(0, 0, 900, 600);
     dock.cascade_style();
-    dock.on_update();
+    update_dock(dock);
 
     auto& context = bgui::get_context();
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
@@ -661,9 +755,7 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     EXPECT_TRUE(close->is_enabled());
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
     dock.cascade_style();
-    dock.on_update();
-    dock.on_update();
-    dock.arrange();
+    update_dock(dock);
 
     bgui::linear* header = nullptr;
     for (auto& [lay, elements] : panel.get_elements()) {
@@ -673,8 +765,65 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
         }
     }
     ASSERT_NE(header, nullptr);
-    EXPECT_EQ(close->processed_x() + close->processed_width(),
+    bgui::linear* controls = nullptr;
+    for (auto& [lay, elements] : header->get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("window-controls"))
+                controls = dynamic_cast<bgui::linear*>(element.get());
+        }
+    }
+    ASSERT_NE(controls, nullptr);
+    EXPECT_EQ(controls->processed_x() + controls->processed_width(),
               header->processed_x() + header->processed_width());
+}
+
+TEST(DockTest, FloatingWindowTrafficLightsMinimizeAndToggleMaximize) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& panel = dock.add<bgui::window>("Panel", true);
+    panel.style.layout.require_size(280.f, 190.f);
+    panel.set_position(30, 40);
+    panel.mark_style_dirty();
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    update_dock(dock);
+
+    const auto initial_rect = panel.processed_rect();
+    ASSERT_GT(initial_rect.z, 0);
+    ASSERT_GT(initial_rect.w, 0);
+
+    panel.minimize();
+    EXPECT_TRUE(panel.is_minimized());
+    EXPECT_TRUE(panel.get_title().is_enabled());
+    dock.cascade_style();
+    update_dock(dock);
+    EXPECT_LT(panel.processed_height(), initial_rect.w);
+
+    panel.minimize();
+    EXPECT_FALSE(panel.is_minimized());
+    dock.cascade_style();
+    update_dock(dock);
+    EXPECT_EQ(panel.processed_rect().x, initial_rect.x);
+    EXPECT_EQ(panel.processed_rect().y, initial_rect.y);
+    EXPECT_EQ(panel.processed_rect().z, initial_rect.z);
+    EXPECT_EQ(panel.processed_rect().w, initial_rect.w);
+
+    panel.maximize();
+    EXPECT_TRUE(panel.is_maximized());
+    dock.cascade_style();
+    update_dock(dock);
+    EXPECT_EQ(panel.processed_rect(), dock.processed_rect());
+
+    panel.maximize();
+    EXPECT_FALSE(panel.is_maximized());
+    dock.cascade_style();
+    update_dock(dock);
+    EXPECT_EQ(panel.processed_rect().x, initial_rect.x);
+    EXPECT_EQ(panel.processed_rect().y, initial_rect.y);
+    EXPECT_EQ(panel.processed_rect().z, initial_rect.z);
+    EXPECT_EQ(panel.processed_rect().w, initial_rect.w);
 }
 
 // Covers serialization and restoration of the dock state, including legacy config

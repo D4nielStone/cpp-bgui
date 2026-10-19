@@ -49,7 +49,8 @@ add_test(NAME ConfigurationTests COMMAND all_tests --gtest_filter=ConfigurationT
 add_test(NAME ImageTests COMMAND all_tests --gtest_filter=ImageTest.*)
 add_test(NAME LinearTests COMMAND all_tests --gtest_filter=LinearTest.*)
 add_test(NAME DockTests COMMAND all_tests --gtest_filter=DockTest.*)
-add_test(NAME StyleTests COMMAND all_tests --gtest_filter=StyleVisualTest.*:DeclarativeStyleTest.*)
+add_test(NAME StyleTests COMMAND all_tests --gtest_filter=StyleVisualTest.*:DeclarativeStyleTest.*:ModalThemeTest.*)
+add_test(NAME DrawTests COMMAND all_tests --gtest_filter=DrawDataTest.*:DrawListTest.*)
 add_test(NAME ProfilingTests COMMAND all_tests --gtest_filter=ProfilingTest.*)
 add_test(NAME IconTests COMMAND all_tests --gtest_filter=IconTest.*)
 

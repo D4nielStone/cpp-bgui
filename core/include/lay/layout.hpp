@@ -33,6 +33,7 @@ private:
         ref.set_parent(this);
 
         m_elements[Lay].push_back(std::move(elem));
+        mark_layout_dirty();
 
         return ref;
     }
@@ -76,6 +77,7 @@ public:
 
             cancel_interactions(it->get());
             elems.erase(it);
+            mark_layout_dirty();
             return true;
         }
 

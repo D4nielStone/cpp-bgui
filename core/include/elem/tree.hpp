@@ -24,7 +24,6 @@ namespace bgui {
     private:
         float m_scale;
         button* m_label_button{nullptr};
-        text* m_disclosure{nullptr};
         linear* m_icon_slot{nullptr};
         icon* m_icon{nullptr};
         linear* m_children{nullptr};

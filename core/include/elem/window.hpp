@@ -28,8 +28,13 @@ namespace bgui {
         vec2i m_pinned_drag_distance{0, 0};
         bool m_floating = true;
         bool m_dragging = false;
+        bool m_minimized = false;
+        bool m_maximized = false;
+        vec4i m_minimized_rect{0, 0, 0, 0};
+        vec4i m_restore_rect{0, 0, 0, 0};
 
         void initialize_context();
+        void set_floating_rect(const vec4i& rect);
     public:
         window();
         window(const char* title, float font_scale = 0.3, bool floating = true);
@@ -73,6 +78,10 @@ namespace bgui {
         bool clips_children() const override { return true; }
         bool is_floating() const { return m_floating; }
         bool is_dragging() const { return m_dragging; }
+        bool is_minimized() const { return m_minimized; }
+        bool is_maximized() const { return m_maximized; }
+        void minimize();
+        void maximize();
         void set_floating(bool floating);
         void set_tabbed(bool tabbed);
     };

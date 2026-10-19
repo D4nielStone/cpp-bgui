@@ -24,20 +24,6 @@ namespace bgui {
         m_label_button->add_class("tree-element-label");
         m_label_button->get_label().set_enable(false);
 
-        m_disclosure = &m_label_button->add<text>(
-            expanded ? "▾" : "▸",
-            scale
-        );
-        m_disclosure->style.layout.require_mode(
-            mode::pixel,
-            mode::wrap_content
-        );
-        m_disclosure->style.layout.require_width(mode::pixel, 16.f);
-        m_disclosure->style.layout.align = vec<2, alignment>{
-            alignment::center,
-            alignment::center
-        };
-
         m_icon_slot = &m_label_button->add<linear>(orientation::horizontal);
         m_icon_slot->style.layout.require_mode(
             mode::pixel,
@@ -47,7 +33,6 @@ namespace bgui {
         m_icon_slot->style.layout.limit_min = vec2i{0, 0};
 
         auto& label_text = m_label_button->add<text>(label, scale);
-        m_disclosure->receives_input(false);
         m_icon_slot->receives_input(false);
         label_text.receives_input(false);
         label_text.add_class("tree-element-label-text");
@@ -99,6 +84,5 @@ namespace bgui {
     void tree::set_expanded(const bool expanded) {
         m_expanded = expanded;
         m_children->set_enable(expanded);
-        m_disclosure->set_buffer(expanded ? "▾" : "▸");
     }
 }

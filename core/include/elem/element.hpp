@@ -25,6 +25,7 @@ namespace bgui {
     class element {
     private:
         bool m_style_dirty  = true;
+        bool m_layout_dirty = true;
     protected:
         // Boolean that false means that the element is disabled.
         bool m_enabled {true};
@@ -51,9 +52,17 @@ namespace bgui {
         static void end_arranging();
         static void end_geometry_frame();
 
-        void set_flex(bool f) {m_flex = f;}
+        void set_flex(bool f) {
+            if (m_flex == f)
+                return;
+            m_flex = f;
+            mark_layout_dirty();
+        }
         bool is_flex() const {return m_flex;}
         void mark_style_dirty();
+        void mark_layout_dirty();
+        bool is_layout_dirty() const { return m_layout_dirty; }
+        void clear_layout_dirty() { m_layout_dirty = false; }
         // The input state of the element
         std::string type;                 // "button", "text", "linear"
         std::vector<std::string> classes; // {"primary", "rounded"}
@@ -66,6 +75,8 @@ namespace bgui {
             return m_state;
         }
         void set_style_state(const state s) {
+            if (m_state == s)
+                return;
             m_state = s;
             mark_style_dirty();
         }
@@ -299,7 +310,10 @@ namespace bgui {
             return m_content_size; 
         }
         void set_content_size(const vec2i& content) {
+            if (m_content_size == content)
+                return;
             m_content_size = content;
+            mark_layout_dirty();
         };
 
         /**

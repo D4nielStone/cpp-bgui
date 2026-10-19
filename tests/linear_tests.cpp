@@ -111,6 +111,76 @@ TEST(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
 			  layout.processed_height());
 }
 
+TEST(LinearTest, NonFlexElementsDoNotConsumeFlowSpace) {
+	linear layout(orientation::vertical);
+	layout.style.layout.require_size(200, 400);
+	layout.style.layout.require_mode(mode::pixel, mode::pixel);
+	layout.style.layout.set_padding(0, 0);
+	layout.compute_style();
+
+	auto header = layout.add_scoped<mock_element>(200, 50);
+	auto overlay = layout.add_scoped<mock_element>(40, 40);
+	auto content = layout.add_scoped<mock_element>(200, 0, mode::pixel, mode::stretch);
+	header->compute_style();
+	overlay->compute_style();
+	content->compute_style();
+	overlay->set_flex(false);
+	overlay->set_final_rect(150, 20, 40, 40);
+
+	run_layout_frame(layout, {200, 400});
+
+	EXPECT_EQ(header->processed_y(), 0);
+	EXPECT_EQ(content->processed_y(), 50);
+	EXPECT_EQ(content->processed_height(), 350);
+	EXPECT_EQ(overlay->processed_rect(), (vec4i{150, 20, 40, 40}));
+}
+
+TEST(LinearTest, PercentChildrenUseAvailableMainAxisSize) {
+	linear layout(orientation::vertical);
+	layout.style.layout.require_size(200, 400);
+	layout.style.layout.require_mode(mode::pixel, mode::pixel);
+	layout.style.layout.set_padding(0, 0);
+	layout.compute_style();
+
+	auto first = layout.add_scoped<mock_element>(200, 50, mode::pixel, mode::percent);
+	auto second = layout.add_scoped<mock_element>(200, 50, mode::pixel, mode::percent);
+	first->style.layout.require_height(mode::percent, 50.f);
+	second->style.layout.require_height(mode::percent, 50.f);
+	first->compute_style();
+	second->compute_style();
+
+	run_layout_frame(layout, {200, 400});
+
+	EXPECT_EQ(first->processed_height(), 200);
+	EXPECT_EQ(second->processed_height(), 200);
+	EXPECT_EQ(first->processed_y(), 0);
+	EXPECT_EQ(second->processed_y(), 200);
+}
+
+TEST(LinearTest, StretchChildrenShareSpaceAfterMargins) {
+	linear layout(orientation::vertical);
+	layout.style.layout.require_size(200, 400);
+	layout.style.layout.require_mode(mode::pixel, mode::pixel);
+	layout.style.layout.set_padding(0, 0);
+	layout.compute_style();
+
+	auto header = layout.add_scoped<mock_element>(200, 50);
+	auto first = layout.add_scoped<mock_element>(200, 0, mode::pixel, mode::stretch);
+	auto second = layout.add_scoped<mock_element>(200, 0, mode::pixel, mode::stretch);
+	header->compute_style();
+	first->style.layout.set_margin(0, 10);
+	second->style.layout.set_margin(0, 10);
+	first->compute_style();
+	second->compute_style();
+
+	run_layout_frame(layout, {200, 400});
+
+	EXPECT_EQ(first->processed_height(), 155);
+	EXPECT_EQ(second->processed_height(), 155);
+	EXPECT_EQ(first->processed_y(), 60);
+	EXPECT_EQ(second->processed_y(), 235);
+}
+
 TEST(LinearTest, PaddingAffectsLayout) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
