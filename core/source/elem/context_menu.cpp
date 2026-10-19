@@ -32,7 +32,7 @@ namespace bgui {
     ) {
         auto& button = m_menu->add<bgui::button>(
             name,
-            0.35f,
+            0.3f,
             [this, fctn]() {
                 fctn();
                 close();
@@ -40,6 +40,10 @@ namespace bgui {
         );
 
         button.add_class("combo-box-option");
+        button.style.layout.require_mode(
+            bgui::mode::match_parent,
+            bgui::mode::wrap_content
+        );
 
         return *this;
     }
@@ -64,6 +68,10 @@ namespace bgui {
             }
         );
         button.add_class("combo-box-option");
+        button.style.layout.require_mode(
+            bgui::mode::match_parent,
+            bgui::mode::wrap_content
+        );
 
         return *this;
     }
@@ -77,7 +85,7 @@ namespace bgui {
         separator.style.layout.require_height(bgui::mode::pixel, 1.f);
         separator.style.layout.limit_min = bgui::vec2i{1, 1};
         separator.style.visual.background.normal =
-            bgui::color{0.35f, 0.35f, 0.35f, 1.f};
+            bgui::color{0.33f, 0.33f, 0.33f, 1.f};
 
         return *this;
     }
@@ -118,5 +126,16 @@ namespace bgui {
     }
     bool context_menu::is_open() const {
         return m_menu && m_menu->is_enabled();
+    }
+
+    bool context_menu::contains_point(int x, int y) const {
+        const auto contains = [x, y](const bgui::element& element) {
+            return x >= element.processed_x() &&
+                x <= element.processed_x() + element.processed_width() &&
+                y >= element.processed_y() &&
+                y <= element.processed_y() + element.processed_height();
+        };
+
+        return contains(m_button) || (m_menu && contains(*m_menu));
     }
 }

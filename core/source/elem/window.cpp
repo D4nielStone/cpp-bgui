@@ -32,7 +32,6 @@ bgui::window::window(const char* title, float font_scale, bool floating)
 
     m_icon = &m_header->add<bgui::image>();
     m_icon->set_size(1.f, 1.f);
-    set_icon("bubble.png");
 
     m_title = &m_header->add<bgui::text>(title, font_scale);
     m_title->add_class("window-label");

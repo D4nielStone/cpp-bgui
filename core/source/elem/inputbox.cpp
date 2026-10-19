@@ -113,7 +113,7 @@ namespace {
         if (!was_down) {
             move();
             was_down = true;
-            next_repeat = now + 0.35f;
+            next_repeat = now + 0.33f;
         } else if (now >= next_repeat) {
             move();
             next_repeat = now + 0.05f;
@@ -374,7 +374,7 @@ void bgui::inputbox::on_update() {
                     erase_before_cursor();
             }
             m_backspace_down = true;
-            m_backspace_next_time = now + 0.35f;
+            m_backspace_next_time = now + 0.33f;
         } else if (now >= m_backspace_next_time) {
             if (!erase_selection()) {
                 if (control_down)
@@ -488,7 +488,7 @@ void bgui::inputbox::on_update() {
                     erase_at_cursor();
             }
             m_delete_down = true;
-            m_delete_next_time = now + 0.35f;
+            m_delete_next_time = now + 0.33f;
         } else if (now >= m_delete_next_time) {
             if (!erase_selection()) {
                 if (control_down)

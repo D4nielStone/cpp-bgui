@@ -89,6 +89,8 @@ namespace bgui {
             window* active{nullptr};
             std::vector<window*> windows;
             std::vector<button*> buttons;
+            std::vector<element*> active_indicators;
+            std::vector<element*> separators;
         };
 
         std::array<panel, 5> m_panels;

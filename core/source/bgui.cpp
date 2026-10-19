@@ -63,7 +63,7 @@ namespace {
             style.layout.require_size(230.f, 142.f);
             style.layout.set_padding(8, 6);
             style.visual.background.normal = bgui::color{0.04f, 0.05f, 0.07f, 0.9f};
-            style.visual.border.normal = bgui::color{0.3f, 0.35f, 0.4f, 1.f};
+            style.visual.border.normal = bgui::color{0.3f, 0.33f, 0.4f, 1.f};
             style.visual.border_size = 1.f;
 
             const std::array<const char*, 6> initial_metrics = {

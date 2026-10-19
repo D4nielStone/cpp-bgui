@@ -234,9 +234,9 @@ namespace bgui {
             auto* tab_window = group->windows[index];
             auto& tab = add<button, layer::base>(
                 tab_window->get_title().get_buffer(), 0.3,
-                [this, host = group->anchor, tab_window]() {
-                    const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [host](const tab_group& candidate) {
-                        return candidate.anchor == host;
+                [this, tab_window]() {
+                    const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [tab_window](const tab_group& candidate) {
+                        return std::find(candidate.windows.begin(), candidate.windows.end(), tab_window) != candidate.windows.end();
                     });
                     if (found != m_tab_groups.end()) {
                         found->active = tab_window;
@@ -244,7 +244,30 @@ namespace bgui {
                     }
                 });
             tab.add_class("dock-tab");
+            tab.get_label().add_class("dock-tab-label");
+            tab.get_label().style.layout.require_mode(
+                mode::stretch,
+                mode::match_parent
+            );
+            tab.get_label().style.layout.align = vec<2, alignment>{
+                alignment::start,
+                alignment::center
+            };
+
+            auto& active_indicator = tab.add<element, layer::overlay>();
+            active_indicator.add_class("dock-tab-active-indicator");
+            active_indicator.receives_input(false);
+            active_indicator.set_flex(false);
+            active_indicator.style.visual.visible = false;
+
+            auto& separator = tab.add<element, layer::overlay>();
+            separator.add_class("dock-tab-separator");
+            separator.receives_input(false);
+            separator.set_flex(false);
+            tab.cascade_style();
             group->buttons.push_back(&tab);
+            group->active_indicators.push_back(&active_indicator);
+            group->separators.push_back(&separator);
         }
     }
 
@@ -265,19 +288,50 @@ namespace bgui {
         }), m_nested_splits.end());
 
         for (auto group = m_tab_groups.begin(); group != m_tab_groups.end();) {
-            if (std::find(group->windows.begin(), group->windows.end(), value) == group->windows.end()) {
+            const auto member = std::find(group->windows.begin(), group->windows.end(), value);
+            if (member == group->windows.end()) {
                 ++group;
                 continue;
             }
-            for (auto* member : group->windows) {
-                if (member != value) {
-                    member->set_enable(true);
-                    member->set_tabbed(false);
-                }
+
+            const auto index = static_cast<std::size_t>(
+                std::distance(group->windows.begin(), member)
+            );
+            const bool removed_active = group->active == value;
+            remove(group->buttons[index]);
+            group->windows.erase(member);
+            group->buttons.erase(group->buttons.begin() + static_cast<std::ptrdiff_t>(index));
+            group->active_indicators.erase(
+                group->active_indicators.begin() + static_cast<std::ptrdiff_t>(index)
+            );
+            group->separators.erase(
+                group->separators.begin() + static_cast<std::ptrdiff_t>(index)
+            );
+
+            if (group->windows.empty()) {
+                group = m_tab_groups.erase(group);
+                continue;
             }
-            for (auto* tab : group->buttons)
-                remove(tab);
-            group = m_tab_groups.erase(group);
+
+            if (group->windows.size() == 1) {
+                auto* remaining = group->windows.front();
+                remove(group->buttons.front());
+                remaining->set_enable(true);
+                remaining->set_tabbed(false);
+                group = m_tab_groups.erase(group);
+                continue;
+            }
+
+            if (group->anchor == value)
+                group->anchor = group->windows.front();
+            if (removed_active)
+                group->active = group->windows[std::min(index, group->windows.size() - 1)];
+
+            for (auto* window : group->windows)
+                window->set_enable(window == group->active);
+            if (removed_active)
+                focus_window(group->active);
+            ++group;
         }
 
         bool was_registered = false;
@@ -1095,7 +1149,7 @@ namespace bgui {
                     return;
                 }
 
-                const int tab_height = std::min(28 * scale, std::max(0, remaining.w / 4));
+                const int tab_height = std::min(32 * scale, std::max(0, remaining.w / 4));
                 int tab_x = remaining.x;
                 const int tab_right = remaining.x + remaining.z;
                 for (std::size_t tab_index = 0; tab_index < group->windows.size(); ++tab_index) {
@@ -1112,7 +1166,15 @@ namespace bgui {
                                 tab->get_label().get_buffer()) + padding + margin
                         ))
                     );
-                    const int width = std::min(desired_width, std::max(0, tab_right - tab_x));
+                    const int minimum_width = tab->computed_style.layout.limit_min.x;
+                    const int remaining_width = std::max(0, tab_right - tab_x);
+                    const int reserved_width = minimum_width * static_cast<int>(
+                        group->windows.size() - tab_index - 1
+                    );
+                    const int width = std::max(
+                        minimum_width,
+                        std::min(desired_width, remaining_width - reserved_width)
+                    );
                     tab->set_enable(true);
                     tab->set_final_rect(
                         tab_x, remaining.y, width, tab_height
@@ -1134,16 +1196,29 @@ namespace bgui {
                     }
 
                     const bool active = tab_window == group->active;
-                    tab->style.visual.background.normal = active
-                        ? bgui::color{0.22f, 0.22f, 0.22f, 1.f}
-                        : bgui::color{0.10f, 0.10f, 0.10f, 1.f};
-                    tab->style.visual.background.hover = active
-                        ? bgui::color{0.28f, 0.28f, 0.28f, 1.f}
-                        : bgui::color{0.16f, 0.16f, 0.16f, 1.f};
-                    tab->style.visual.background.pressed = active
-                        ? bgui::color{0.19f, 0.19f, 0.19f, 1.f}
-                        : bgui::color{0.13f, 0.13f, 0.13f, 1.f};
+                    if (active) {
+                        tab->add_class("dock-tab-active");
+                        tab->get_label().add_class("dock-tab-label-active");
+                    } else {
+                        tab->remove_class("dock-tab-active");
+                        tab->get_label().remove_class("dock-tab-label-active");
+                    }
                     tab->mark_style_dirty();
+
+                    auto* indicator = group->active_indicators[tab_index];
+                    indicator->style.visual.visible = active;
+                    indicator->set_final_rect(
+                        tab_x, remaining.y, width, std::max(2, 2 * scale)
+                    );
+                    indicator->mark_style_dirty();
+
+                    auto* separator = group->separators[tab_index];
+                    separator->set_final_rect(
+                        tab_x + width - std::max(1, scale),
+                        remaining.y + std::max(3, 3 * scale),
+                        std::max(1, scale),
+                        std::max(0, tab_height - std::max(6, 6 * scale))
+                    );
                     tab_window->set_enable(active);
                     if (active) {
                         tab_window->get_title().set_drag(tab_drag);

@@ -45,7 +45,7 @@ int main() {
 
         auto& status = gallery.add<bgui::text>(
             "Ready — drag the dock dividers or window tabs to rearrange the workspace.",
-            0.35f
+            0.33f
         );
         status.style.layout.require_mode(
             bgui::mode::match_parent,
@@ -141,7 +141,7 @@ int main() {
 
         auto& color_label = gallery.add<bgui::text>(
             "Color picker (click or drag inside the palette):",
-            0.35f
+            0.33f
         );
         color_label.style.layout.require_mode(
             bgui::mode::match_parent,
@@ -219,13 +219,6 @@ int main() {
             0.38f,
             [&modal]() {
                 modal.set_enable(true);
-            }
-        );
-
-        auto& image = gallery.add<bgui::image>(
-            "bubble.png",
-            [&status](const std::string& path) {
-                status.set_buffer("Image clicked: " + path);
             }
         );
         image.set_size(110.f, 70.f);

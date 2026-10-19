@@ -26,6 +26,7 @@ namespace bgui {
         void toggle();
 
         bool is_open() const;
+        bool contains_point(int x, int y) const;
 
     private:
         bgui::button& m_button;

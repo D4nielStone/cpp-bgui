@@ -29,6 +29,7 @@ namespace {
         }
         return nullptr;
     }
+
 }
 
 // Ensures pinned dock windows remain tiled and can be resized by dragging a
@@ -435,6 +436,81 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     EXPECT_EQ(configuration.tab_groups.front().active, "Floating");
     EXPECT_FALSE(anchor.is_enabled());
     EXPECT_TRUE(floating.is_enabled());
+}
+
+TEST(DockTest, TabsHaveNoCloseButtonsAndRemovingOneKeepsTheGroupTabbed) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.add_window("Anchor", bgui::dock_area::center);
+    dock.add_window("Second", bgui::dock_area::center);
+    auto& selected = dock.add_window("Selected", bgui::dock_area::center);
+
+    auto configuration = dock.get_configuration();
+    configuration.tab_groups.push_back({
+        "Anchor",
+        "Selected",
+        {"Anchor", "Second", "Selected"}
+    });
+    dock.apply_configuration(configuration);
+
+    EXPECT_EQ(find_button(dock, "dock-tab-close"), nullptr);
+    EXPECT_TRUE(dock.remove_window(&selected));
+
+    const auto remaining = dock.get_configuration();
+    ASSERT_EQ(remaining.tab_groups.size(), 1u);
+    EXPECT_EQ(remaining.tab_groups.front().active, "Second");
+    EXPECT_EQ(remaining.tab_groups.front().windows.size(), 2u);
+
+    std::size_t tab_count = 0;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-tab"))
+                ++tab_count;
+        }
+    }
+    EXPECT_EQ(tab_count, 2u);
+}
+
+TEST(DockTest, TabWidthsReserveEachTabsMinimumWidth) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.compute_style();
+    dock.process_required_size({260, 300});
+    dock.set_final_rect(0, 0, 260, 300);
+
+    dock.add_window(
+        "A deliberately long editor panel title",
+        bgui::dock_area::center
+    );
+    dock.add_window("Short", bgui::dock_area::center);
+    auto configuration = dock.get_configuration();
+    configuration.tab_groups.push_back({
+        "A deliberately long editor panel title",
+        "Short",
+        {"A deliberately long editor panel title", "Short"}
+    });
+    dock.apply_configuration(configuration);
+
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-tab"))
+                element->style.layout.limit_min = bgui::vec2i{80, 0};
+        }
+    }
+
+    dock.cascade_style();
+    dock.on_update();
+
+    std::size_t tabs = 0;
+    for (auto& [lay, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (!element->has_class("dock-tab"))
+                continue;
+            ++tabs;
+            EXPECT_GE(element->processed_width(), 80);
+        }
+    }
+    EXPECT_EQ(tabs, 2u);
 }
 
 // Confirms that dragging a pinned window by its title bar converts it into a

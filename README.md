@@ -143,10 +143,10 @@ bgui::enable_profiling(false);
     // layout are invisible by default
     panel->set_visible(true);
 
-    auto txt = panel->add_scoped<bgui::text>("Linear Layout Example", 0.35f);
+    auto txt = panel->add_scoped<bgui::text>("Linear Layout Example", 0.33f);
     txt->require_width(bgui::mode::match_parent);
     txt->set_alignment(bgui::alignment::center);
-    auto button = panel->add_scoped<bgui::button>("Button Example", 0.35f, [](){});
+    auto button = panel->add_scoped<bgui::button>("Button Example", 0.33f, [](){});
     button->require_width(bgui::mode::match_parent);
 
     // window widget
@@ -155,11 +155,11 @@ bgui::enable_profiling(false);
     auto window3 = root.add_scoped<bgui::window>("win3");
     auto window4 = root.add_scoped<bgui::window>("win4");
     win->get_context().style.layout.set_padding(10, 10);
-    auto window_text = win->add_scoped<bgui::text>("This is a window widget example.", 0.35f);
-    auto txt2 = win->add_scoped<bgui::text>("Centered text", 0.35f);
+    auto window_text = win->add_scoped<bgui::text>("This is a window widget example.", 0.33f);
+    auto txt2 = win->add_scoped<bgui::text>("Centered text", 0.33f);
     txt2->set_alignment(bgui::alignment::center);
     txt2->require_width(bgui::mode::stretch);
-    auto button2 = win->add_scoped<bgui::button>("Button inside window", 0.35f, [](){});
+    auto button2 = win->add_scoped<bgui::button>("Button inside window", 0.33f, [](){});
     button2->require_width(bgui::mode::match_parent);
 
     // Slider and progress bar share an explicit value range.

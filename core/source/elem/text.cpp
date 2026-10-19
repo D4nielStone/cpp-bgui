@@ -623,7 +623,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             return;
 
         const auto previous_color = data->m_draw_list.get_color();
-        data->m_draw_list.set_color({0.2f, 0.45f, 0.8f, 0.35f});
+        data->m_draw_list.set_color({0.2f, 0.45f, 0.8f, 0.33f});
         data->m_draw_list.add_rect_filled({left, top}, {right, bottom});
         data->m_draw_list.set_color(previous_color);
     };

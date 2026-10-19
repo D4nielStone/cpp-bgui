@@ -29,6 +29,8 @@ namespace bgui {
             const std::string& name
         );
 
+        void on_update() override;
+
     private:
         bgui::layout& get_root() const;
 

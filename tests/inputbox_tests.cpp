@@ -39,7 +39,7 @@ TEST(InputAreaTest, CursorAndBackspaceKeepUtf8CodepointsIntact) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("", "", 0.35f, [](const std::string&) {});
+    bgui::inputbox input("", "", 0.33f, [](const std::string&) {});
     input.set_focused(true);
     context.m_char_buffer = "\xC3\xA9";
     input.on_update();
@@ -72,7 +72,7 @@ TEST(InputAreaTest, NumberModeAcceptsOnlyNumericCharacters) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("", "", 0.35f, nullptr, bgui::input_mode::number);
+    bgui::inputbox input("", "", 0.33f, nullptr, bgui::input_mode::number);
     input.set_focused(true);
     context.m_char_buffer = "a-12.3x.4";
     input.on_update();
@@ -90,7 +90,7 @@ TEST(InputAreaTest, CursorArrowPressMovesOneCharacterInsteadOfPerFrame) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("abcd", "", 0.35f);
+    bgui::inputbox input("abcd", "", 0.33f);
     input.set_focused(true);
     context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
 
@@ -114,7 +114,7 @@ TEST(InputAreaTest, MultilineEnterAndVerticalArrowsMoveWithinAdjacentLines) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("ab", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input("ab", "", 0.33f, nullptr, bgui::input_mode::multiline);
     input.set_focused(true);
     context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
     input.on_update();
@@ -152,7 +152,7 @@ TEST(InputAreaTest, DeleteRemovesOneFollowingUtf8Character) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("\xC3\xA9x", "", 0.35f);
+    bgui::inputbox input("\xC3\xA9x", "", 0.33f);
     input.set_focused(true);
     context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
     input.on_update();
@@ -173,7 +173,7 @@ TEST(InputAreaTest, MultilineHomeEndAndTabEditAtExpectedPositions) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("first\nsecond", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input("first\nsecond", "", 0.33f, nullptr, bgui::input_mode::multiline);
     input.set_focused(true);
 
     context.m_input_map[bgui::input_key::home] = bgui::input_action::press;
@@ -210,7 +210,7 @@ TEST(InputAreaTest, ShiftSelectsAndTypingReplacesTheSelectedText) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("abcd", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input("abcd", "", 0.33f, nullptr, bgui::input_mode::multiline);
     input.set_focused(true);
     context.m_input_map[bgui::input_key::left_shift] = bgui::input_action::press;
     context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
@@ -232,7 +232,7 @@ TEST(InputAreaTest, MultilineControlCAndVUseClipboardCallbacks) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("copy me", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input("copy me", "", 0.33f, nullptr, bgui::input_mode::multiline);
     input.set_focused(true);
     std::string clipboard;
     context.m_set_clipboard = [&clipboard](const std::string& text) {
@@ -276,7 +276,7 @@ TEST(InputAreaTest, MultilineControlZUndoAndControlShiftZRedoEdits) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("abc", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input("abc", "", 0.33f, nullptr, bgui::input_mode::multiline);
     input.set_focused(true);
     context.m_char_buffer = "X";
     input.on_update();
@@ -322,7 +322,7 @@ TEST(InputAreaTest, ControlArrowsAndDeleteOperateOnWholeWords) {
     context.m_char_buffer.clear();
     context.m_input_map.clear();
 
-    bgui::inputbox input("one two", "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input("one two", "", 0.33f, nullptr, bgui::input_mode::multiline);
     input.set_focused(true);
 
     context.m_input_map[bgui::input_key::home] = bgui::input_action::press;
@@ -360,7 +360,7 @@ TEST(InputAreaTest, MultilineWrapCanBeToggled) {
     bgui::scoped_interface interface;
     ensure_test_font();
 
-    bgui::inputbox input(std::string(800, 'a'), "", 0.35f, nullptr, bgui::input_mode::multiline);
+    bgui::inputbox input(std::string(800, 'a'), "", 0.33f, nullptr, bgui::input_mode::multiline);
     EXPECT_TRUE(input.is_wrap_enabled());
     EXPECT_NE(input.get_label().get_vertical_cursor_position(0, 1), 0U);
 

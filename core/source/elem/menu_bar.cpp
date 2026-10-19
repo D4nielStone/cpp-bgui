@@ -1,4 +1,5 @@
 #include "elem/menu_bar.hpp"
+#include "bgui.hpp"
 
 #include <stdexcept>
 
@@ -13,7 +14,7 @@ namespace bgui {
         style.layout.padding = bgui::vec4i{12, 0, 8, 0};
 
         auto& title = add<bgui::text>(
-            " Bubble Engine | ",
+            "© Bubble Engine | ",
             0.3
         );
         title.style.layout.require_mode(
@@ -45,7 +46,7 @@ namespace bgui {
 
         auto& button = add<bgui::button>(
             name,
-            0.35f,
+            0.33f,
             [this, menu_index]() {
                 if (m_menus[menu_index])
                     m_menus[menu_index]->toggle();
@@ -71,7 +72,7 @@ namespace bgui {
         const std::string& name,
         const std::function<void()>& fctn
     ) {
-        auto& button = add<bgui::button>(name, 0.35f, fctn);
+        auto& button = add<bgui::button>(name, 0.33f, fctn);
         button.add_class("window-button");
         button.style.layout.require_mode(
             bgui::mode::wrap_content,
@@ -120,5 +121,23 @@ namespace bgui {
             configure(*m_menus[menu_index]);
 
         return button;
+    }
+
+    void menu_bar::on_update() {
+        bgui::linear::on_update();
+
+        const auto& context = bgui::get_context();
+        const bool clicked = bgui::get_pressed(bgui::input_key::mouse_left) &&
+            !context.m_last_mouse_left;
+        if (!clicked)
+            return;
+
+        const auto mouse = bgui::get_mouse_position();
+        for (auto& menu : m_menus) {
+            if (menu && menu->is_open() &&
+                !menu->contains_point(mouse.x, mouse.y)) {
+                menu->close();
+            }
+        }
     }
 }
