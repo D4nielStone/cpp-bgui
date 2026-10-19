@@ -10,7 +10,8 @@
 #include "lay/layout.hpp"
 
 namespace bgui {
-    class button;
+    class dock_tab;
+    class text;
     class window;
     class dock_splitter;
 
@@ -88,9 +89,10 @@ namespace bgui {
             window* anchor{nullptr};
             window* active{nullptr};
             std::vector<window*> windows;
-            std::vector<button*> buttons;
+            std::vector<dock_tab*> tabs;
             std::vector<element*> active_indicators;
             std::vector<element*> separators;
+            text* overflow{nullptr};
         };
 
         std::array<panel, 5> m_panels;
@@ -115,6 +117,8 @@ namespace bgui {
         panel& get_panel(dock_area area);
         const panel& get_panel(dock_area area) const;
         void register_window(window& value, dock_area area);
+        tab_group& ensure_tab_group(window& anchor);
+        void ensure_tab_controls(tab_group& group);
         void split_window(window& anchor, window& added, bool horizontal, bool after);
         void merge_window_as_tab(window& anchor, window& added);
         void sync_windows();

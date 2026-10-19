@@ -1,18 +1,108 @@
 #include "lay/dock.hpp"
 
 #include "bgui.hpp"
-#include "elem/button.hpp"
+#include "elem/text.hpp"
 #include "elem/window.hpp"
+#include "lay/linear.hpp"
 #include "os/os.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <numeric>
 #include <utility>
 #include <unordered_set>
 
 namespace bgui {
+    class dock_tab final : public linear {
+    public:
+        dock_tab(
+            const std::string& title,
+            const float scale,
+            std::function<void()> on_select
+        )
+            : linear(orientation::horizontal),
+              m_label(&add<text>(title, scale)),
+              m_on_select(std::move(on_select)) {
+            type = "dock-tab";
+            add_class("dock-tab");
+            receives_input(true);
+            m_label->receives_input(false);
+            m_label->set_wrap(false);
+            style.layout.limit_min = vec2i{15, 0};
+            m_label->style.layout.limit_min = vec2i{15, 0};
+            m_label->style.layout.require_mode(
+                mode::stretch,
+                mode::wrap_content
+            );
+        }
+
+        text& get_label() {
+            return *m_label;
+        }
+
+        int preferred_height() {
+            m_label->calc_content_size(layer::base);
+            const auto& padding = computed_style.layout.padding;
+            const auto& margin = computed_style.layout.margin;
+            const auto& label_margin = m_label->computed_style.layout.margin;
+            return std::max(
+                computed_style.layout.limit_min.y,
+                m_label->get_content_size().y +
+                    padding.y + padding.w + margin.y + margin.w +
+                    label_margin.y + label_margin.w
+            );
+        }
+
+        void on_update() override {
+            const auto& padding = computed_style.layout.padding;
+            const auto& margin = m_label->computed_style.layout.margin;
+            const int x = processed_x() + padding.x + margin.x;
+            const int y = processed_y() + padding.y + margin.y;
+            const int width = std::max(
+                0,
+                processed_width() - padding.x - padding.z - margin.x - margin.z
+            );
+            const int height = std::max(
+                0,
+                processed_height() - padding.y - padding.w - margin.y - margin.w
+            );
+
+            m_label->calc_content_size(layer::base);
+            m_label->process_required_size({width, height});
+            m_label->set_final_rect(
+                x, y, m_label->processed_width(), m_label->processed_height()
+            );
+            m_label->on_update();
+        }
+
+        void on_pressed() override {
+            element::on_pressed();
+            bgui::get_context().m_actual_cursor = bgui::cursor::hand;
+        }
+
+        void on_released() override {
+            element::on_released();
+            bgui::get_context().m_actual_cursor = bgui::cursor::hand;
+            bgui::add_function(m_on_select);
+        }
+
+        void on_clicked() override {
+            element::on_clicked();
+            bgui::get_context().m_actual_cursor = bgui::cursor::hand;
+        }
+
+        void on_mouse_hover() override {
+            element::on_mouse_hover();
+            bgui::get_context().m_actual_cursor = bgui::cursor::hand;
+        }
+
+    private:
+        text* m_label;
+        std::function<void()> m_on_select;
+    };
+
     class dock_splitter final : public element {
     public:
         dock_splitter(const bool resize_width, std::function<void(int)> resize)
@@ -202,53 +292,50 @@ namespace bgui {
             });
     }
 
-    void dock::merge_window_as_tab(window& anchor, window& added) {
-        auto group = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [&anchor](const tab_group& candidate) {
-            return std::find(candidate.windows.begin(), candidate.windows.end(), &anchor) != candidate.windows.end();
-        });
-        if (group == m_tab_groups.end()) {
-            m_tab_groups.push_back({&anchor, &anchor, {&anchor}, {}});
-            group = std::prev(m_tab_groups.end());
-        }
-
-        if (std::find(group->windows.begin(), group->windows.end(), &added) != group->windows.end())
-            return;
-
-        for (auto* member : group->windows)
-            member->set_tabbed(true);
-
-        dock_area area = dock_area::center;
-        for (std::size_t index = 0; index < m_panels.size(); ++index) {
-            const auto& windows = m_panels[index].windows;
-            if (std::find(windows.begin(), windows.end(), &anchor) != windows.end()) {
-                area = static_cast<dock_area>(index);
-                break;
+    dock::tab_group& dock::ensure_tab_group(window& anchor) {
+        auto group = std::find_if(
+            m_tab_groups.begin(),
+            m_tab_groups.end(),
+            [&anchor](const tab_group& candidate) {
+                return std::find(
+                    candidate.windows.begin(), candidate.windows.end(), &anchor
+                ) != candidate.windows.end();
             }
-        }
-        register_window(added, area);
-        group->windows.push_back(&added);
-        group->active = &added;
-        added.set_tabbed(true);
+        );
+        if (group != m_tab_groups.end())
+            return *group;
 
-        for (std::size_t index = group->buttons.size(); index < group->windows.size(); ++index) {
-            auto* tab_window = group->windows[index];
-            auto& tab = add<button, layer::base>(
+        m_tab_groups.push_back({&anchor, &anchor, {&anchor}, {}, {}, {}, nullptr});
+        auto& created = m_tab_groups.back();
+        anchor.set_tabbed(true);
+        ensure_tab_controls(created);
+        return created;
+    }
+
+    void dock::ensure_tab_controls(tab_group& group) {
+        while (group.tabs.size() < group.windows.size()) {
+            auto* tab_window = group.windows[group.tabs.size()];
+            auto& tab = add<dock_tab, layer::base>(
                 tab_window->get_title().get_buffer(), 0.3,
                 [this, tab_window]() {
-                    const auto found = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [tab_window](const tab_group& candidate) {
-                        return std::find(candidate.windows.begin(), candidate.windows.end(), tab_window) != candidate.windows.end();
-                    });
+                    const auto found = std::find_if(
+                        m_tab_groups.begin(),
+                        m_tab_groups.end(),
+                        [tab_window](const tab_group& candidate) {
+                            return std::find(
+                                candidate.windows.begin(),
+                                candidate.windows.end(),
+                                tab_window
+                            ) != candidate.windows.end();
+                        }
+                    );
                     if (found != m_tab_groups.end()) {
                         found->active = tab_window;
                         focus_window(tab_window);
                     }
-                });
-            tab.add_class("dock-tab");
-            tab.get_label().add_class("dock-tab-label");
-            tab.get_label().style.layout.require_mode(
-                mode::stretch,
-                mode::match_parent
+                }
             );
+            tab.get_label().add_class("dock-tab-label");
             tab.get_label().style.layout.align = vec<2, alignment>{
                 alignment::start,
                 alignment::center
@@ -265,10 +352,48 @@ namespace bgui {
             separator.receives_input(false);
             separator.set_flex(false);
             tab.cascade_style();
-            group->buttons.push_back(&tab);
-            group->active_indicators.push_back(&active_indicator);
-            group->separators.push_back(&separator);
+            group.tabs.push_back(&tab);
+            group.active_indicators.push_back(&active_indicator);
+            group.separators.push_back(&separator);
         }
+
+        if (!group.overflow) {
+            auto& overflow = add<text, layer::base>("...", 0.3f);
+            overflow.add_class("dock-tab-overflow");
+            overflow.style.layout.require_mode(
+                mode::wrap_content,
+                mode::match_parent
+            );
+            overflow.style.layout.align = vec<2, alignment>{
+                alignment::center,
+                alignment::center
+            };
+            group.overflow = &overflow;
+        }
+    }
+
+    void dock::merge_window_as_tab(window& anchor, window& added) {
+        auto& group = ensure_tab_group(anchor);
+
+        if (std::find(group.windows.begin(), group.windows.end(), &added) != group.windows.end())
+            return;
+
+        for (auto* member : group.windows)
+            member->set_tabbed(true);
+
+        dock_area area = dock_area::center;
+        for (std::size_t index = 0; index < m_panels.size(); ++index) {
+            const auto& windows = m_panels[index].windows;
+            if (std::find(windows.begin(), windows.end(), &anchor) != windows.end()) {
+                area = static_cast<dock_area>(index);
+                break;
+            }
+        }
+        register_window(added, area);
+        group.windows.push_back(&added);
+        group.active = &added;
+        added.set_tabbed(true);
+        ensure_tab_controls(group);
     }
 
     bool dock::remove_window(window* value) {
@@ -298,9 +423,9 @@ namespace bgui {
                 std::distance(group->windows.begin(), member)
             );
             const bool removed_active = group->active == value;
-            remove(group->buttons[index]);
+            remove(group->tabs[index]);
             group->windows.erase(member);
-            group->buttons.erase(group->buttons.begin() + static_cast<std::ptrdiff_t>(index));
+            group->tabs.erase(group->tabs.begin() + static_cast<std::ptrdiff_t>(index));
             group->active_indicators.erase(
                 group->active_indicators.begin() + static_cast<std::ptrdiff_t>(index)
             );
@@ -309,15 +434,8 @@ namespace bgui {
             );
 
             if (group->windows.empty()) {
-                group = m_tab_groups.erase(group);
-                continue;
-            }
-
-            if (group->windows.size() == 1) {
-                auto* remaining = group->windows.front();
-                remove(group->buttons.front());
-                remaining->set_enable(true);
-                remaining->set_tabbed(false);
+                if (group->overflow)
+                    remove(group->overflow);
                 group = m_tab_groups.erase(group);
                 continue;
             }
@@ -387,8 +505,10 @@ namespace bgui {
                 member->set_enable(true);
                 member->set_tabbed(false);
             }
-            for (auto* tab : group->buttons)
+            for (auto* tab : group->tabs)
                 remove(tab);
+            if (group->overflow)
+                remove(group->overflow);
             group = m_tab_groups.erase(group);
         }
 
@@ -413,6 +533,22 @@ namespace bgui {
             });
             if (!registered)
                 register_window(*value, dock_area::center);
+        }
+
+        for (const auto& panel : m_panels) {
+            for (auto* value : panel.windows) {
+                const bool grouped = std::any_of(
+                    m_tab_groups.begin(),
+                    m_tab_groups.end(),
+                    [value](const tab_group& group) {
+                        return std::find(
+                            group.windows.begin(), group.windows.end(), value
+                        ) != group.windows.end();
+                    }
+                );
+                if (!grouped)
+                    ensure_tab_group(*value);
+            }
         }
 
         if (m_focused_window && !owned_windows.contains(m_focused_window))
@@ -533,6 +669,8 @@ namespace bgui {
         for (const auto& group : m_tab_groups) {
             if (!group.anchor)
                 continue;
+            if (group.windows.size() < 2)
+                continue;
             tab_group_configuration entry;
             entry.anchor = group.anchor->get_title().get_buffer();
             if (group.active)
@@ -646,12 +784,13 @@ namespace bgui {
             }
         }
         for (const auto& group : m_tab_groups) {
-            if (!group.active || group.buttons.empty())
+            if (!group.active || group.tabs.empty() || !group.overflow)
                 continue;
             const auto active_rect = group.active->processed_rect();
-            const auto tabs_rect = group.buttons.front()->processed_rect();
+            const auto tabs_rect = group.tabs.front()->processed_rect();
             const vec4i group_bounds{
-                active_rect.x, tabs_rect.y, active_rect.z, active_rect.w + tabs_rect.w
+                active_rect.x, tabs_rect.y, active_rect.z,
+                active_rect.w + tabs_rect.w
             };
             if (pointer.x < group_bounds.x || pointer.x > group_bounds.x + group_bounds.z ||
                 pointer.y < group_bounds.y || pointer.y > group_bounds.y + group_bounds.w)
@@ -825,8 +964,10 @@ namespace bgui {
                     member->set_tabbed(false);
                 }
             }
-            for (auto* tab : group.buttons)
+            for (auto* tab : group.tabs)
                 remove(tab);
+            if (group.overflow)
+                remove(group.overflow);
         }
         m_nested_splits.clear();
         m_tab_groups.clear();
@@ -885,6 +1026,7 @@ namespace bgui {
             auto* anchor = find_window(entry.anchor);
             if (!anchor || anchor->is_floating())
                 continue;
+            ensure_tab_group(*anchor);
             for (const auto& title : entry.windows) {
                 auto* added = find_window(title);
                 if (!added || added == anchor || added->is_floating())
@@ -923,7 +1065,7 @@ namespace bgui {
 
         const auto padding = computed_style.layout.padding;
         const int scale = std::max(1, static_cast<int>(std::round(get_global_scale())));
-        m_splitter_size = std::max(4, 6 * scale);
+        m_splitter_size = std::max(2, 4 * scale);
         const int min_panel_size = 80 * scale;
         const int x = processed_x() + padding.x;
         const int y = processed_y() + padding.y;
@@ -1149,12 +1291,29 @@ namespace bgui {
                     return;
                 }
 
-                const int tab_height = std::min(32 * scale, std::max(0, remaining.w / 4));
+                int tab_height = 0;
+                for (auto* tab : group->tabs)
+                    tab_height = std::max(tab_height, tab->preferred_height());
+                tab_height = std::min(tab_height, std::max(0, remaining.w));
                 int tab_x = remaining.x;
-                const int tab_right = remaining.x + remaining.z;
+                const int overflow_width = std::min(
+                    remaining.z,
+                    std::max(
+                        24 * scale,
+                        static_cast<int>(std::ceil(
+                            group->overflow->get_text_width("...") + 8 * scale
+                        ))
+                    )
+                );
+                const int tab_right = remaining.x + remaining.z - overflow_width;
+                group->overflow->set_enable(true);
+                group->overflow->set_final_rect(
+                    tab_right, remaining.y, overflow_width, tab_height
+                );
+                group->overflow->on_update();
                 for (std::size_t tab_index = 0; tab_index < group->windows.size(); ++tab_index) {
                     auto* tab_window = group->windows[tab_index];
-                    auto* tab = group->buttons[tab_index];
+                    auto* tab = group->tabs[tab_index];
                     const int padding = tab->computed_style.layout.padding.x +
                         tab->computed_style.layout.padding.z;
                     const int margin = tab->computed_style.layout.margin.x +

@@ -219,6 +219,49 @@ CLASSES
 
 [class.dock-tab]
 layout.mode = stretch, wrap_content
+layout.padding = 8, 0
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.background.hover = 0.17, 0.17, 0.17, 1.0
+visual.background.pressed = 0.20, 0.20, 0.20, 1.0
+visual.border.normal = 0.12, 0.12, 0.12, 1.0
+visual.border.size = 0
+visual.border.radius = 0
+visual.visible = true
+
+[class.dock-tab-active]
+visual.background.normal = 0.16, 0.16, 0.16, 1.0
+
+[class.dock-tab-active-indicator]
+visual.background.normal = 0.25, 0.50, 0.88, 1.0
+visual.border.normal = 0.0
+visual.visible = true
+
+[class.dock-tab-overflow]
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.text.normal = 0.75, 0.75, 0.75, 1.0
+visual.visible = true
+
+[class.entities-filter-bar]
+layout.padding = 4
+visual.background.normal = 0.085, 0.085, 0.085, 1.0
+visual.border.normal = 0.13, 0.13, 0.13, 1.0
+visual.border.size = 1
+visual.border.radius = 0
+visual.visible = true
+
+[class.entities-add-button]
+layout.padding = 4
+visual.background.normal = 0.16, 0.16, 0.16, 1.0
+visual.background.hover = 0.22, 0.22, 0.22, 1.0
+visual.border.normal = 0.13, 0.13, 0.13, 1.0
+visual.border.size = 1
+visual.border.radius = 0
+
+[class.entities-list]
+visual.background.normal = 0.075, 0.075, 0.075, 1.0
+visual.border.normal = 0.0
+visual.border.size = 0
+visual.visible = true
 
 [class.window-header]
 layout.mode = stretch, wrap_content

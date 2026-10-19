@@ -50,13 +50,13 @@ TEST(DockTest, PinnedWindowsTileAndResizeByDraggingDividers) {
     EXPECT_FALSE(center.is_floating());
     EXPECT_GT(left.processed_width(), 0);
     EXPECT_EQ(left.processed_x(), 0);
-    EXPECT_EQ(center.processed_x(), left.processed_width() + 6);
+    EXPECT_EQ(center.processed_x(), left.processed_width() + 4);
 
     bgui::element* left_divider = nullptr;
     for (auto& [lay, elements] : dock.get_elements()) {
         for (auto& element : elements) {
             if (element->has_class("dock-splitter") && element->is_enabled() &&
-                element->processed_width() == 6 && element->processed_height() == 600) {
+                element->processed_width() == 4 && element->processed_height() == 600) {
                 left_divider = element.get();
                 break;
             }
@@ -346,7 +346,7 @@ TEST(DockTest, RightSideSplitResizesInDragDirection) {
     for (auto& [lay, elements] : dock.get_elements()) {
         for (auto& element : elements) {
             if (element->has_class("dock-splitter") && element->is_enabled() &&
-                element->processed_width() == 6 && element->processed_height() == 600) {
+                element->processed_width() == 4 && element->processed_height() == 600) {
                 splitter = element.get();
                 break;
             }
@@ -419,8 +419,11 @@ TEST(DockTest, FloatingWindowCenterDropCreatesTabsForHoveredDock) {
     std::size_t tabs = 0;
     for (auto& [lay, elements] : dock.get_elements()) {
         for (auto& element : elements) {
-            if (element->has_class("dock-tab"))
+            if (element->has_class("dock-tab")) {
+                EXPECT_EQ(element->type, "dock-tab");
+                EXPECT_EQ(dynamic_cast<bgui::button*>(element.get()), nullptr);
                 ++tabs;
+            }
         }
     }
     EXPECT_EQ(tabs, 2u);
@@ -511,6 +514,76 @@ TEST(DockTest, TabWidthsReserveEachTabsMinimumWidth) {
         }
     }
     EXPECT_EQ(tabs, 2u);
+}
+
+TEST(DockTest, SingleRemainingTabKeepsItsStripOverflowAndTextHeight) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+
+    auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
+    auto& removed = dock.add_window("Removed", bgui::dock_area::center);
+    auto configuration = dock.get_configuration();
+    configuration.tab_groups.push_back({
+        "Anchor",
+        "Anchor",
+        {"Anchor", "Removed"}
+    });
+    dock.apply_configuration(configuration);
+    dock.cascade_style();
+    dock.on_update();
+
+    ASSERT_TRUE(dock.remove_window(&removed));
+    dock.cascade_style();
+    dock.on_update();
+
+    std::size_t tab_count = 0;
+    std::size_t overflow_count = 0;
+    for (auto& [layer, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-tab")) {
+                ++tab_count;
+                EXPECT_TRUE(element->has_class("dock-tab-active"));
+                auto* tab_layout = element->as_layout();
+                ASSERT_NE(tab_layout, nullptr);
+                const auto& tab_children = tab_layout->get_elements();
+                const auto text_layer = tab_children.find(bgui::layer::base);
+                ASSERT_NE(text_layer, tab_children.end());
+                ASSERT_FALSE(text_layer->second.empty());
+                EXPECT_EQ(
+                    element->processed_height(),
+                    text_layer->second.front()->processed_height() +
+                        element->computed_style.layout.padding.y +
+                        element->computed_style.layout.padding.w
+                );
+            }
+            if (element->has_class("dock-tab-overflow"))
+                ++overflow_count;
+        }
+    }
+    EXPECT_EQ(tab_count, 1u);
+    EXPECT_EQ(overflow_count, 1u);
+
+    const auto restored = dock.get_configuration();
+    EXPECT_TRUE(restored.tab_groups.empty());
+    EXPECT_TRUE(anchor.is_enabled());
+
+    dock.apply_configuration(restored);
+    dock.on_update();
+    tab_count = 0;
+    overflow_count = 0;
+    for (auto& [layer, elements] : dock.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("dock-tab"))
+                ++tab_count;
+            if (element->has_class("dock-tab-overflow"))
+                ++overflow_count;
+        }
+    }
+    EXPECT_EQ(tab_count, 1u);
+    EXPECT_EQ(overflow_count, 1u);
 }
 
 // Confirms that dragging a pinned window by its title bar converts it into a
