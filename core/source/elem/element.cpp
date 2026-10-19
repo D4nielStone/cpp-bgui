@@ -56,7 +56,10 @@ void element::set_final_rect(const int x, const int y, const int w, const int h)
     m_arranged_rect = {x, y, w, h};
     if (!s_geometry_frame_active)
         m_rect = m_arranged_rect;
-    mark_layout_dirty();
+    if (s_arranging_geometry)
+        m_layout_dirty = true;
+    else
+        mark_layout_dirty();
 }
 
 void element::set_position(const int x, const int y) {
@@ -68,7 +71,10 @@ void element::set_position(const int x, const int y) {
         m_rect.x = x;
         m_rect.y = y;
     }
-    mark_layout_dirty();
+    if (s_arranging_geometry)
+        m_layout_dirty = true;
+    else
+        mark_layout_dirty();
 }
 
 void element::set_final_size(const int width, const int height) {
@@ -80,7 +86,10 @@ void element::set_final_size(const int width, const int height) {
         m_rect.z = width;
         m_rect.w = height;
     }
-    mark_layout_dirty();
+    if (s_arranging_geometry)
+        m_layout_dirty = true;
+    else
+        mark_layout_dirty();
 }
 
 vec2i element::processed_position() const {
@@ -98,6 +107,8 @@ vec4i element::processed_rect() const {
 }
 
 void element::prepare_geometry_frame() {
+    if (!is_layout_dirty())
+        return;
     m_arranged_rect = m_rect;
 }
 
@@ -107,7 +118,15 @@ void element::commit_geometry() {
 
 void element::mark_style_dirty() {
     m_style_dirty = true;
-    mark_layout_dirty();
+    m_layout_dirty = true;
+    if (m_parent) {
+        if (s_arranging_geometry) {
+            for (layout* ancestor = m_parent; ancestor; ancestor = ancestor->get_parent())
+                ancestor->m_layout_dirty = true;
+        } else {
+            m_parent->mark_layout_dirty();
+        }
+    }
 
     if (auto* lay = as_layout()) {
         lay->mark_children_style_dirty();

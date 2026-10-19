@@ -39,6 +39,8 @@ void layout::arrange() {
 }
 
 void layout::prepare_geometry_frame() {
+    if (!is_layout_dirty())
+        return;
     element::prepare_geometry_frame();
     for (auto& [lay, elems] : m_elements) {
         for (auto& elem : elems) {

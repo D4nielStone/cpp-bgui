@@ -125,10 +125,12 @@ void linear::on_update() {
             if (thumb_travel > 0) {
                 const int max_scroll = std::max(
                     0, m_scroll_content_height - processed_height());
+                const int previous_offset = m_scroll_offset;
                 m_scroll_offset += static_cast<int>(
                     static_cast<long long>(drag.y) * max_scroll / thumb_travel);
                 m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
-                mark_layout_dirty();
+                if (m_scroll_offset != previous_offset)
+                    mark_layout_dirty();
             }
             m_scrollbar.set_drag({0, 0});
         }
