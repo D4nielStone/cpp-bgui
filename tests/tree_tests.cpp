@@ -33,3 +33,15 @@ TEST(treeTest, CanStartExpanded) {
     EXPECT_TRUE(root.is_expanded());
     EXPECT_TRUE(root.children().is_enabled());
 }
+
+TEST(treeTest, CanAddAndRemoveAnIcon) {
+    bgui::tree root("Root");
+
+    EXPECT_FALSE(root.has_icon());
+
+    root.set_icon("directory_open");
+    EXPECT_TRUE(root.has_icon());
+
+    root.set_icon("");
+    EXPECT_FALSE(root.has_icon());
+}
