@@ -186,6 +186,7 @@ void bgui::text::set_buffer(const std::string& buffer) {
         return;
     m_buffer = buffer;
     update_highlight_colors();
+    mark_layout_dirty();
 }
 
 void bgui::text::set_highlight_rules(
@@ -193,6 +194,7 @@ void bgui::text::set_highlight_rules(
 ) {
     m_highlight_rules = std::move(rules);
     update_highlight_colors();
+    mark_render_dirty();
 }
 
 void bgui::text::set_editor_guides_enabled(bool enabled) {
@@ -200,6 +202,7 @@ void bgui::text::set_editor_guides_enabled(bool enabled) {
         return;
     m_editor_guides_enabled = enabled;
     update_highlight_colors();
+    mark_render_dirty();
 }
 
 size_t bgui::text::get_cursor_position_at(float x, float y) const {
@@ -496,6 +499,7 @@ void bgui::text::calc_content_size(const layer&) {
 }
 void bgui::text::set_font(const std::string &path) {
     font_manager::get_instance().m_font_queue.push(path);
+    mark_layout_dirty();
 }
 
 float bgui::text::get_text_width(const std::string& t) const {

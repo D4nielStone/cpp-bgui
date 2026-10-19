@@ -29,6 +29,17 @@ public:
 	}
 };
 
+class arrange_counting_element : public mock_element {
+public:
+	using mock_element::mock_element;
+
+	int arrange_count{0};
+
+	void arrange() override {
+		++arrange_count;
+	}
+};
+
 static void run_layout_frame(layout& root, const vec2i& available) {
 	element::begin_geometry_frame();
 	root.prepare_geometry_frame();
@@ -39,6 +50,26 @@ static void run_layout_frame(layout& root, const vec2i& available) {
 	element::end_arranging();
 	root.commit_geometry();
 	element::end_geometry_frame();
+}
+
+TEST(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {
+	linear root(orientation::vertical);
+	root.style.layout.require_size(200, 200);
+	root.style.layout.require_mode(mode::pixel, mode::pixel);
+	root.compute_style();
+
+	auto child = root.add_scoped<arrange_counting_element>(100, 40);
+	child->compute_style();
+
+	run_layout_frame(root, {200, 200});
+	ASSERT_EQ(child->arrange_count, 1);
+
+	run_layout_frame(root, {200, 200});
+	EXPECT_EQ(child->arrange_count, 1);
+
+	child->set_content_size({100, 60});
+	run_layout_frame(root, {200, 200});
+	EXPECT_EQ(child->arrange_count, 2);
 }
 
 TEST(LinearTest, VerticalLayoutFixedSizes) {

@@ -66,10 +66,13 @@ float bgui::slider::normalize_value(float value) const {
 
 void bgui::slider::set_range(float minimum, float maximum) {
     validate_range(minimum, maximum);
+    if (minimum == m_minimum && maximum == m_maximum)
+        return;
     const float previous_value = m_value;
     m_minimum = minimum;
     m_maximum = maximum;
     m_value = normalize_value(previous_value);
+    mark_render_dirty();
     if (m_value != previous_value && m_on_change)
         m_on_change(m_value);
 }
@@ -83,6 +86,7 @@ void bgui::slider::set_value(float value) {
         return;
 
     m_value = normalized;
+    mark_render_dirty();
     if (m_on_change)
         m_on_change(m_value);
 }
@@ -92,8 +96,12 @@ void bgui::slider::set_step(float step) {
         throw std::invalid_argument("[BGUI] Slider step must be finite and non-negative.");
 
     const float previous_value = m_value;
+    if (step == m_step)
+        return;
     m_step = step;
     m_value = normalize_value(m_value);
+    if (m_value != previous_value)
+        mark_render_dirty();
     if (m_value != previous_value && m_on_change)
         m_on_change(m_value);
 }

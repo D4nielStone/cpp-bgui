@@ -37,6 +37,19 @@ Bubble GUI works with a **retained** logic model:
 > The final visual state is calculated only when generating draw requires.
 ---
 
+### Incremental rendering
+
+Layout changes invalidate the affected layout and its ancestors; clean layouts
+reuse their arranged geometry. Elements cache their draw data and rebuild it
+when style, geometry, clipping, or tracked widget state changes. Custom
+elements that change rendering data outside BGUI setters should call
+`mark_render_dirty()`. Elements with externally updated render state can opt
+out of caching with `supports_render_cache()`.
+
+The OpenGL backend retains dynamic buffer capacity, batches adjacent draw
+commands that share material and clip state, and uses scissor regions to avoid
+drawing clipped content.
+
 ## Releases & Changelogs
 
 You can find the latest version on the [**Releases**](https://github.com/D4nielStone/cpp-bgui/releases/) page.
@@ -119,7 +132,7 @@ bgui::set_logs_enabled(false);
 ```
 
 Enable the built-in profiling overlay to show rolling FPS, frame interval, BGUI
-update duration, generated draw calls and geometry vertices, and window
+update duration, generated draw commands and geometry vertices, and window
 resolution. The update duration does not include rendering, buffer swapping, or
 GPU time. Profiling is off by default and can be hidden again at runtime:
 

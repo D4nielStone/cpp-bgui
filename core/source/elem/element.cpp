@@ -9,6 +9,33 @@ using namespace bgui;
 namespace {
     bool s_geometry_frame_active = false;
     bool s_arranging_geometry = false;
+
+    bool layout_style_changed(
+        const computed_layout_style& previous,
+        const computed_layout_style& current
+    ) {
+        return previous.size_mode != current.size_mode ||
+            previous.align != current.align ||
+            previous.size != current.size ||
+            previous.limit_min != current.limit_min ||
+            previous.limit_max != current.limit_max ||
+            previous.padding != current.padding ||
+            previous.margin != current.margin ||
+            previous.ori != current.ori;
+    }
+
+    bool visual_style_changed(
+        const computed_visual_style& previous,
+        const computed_visual_style& current
+    ) {
+        return previous.background != current.background ||
+            previous.border != current.border ||
+            previous.text != current.text ||
+            previous.font != current.font ||
+            previous.border_radius != current.border_radius ||
+            previous.border_size != current.border_size ||
+            previous.visible != current.visible;
+    }
 }
 
 element::~element() {
@@ -56,6 +83,7 @@ void element::set_final_rect(const int x, const int y, const int w, const int h)
     m_arranged_rect = {x, y, w, h};
     if (!s_geometry_frame_active)
         m_rect = m_arranged_rect;
+    mark_render_dirty();
     if (s_arranging_geometry)
         m_layout_dirty = true;
     else
@@ -71,6 +99,7 @@ void element::set_position(const int x, const int y) {
         m_rect.x = x;
         m_rect.y = y;
     }
+    mark_render_dirty();
     if (s_arranging_geometry)
         m_layout_dirty = true;
     else
@@ -86,6 +115,7 @@ void element::set_final_size(const int width, const int height) {
         m_rect.z = width;
         m_rect.w = height;
     }
+    mark_render_dirty();
     if (s_arranging_geometry)
         m_layout_dirty = true;
     else
@@ -116,9 +146,17 @@ void element::commit_geometry() {
     m_rect = m_arranged_rect;
 }
 
+void element::mark_render_dirty() {
+    m_render_dirty = true;
+    m_render_cache_valid = false;
+    if (m_parent)
+        m_parent->mark_render_dirty();
+}
+
 void element::mark_style_dirty() {
     m_style_dirty = true;
     m_layout_dirty = true;
+    mark_render_dirty();
     if (m_parent) {
         if (s_arranging_geometry) {
             for (layout* ancestor = m_parent; ancestor; ancestor = ancestor->get_parent())
@@ -127,13 +165,13 @@ void element::mark_style_dirty() {
             m_parent->mark_layout_dirty();
         }
     }
-
     if (auto* lay = as_layout()) {
         lay->mark_children_style_dirty();
     }
 }
 
 void element::mark_layout_dirty() {
+    mark_render_dirty();
     if (s_arranging_geometry)
         return;
 
@@ -175,6 +213,9 @@ void element::set_enable(bool b){
 
     m_enabled = b;
     mark_layout_dirty();
+    mark_render_dirty();
+    if (m_parent)
+        m_parent->invalidate_cacheability();
     if (!m_enabled) {
         bgui::cancel_interactions(this);
         set_style_state(state::disabled);
@@ -195,7 +236,7 @@ vec2i bgui::element::is_drag() const {
 
 void element::compute_style() {
     auto& sm = style_manager::get_instance();
-    
+    const auto previous_style = computed_style;
     computed_style = {};
     // compute it's style
     sm.resolve(
@@ -233,6 +274,12 @@ void element::compute_style() {
     computed_style.visual.border_size *= scale;
 
     clear_style_dirty();
+    if (layout_style_changed(previous_style.layout, computed_style.layout) ||
+        visual_style_changed(previous_style.visual, computed_style.visual)) {
+        mark_layout_dirty();
+        if (auto* lay = as_layout())
+            lay->mark_children_style_dirty();
+    }
 }
 void element::set_properties() {
     m_material.set("bg_color", computed_style.visual.background);
@@ -260,6 +307,44 @@ void element::get_requires(bgui::draw_data* calls) {
             static_cast<float>(processed_height())
         }
     });
+}
+
+void element::get_cached_requires(bgui::draw_data* calls) {
+    if (!calls)
+        return;
+    if (!supports_render_cache()) {
+        get_requires(calls);
+        return;
+    }
+
+    const auto requested_clip = calls->m_clip_rect;
+    const auto input_color = calls->m_draw_list.get_color();
+    if (m_render_dirty || !m_render_cache_valid ||
+        m_render_cache_clip != requested_clip ||
+        m_render_cache_input_color != input_color) {
+        bgui::draw_data cached;
+        cached.m_clip_rect = requested_clip;
+        cached.m_draw_list.set_color(input_color);
+        get_requires(&cached);
+
+        m_cached_draw_requires.clear();
+        m_cached_draw_requires.reserve(cached.m_quad_requires.size());
+        while (!cached.m_quad_requires.empty()) {
+            m_cached_draw_requires.push_back(cached.m_quad_requires.front());
+            cached.m_quad_requires.pop();
+        }
+        m_cached_draw_vertices = cached.m_draw_list.get_vertices();
+        m_render_cache_clip = requested_clip;
+        m_render_cache_input_color = input_color;
+        m_render_cache_output_color = cached.m_draw_list.get_color();
+        m_render_cache_valid = true;
+        m_render_dirty = false;
+    }
+
+    for (const auto& require : m_cached_draw_requires)
+        calls->m_quad_requires.push(require);
+    calls->m_draw_list.append_vertices(m_cached_draw_vertices);
+    calls->m_draw_list.set_color(m_render_cache_output_color);
 }
 
 void element::process_required_size(const bgui::vec2i& available) {
@@ -309,6 +394,7 @@ void element::process_required_size(const bgui::vec2i& available) {
         m_rect.w = m_arranged_rect.w;
     }
     if (size_changed) {
+        mark_render_dirty();
         if (s_arranging_geometry)
             m_layout_dirty = true;
         else

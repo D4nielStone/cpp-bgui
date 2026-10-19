@@ -39,8 +39,11 @@ namespace bgui {
     }
 
     void image::set_uv_region(const vec2& uv_min, const vec2& uv_max) {
+        if (m_uv_min == uv_min && m_uv_max == uv_max)
+            return;
         m_uv_min = uv_min;
         m_uv_max = uv_max;
+        mark_render_dirty();
     }
 
     void image::use_natural_size() {

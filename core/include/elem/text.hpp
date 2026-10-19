@@ -34,19 +34,33 @@ namespace bgui {
         ~text();
         // sets to this text the font with `name`.
         void set_font(const std::string& name);
-        void set_wrap(bool enabled) { m_wrap_enabled = enabled; }
+        void set_wrap(bool enabled) {
+            if (m_wrap_enabled == enabled)
+                return;
+            m_wrap_enabled = enabled;
+            mark_layout_dirty();
+        }
         bool is_wrap_enabled() const { return m_wrap_enabled; }
         void set_editor_guides_enabled(bool enabled);
         void on_update() override;
         void calc_content_size(const layer& lay) override;
         float get_text_width(const std::string& t) const;
         void set_cursor(size_t position, bool visible) {
+            if (m_cursor_position == position && m_cursor_visible == visible)
+                return;
             m_cursor_position = position;
             m_cursor_visible = visible;
+            mark_render_dirty();
         }
         void set_selection(size_t start, size_t end) {
-            m_selection_start = std::min(start, end);
-            m_selection_end = std::max(start, end);
+            const auto selection_start = std::min(start, end);
+            const auto selection_end = std::max(start, end);
+            if (m_selection_start == selection_start &&
+                m_selection_end == selection_end)
+                return;
+            m_selection_start = selection_start;
+            m_selection_end = selection_end;
+            mark_render_dirty();
         }
         void set_buffer(const std::string& buffer);
         void set_highlight_rules(

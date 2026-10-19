@@ -17,11 +17,22 @@ template<typename T>
 class scoped_element;
 
 class layout : public element {
+    friend class element;
+
 protected:
     std::map<layer, std::vector<std::unique_ptr<element>>> m_elements;
     bool m_resizable{false};
 
 private:
+    mutable bool m_cacheability_dirty{true};
+    mutable bool m_subtree_cacheable{true};
+
+    void invalidate_cacheability() {
+        m_cacheability_dirty = true;
+        if (m_parent)
+            m_parent->invalidate_cacheability();
+    }
+
     template<typename T, layer Lay, typename... Args>
     T& insert_element(Args&&... args) {
         auto elem = std::make_unique<T>(
@@ -34,6 +45,7 @@ private:
 
         m_elements[Lay].push_back(std::move(elem));
         mark_layout_dirty();
+        invalidate_cacheability();
 
         return ref;
     }
@@ -78,6 +90,7 @@ public:
             cancel_interactions(it->get());
             elems.erase(it);
             mark_layout_dirty();
+            invalidate_cacheability();
             return true;
         }
 
@@ -128,6 +141,7 @@ public:
     void commit_geometry() override;
 
     void get_requires(bgui::draw_data* calls);
+    bool supports_render_cache() const override;
 
     std::map<layer, std::vector<std::unique_ptr<element>>>& get_elements();
 

@@ -68,7 +68,7 @@ namespace {
 
             const std::array<const char*, 6> initial_metrics = {
                 "FPS: --", "Frame interval: -- ms", "UI update: -- ms",
-                "Draw calls: --", "Geometry vertices: --", "Resolution: -- x --"
+                "Draw commands: --", "Geometry vertices: --", "Resolution: -- x --"
             };
             for (std::size_t i = 0; i < initial_metrics.size(); ++i) {
                 m_metrics[i] = &add<bgui::text>(initial_metrics[i], 0.32f);
@@ -105,7 +105,7 @@ namespace {
                 format_time(has_frame_time, frame_time_ms));
             m_metrics[2]->set_buffer("UI update: " +
                 format_time(has_update_time, update_time_ms));
-            m_metrics[3]->set_buffer("Draw calls: " + std::to_string(draw_calls));
+            m_metrics[3]->set_buffer("Draw commands: " + std::to_string(draw_calls));
             m_metrics[4]->set_buffer(
                 "Geometry vertices: " + std::to_string(geometry_vertices));
             m_metrics[5]->set_buffer(
@@ -891,7 +891,7 @@ void bgui::on_update() {
     // get new requires
     if(!get_draw_data()->m_quad_requires.empty()) bgui::detail::log_out() << "[BGUI] Warning: draw data not empty at beginning of frame.\nMake sure you are resetting draw data each frame.\n";
     get_draw_data()->m_clip_rect = {0, 0, w_size.x, w_size.y};
-    bgui::s_main_layout->get_requires(get_draw_data());
+    bgui::s_main_layout->get_cached_requires(get_draw_data());
     if (s_profiling_enabled) {
         const auto update_end = profiling_clock::now();
         s_profile_update_time_ms =

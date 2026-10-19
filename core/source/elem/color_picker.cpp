@@ -200,6 +200,9 @@ void bgui::color_picker::set_color(const bgui::color& value) {
     }
 
     const bgui::color previous_color = m_color;
+    const float previous_white_weight = m_white_weight;
+    const float previous_hue_weight = m_hue_weight;
+    const float previous_black_weight = m_black_weight;
     const bgui::color normalized{
         std::clamp(value.r, 0.f, 1.f),
         std::clamp(value.g, 0.f, 1.f),
@@ -221,6 +224,11 @@ void bgui::color_picker::set_color(const bgui::color& value) {
     if (m_hue != previous_hue)
         m_palette_dirty = true;
     update_color();
+    if (m_color != previous_color || m_hue != previous_hue ||
+        m_white_weight != previous_white_weight ||
+        m_hue_weight != previous_hue_weight ||
+        m_black_weight != previous_black_weight)
+        mark_render_dirty();
     if (m_color != previous_color && m_on_change)
         m_on_change(m_color);
 }
@@ -236,6 +244,7 @@ void bgui::color_picker::set_hue(float hue) {
     const bgui::color previous_color = m_color;
     m_hue = normalized;
     m_palette_dirty = true;
+    mark_render_dirty();
     update_color();
     if (m_color != previous_color && m_on_change)
         m_on_change(m_color);
@@ -280,10 +289,18 @@ void bgui::color_picker::update_from_pointer() {
             weight /= total;
 
         const bgui::color previous_color = m_color;
+        const float previous_white_weight = m_white_weight;
+        const float previous_hue_weight = m_hue_weight;
+        const float previous_black_weight = m_black_weight;
         m_white_weight = weights[0];
         m_hue_weight = weights[1];
         m_black_weight = weights[2];
         update_color();
+        if (m_color != previous_color ||
+            m_white_weight != previous_white_weight ||
+            m_hue_weight != previous_hue_weight ||
+            m_black_weight != previous_black_weight)
+            mark_render_dirty();
         if (m_color != previous_color && m_on_change)
             m_on_change(m_color);
     }

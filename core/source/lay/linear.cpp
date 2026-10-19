@@ -419,7 +419,7 @@ void linear::get_requires(bgui::draw_data* data) {
 
     const auto inherited_clip = data->m_clip_rect;
     data->m_clip_rect = bgui::intersect_rect(inherited_clip, get_children_clip_rect());
-    m_scrollbar.get_requires(data);
+    m_scrollbar.get_cached_requires(data);
     data->m_clip_rect = inherited_clip;
 }
 

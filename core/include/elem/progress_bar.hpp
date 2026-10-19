@@ -17,6 +17,7 @@ namespace bgui {
         float get_maximum() const noexcept { return m_maximum; }
         float get_value() const noexcept { return m_value.load(std::memory_order_relaxed); }
         orientation get_orientation() const noexcept { return m_orientation; }
+        bool supports_render_cache() const override { return false; }
 
         void set_range(float minimum, float maximum);
         void set_value(float value);

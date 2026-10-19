@@ -90,10 +90,29 @@ void layout::get_requires(bgui::draw_data* data) {
                  rect.y + rect.w <= clip.y || rect.y >= clip.y + clip.w))
                 continue;
             // get the requires from each element
-            elem->get_requires(data);
+            elem->get_cached_requires(data);
             // adjust the rect to be modular to this layout
             if(data->m_quad_requires.empty()) continue;
         }
     }
     data->m_clip_rect = inherited_clip;
 };
+
+bool layout::supports_render_cache() const {
+    if (!m_cacheability_dirty)
+        return m_subtree_cacheable;
+
+    m_subtree_cacheable = true;
+    for (const auto& [lay, elems] : m_elements) {
+        for (const auto& elem : elems) {
+            if (elem && elem->is_enabled() && !elem->supports_render_cache()) {
+                m_subtree_cacheable = false;
+                break;
+            }
+        }
+        if (!m_subtree_cacheable)
+            break;
+    }
+    m_cacheability_dirty = false;
+    return m_subtree_cacheable;
+}

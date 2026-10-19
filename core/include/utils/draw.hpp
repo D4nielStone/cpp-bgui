@@ -29,6 +29,9 @@ namespace bgui{
         const bgui::vec4& get_color() const { return m_color; }
         const std::vector<draw_vertex>& get_vertices() const { return m_vertices; }
         void clear() { m_vertices.clear(); }
+        void append_vertices(const std::vector<draw_vertex>& vertices) {
+            m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
+        }
 
         void add_line(const bgui::vec2& start, const bgui::vec2& end, float thickness = 1.f) {
             const auto delta = end - start;

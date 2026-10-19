@@ -26,6 +26,13 @@ namespace bgui {
     private:
         bool m_style_dirty  = true;
         bool m_layout_dirty = true;
+        bool m_render_dirty = true;
+        bool m_render_cache_valid = false;
+        vec4i m_render_cache_clip{0, 0, 0, 0};
+        vec4 m_render_cache_input_color{1.f, 1.f, 1.f, 1.f};
+        vec4 m_render_cache_output_color{1.f, 1.f, 1.f, 1.f};
+        std::vector<draw_require> m_cached_draw_requires;
+        std::vector<draw_vertex> m_cached_draw_vertices;
     protected:
         // Boolean that false means that the element is disabled.
         bool m_enabled {true};
@@ -61,8 +68,11 @@ namespace bgui {
         bool is_flex() const {return m_flex;}
         void mark_style_dirty();
         void mark_layout_dirty();
+        // Call after changing custom rendering data that is not tracked by BGUI setters.
+        void mark_render_dirty();
         bool is_layout_dirty() const { return m_layout_dirty; }
         void clear_layout_dirty() { m_layout_dirty = false; }
+        virtual bool supports_render_cache() const { return true; }
         // The input state of the element
         std::string type;                 // "button", "text", "linear"
         std::vector<std::string> classes; // {"primary", "rounded"}
@@ -321,6 +331,8 @@ namespace bgui {
          * @param calls A pointer to the structure where draw data is collected.
          */
         virtual void get_requires(draw_data* calls);
+        // Reuses cached draw data until rendering inputs, geometry, or clipping change.
+        void get_cached_requires(draw_data* calls);
     };
 
 } // namespace bgui

@@ -36,6 +36,16 @@ public:
 private:
 	int& m_release_count;
 };
+
+class draw_count_probe final : public element {
+public:
+	int draw_count{0};
+
+	void get_requires(draw_data* calls) override {
+		++draw_count;
+		element::get_requires(calls);
+	}
+};
 }
 
 TEST(ElementTest, RequireSizeAndMode) {
@@ -64,6 +74,64 @@ TEST(ElementTest, FinalRectManipulation) {
 	EXPECT_EQ(elem.processed_y(), 15);
 	EXPECT_EQ(elem.processed_width(), 80);
 	EXPECT_EQ(elem.processed_height(), 40);
+}
+
+TEST(DrawDataTest, CachedElementOutputReusesAndInvalidates) {
+	layout root;
+	auto& child = root.add<draw_count_probe>();
+	child.set_final_rect(0, 0, 50, 50);
+
+	draw_data first;
+	first.m_clip_rect = {0, 0, 100, 100};
+	root.get_cached_requires(&first);
+	EXPECT_EQ(child.draw_count, 1);
+	EXPECT_EQ(first.m_quad_requires.size(), 2U);
+
+	draw_data second;
+	second.m_clip_rect = {0, 0, 100, 100};
+	root.get_cached_requires(&second);
+	EXPECT_EQ(child.draw_count, 1);
+	EXPECT_EQ(second.m_quad_requires.size(), 2U);
+
+	child.mark_render_dirty();
+	draw_data third;
+	third.m_clip_rect = {0, 0, 100, 100};
+	root.get_cached_requires(&third);
+	EXPECT_EQ(child.draw_count, 2);
+	EXPECT_EQ(third.m_quad_requires.size(), 2U);
+
+	child.set_position(5, 5);
+	draw_data moved;
+	moved.m_clip_rect = {0, 0, 100, 100};
+	root.get_cached_requires(&moved);
+	EXPECT_EQ(child.draw_count, 3);
+	EXPECT_EQ(moved.m_quad_requires.back().m_rect.x, 5.f);
+
+	draw_data clipped;
+	clipped.m_clip_rect = {0, 0, 25, 25};
+	root.get_cached_requires(&clipped);
+	EXPECT_EQ(child.draw_count, 4);
+	ASSERT_EQ(clipped.m_quad_requires.size(), 2U);
+	EXPECT_EQ(clipped.m_quad_requires.back().m_clip_rect, (vec4i{0, 0, 25, 25}));
+}
+
+TEST(DrawDataTest, RootStyleChangesInvalidateCachedOutput) {
+	layout root;
+	root.style.visual.background.normal = color{0.2f, 0.3f, 0.4f, 1.f};
+	root.cascade_style();
+
+	draw_data first;
+	first.m_clip_rect = {0, 0, 100, 100};
+	root.get_cached_requires(&first);
+
+	const color updated{0.7f, 0.6f, 0.5f, 1.f};
+	root.style.visual.background.normal = updated;
+	root.cascade_style();
+
+	draw_data second;
+	second.m_clip_rect = {0, 0, 100, 100};
+	root.get_cached_requires(&second);
+	EXPECT_EQ(root.get_material().m_properties.at("bg_color"), propertie{updated});
 }
 
 TEST(ElementTest, UpdateSizeCalculation) {
