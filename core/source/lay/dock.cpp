@@ -1452,7 +1452,7 @@ namespace bgui {
                 if (element->has_class("dock-drop-preview"))
                     return 6;
                 if (element->has_class("dock-tab"))
-                    return 6;
+                    return 3;
                 if (element->has_class("dock-drop-zone"))
                     return 7;
 

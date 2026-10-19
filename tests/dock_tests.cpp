@@ -132,6 +132,48 @@ TEST(DockTest, FocusedFloatingWindowBecomesTopmost) {
     EXPECT_LT(other_position, focused_position);
 }
 
+TEST(DockTest, DockTabsStayBelowFloatingWindows) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor", bgui::dock_area::center);
+    auto& second = dock.add_window("Second", bgui::dock_area::center);
+    auto& floating = dock.add<bgui::window>("Floating", true);
+    auto& focused_floating = dock.add<bgui::window>("Focused floating", true);
+    auto configuration = dock.get_configuration();
+    configuration.tab_groups.push_back({
+        "Anchor",
+        "Anchor",
+        {"Anchor", "Second"}
+    });
+    dock.apply_configuration(configuration);
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    dock.focus_window(&focused_floating);
+    dock.on_update();
+
+    const auto& elements = dock.get_elements()[bgui::layer::base];
+    const auto floating_position = std::find_if(elements.begin(), elements.end(), [&floating](const auto& element) {
+        return element.get() == &floating;
+    });
+    const auto focused_position = std::find_if(elements.begin(), elements.end(), [&focused_floating](const auto& element) {
+        return element.get() == &focused_floating;
+    });
+    ASSERT_NE(floating_position, elements.end());
+    ASSERT_NE(focused_position, elements.end());
+
+    std::size_t tab_count = 0;
+    for (auto tab = elements.begin(); tab != elements.end(); ++tab) {
+        if (!(*tab)->has_class("dock-tab"))
+            continue;
+        ++tab_count;
+        EXPECT_LT(tab, floating_position);
+        EXPECT_LT(tab, focused_position);
+    }
+    EXPECT_EQ(tab_count, 2u);
+}
+
 // Covers the drag-preview path: a floating window should expose valid drop targets
 // and highlight the center preview while it is being moved.
 TEST(DockTest, DraggedFloatingWindowShowsDockPinTargets) {
