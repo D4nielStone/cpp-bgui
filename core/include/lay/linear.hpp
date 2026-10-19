@@ -13,14 +13,24 @@ namespace bgui {
         bool m_scrollable{false};
         int m_scroll_offset{0};
         int m_scroll_content_height{0};
+        float m_scroll_remainder{0.f};
         element m_scrollbar;
 
+        bool can_scroll_in_direction(float scroll_delta) const;
+        bool has_scrollable_descendant_at(
+            float x,
+            float y,
+            float scroll_delta
+        );
         void update_scrollbar_rect();
     public:
         linear(const bgui::orientation& ori = bgui::orientation::horizontal);
         ~linear() = default;
     
         void on_update() override;
+        void arrange() override;
+        void prepare_geometry_frame() override;
+        void commit_geometry() override;
         void get_requires(bgui::draw_data* data) override;
         void calc_content_size(const layer& lay) override;
         void set_scrollable(bool enabled);

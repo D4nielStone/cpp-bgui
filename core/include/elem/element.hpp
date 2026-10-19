@@ -42,9 +42,15 @@ namespace bgui {
         // FINAL COMPUTED RECT (layout writes this)
         // x, y, width, height - The final position and dimensions calculated by the layout.
         vec4i m_rect {0, 0, 0, 0};
+        vec4i m_arranged_rect {0, 0, 0, 0};
         state m_state{state::normal};
         bool m_flex = true;
     public:
+        static void begin_geometry_frame();
+        static void begin_arranging();
+        static void end_arranging();
+        static void end_geometry_frame();
+
         void set_flex(bool f) {m_flex = f;}
         bool is_flex() const {return m_flex;}
         void mark_style_dirty();
@@ -133,26 +139,26 @@ namespace bgui {
          * @brief Gets the final computed X position (left edge) of the element.
          * @return The X coordinate in pixels.
          */
-        int processed_x()     const { return m_rect[0]; }
+        int processed_x()     const;
         
         /**
          * @brief Gets the final computed Y position (top edge) of the element.
          * @return The Y coordinate in pixels.
          */
-        int processed_y()     const { return m_rect[1]; }
+        int processed_y()     const;
 
         
         /**
          * @brief Gets the final computed width of the element.
          * @return The width in pixels.
          */
-        int processed_width() const { return m_rect.z; }
+        int processed_width() const;
         
         /**
          * @brief Gets the final computed height of the element.
          * @return The height in pixels.
          */
-        int processed_height()const { return m_rect.w; }
+        int processed_height()const;
 
         /**
          * @brief Sets the final computed position and size of the element.
@@ -162,39 +168,39 @@ namespace bgui {
          * @param w The final width.
          * @param h The final height.
          */
-        void set_final_rect(int x, int y, int w, int h) {m_rect = vec4i({x, y, w, h}); }
+        void set_final_rect(int x, int y, int w, int h);
         
         /**
          * @brief Sets the final computed position (X and Y).
          * @param x The final X position.
          * @param y The final Y position.
          */
-        void set_position(int x, int y) {m_rect[0] = x; m_rect[1] = y;}
+        void set_position(int x, int y);
         
         /**
          * @brief Sets the final computed size (width and height).
          * @param x The final width.
          * @param y The final height.
          */
-        void set_final_size(int x, int y) {m_rect.z = x; m_rect.w = y;}
+        void set_final_size(int x, int y);
 
         /**
          * @brief Gets the final computed position as a 2D vector.
          * @return A vec2i containing the X and Y position.
          */
-        vec2i processed_position() const { return vec2i({m_rect[0], m_rect[1]}); }
+        vec2i processed_position() const;
         
         /**
          * @brief Gets the final computed size as a 2D vector.
          * @return A vec2i containing the width and height.
          */
-        vec2i processed_size()     const { return vec2i({m_rect.z, m_rect.w}); }
+        vec2i processed_size()     const;
         
         /**
          * @brief Gets the final computed rectangle (X, Y, W, H).
          * @return A vec4i containing the processed rect.
          */
-        vec4i processed_rect()     const { return m_rect; }
+        vec4i processed_rect()     const;
         // input
         /**
          * @brief Enables or disables input reception for the element.
@@ -225,6 +231,9 @@ namespace bgui {
          * * Derived classes should override this for continuous logic.
          */
         virtual void on_update();
+        virtual void arrange();
+        virtual void prepare_geometry_frame();
+        virtual void commit_geometry();
 
         /**
          * @brief Calculates the content width (excluding padding, margin, border).

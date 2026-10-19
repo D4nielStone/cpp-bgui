@@ -65,6 +65,7 @@ namespace bgui {
         configuration get_configuration();
         void apply_configuration(const configuration& value);
         void on_update() override;
+        void arrange() override;
 
     private:
         struct panel {

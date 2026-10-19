@@ -1466,4 +1466,25 @@ namespace bgui {
             return z_order(left) < z_order(right);
         });
     }
+
+    void dock::arrange() {
+        for (auto& [lay, elements] : get_elements()) {
+            for (auto& child : elements) {
+                if (!child || !child->is_enabled())
+                    continue;
+
+                if (auto* value = dynamic_cast<window*>(child.get());
+                    value && value->is_floating())
+                    value->process_required_size(processed_size());
+                else if (!dynamic_cast<window*>(child.get()) &&
+                         !dynamic_cast<dock_splitter*>(child.get()) &&
+                         !child->has_class("dock-drop-zone") &&
+                         !child->has_class("dock-drop-preview") &&
+                         !child->has_class("dock-tab"))
+                    child->process_required_size(processed_size());
+
+                child->arrange();
+            }
+        }
+    }
 }

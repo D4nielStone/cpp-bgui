@@ -6,8 +6,93 @@
 
 using namespace bgui;
 
+namespace {
+    bool s_geometry_frame_active = false;
+    bool s_arranging_geometry = false;
+}
+
 element::~element() {
     bgui::cancel_interactions(this);
+}
+
+void element::begin_geometry_frame() {
+    s_geometry_frame_active = true;
+    s_arranging_geometry = false;
+}
+
+void element::begin_arranging() {
+    s_arranging_geometry = true;
+}
+
+void element::end_arranging() {
+    s_arranging_geometry = false;
+}
+
+void element::end_geometry_frame() {
+    s_arranging_geometry = false;
+    s_geometry_frame_active = false;
+}
+
+int element::processed_x() const {
+    return s_arranging_geometry ? m_arranged_rect.x : m_rect.x;
+}
+
+int element::processed_y() const {
+    return s_arranging_geometry ? m_arranged_rect.y : m_rect.y;
+}
+
+int element::processed_width() const {
+    return s_arranging_geometry ? m_arranged_rect.z : m_rect.z;
+}
+
+int element::processed_height() const {
+    return s_arranging_geometry ? m_arranged_rect.w : m_rect.w;
+}
+
+void element::set_final_rect(const int x, const int y, const int w, const int h) {
+    m_arranged_rect = {x, y, w, h};
+    if (!s_geometry_frame_active)
+        m_rect = m_arranged_rect;
+}
+
+void element::set_position(const int x, const int y) {
+    m_arranged_rect.x = x;
+    m_arranged_rect.y = y;
+    if (!s_geometry_frame_active) {
+        m_rect.x = x;
+        m_rect.y = y;
+    }
+}
+
+void element::set_final_size(const int width, const int height) {
+    m_arranged_rect.z = width;
+    m_arranged_rect.w = height;
+    if (!s_geometry_frame_active) {
+        m_rect.z = width;
+        m_rect.w = height;
+    }
+}
+
+vec2i element::processed_position() const {
+    return {processed_x(), processed_y()};
+}
+
+vec2i element::processed_size() const {
+    return {processed_width(), processed_height()};
+}
+
+vec4i element::processed_rect() const {
+    return {
+        processed_x(), processed_y(), processed_width(), processed_height()
+    };
+}
+
+void element::prepare_geometry_frame() {
+    m_arranged_rect = m_rect;
+}
+
+void element::commit_geometry() {
+    m_rect = m_arranged_rect;
 }
 
 void element::mark_style_dirty() {
@@ -50,6 +135,9 @@ void element::set_enable(bool b){
 }
 
 void element::on_update() {
+}
+
+void element::arrange() {
 }
 
 vec2i bgui::element::is_drag() const {
@@ -107,8 +195,7 @@ void element::set_properties() {
     m_material.set("text_color", computed_style.visual.text);
 }
 void element::get_requires(bgui::draw_data* calls) {
-    // Input events can change the state after the frame style cascade.
-    // Resolve the element again before creating its draw command.
+    // Ensure the computed style is up-to-date for this element before emitting draw calls.
     if (is_style_dirty())
         compute_style();
 
@@ -118,10 +205,10 @@ void element::get_requires(bgui::draw_data* calls) {
         m_material,
         6,
         vec4{
-            static_cast<float>(m_rect[0]),
-            static_cast<float>(m_rect[1]),
-            static_cast<float>(m_rect.z),
-            static_cast<float>(m_rect.w)
+            static_cast<float>(processed_x()),
+            static_cast<float>(processed_y()),
+            static_cast<float>(processed_width()),
+            static_cast<float>(processed_height())
         }
     });
 }
@@ -160,6 +247,12 @@ void element::process_required_size(const bgui::vec2i& available) {
                    computed_style.layout.limit_min[1], 
                    computed_style.layout.limit_max[1]);
 
-    // Step 6: Set final rect dimensions
-    m_rect = { m_rect.x, m_rect.y, static_cast<int>(w), static_cast<int>(h) };
+    // Step 6: Set final rect dimensions into arranged rect when in geometry frame,
+    // otherwise publish directly into the visible rect.
+    m_arranged_rect.z = static_cast<int>(w);
+    m_arranged_rect.w = static_cast<int>(h);
+    if (!s_geometry_frame_active) {
+        m_rect.z = m_arranged_rect.z;
+        m_rect.w = m_arranged_rect.w;
+    }
 }

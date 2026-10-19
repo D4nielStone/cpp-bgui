@@ -856,11 +856,14 @@ void bgui::on_update() {
         overlay->set_position(std::max(0, w_size.x - width - margin), margin);
     }
 
-    // cascade style
+    // --- Mutation phase: cascade styles and run mutation/update logic
     cascade_style();
 
+    // Begin a geometry frame so mutation does not publish geometry changes.
+    bgui::element::begin_geometry_frame();
+    bgui::s_main_layout->prepare_geometry_frame();
+
     // Resolve mouse focus before updating keyboard-driven elements.
-    bgui::s_main_layout->process_required_size(w_size);
     get_context().m_actual_cursor = cursor::arrow;
     s_mouse_target = nullptr;
     update_inputs(*bgui::s_main_layout);
@@ -871,6 +874,16 @@ void bgui::on_update() {
     if (!s_keyboard_focused) {
         bgui::get_context().m_char_buffer.clear();
     }
+
+    // --- Arrange phase: compute the new geometry into arranged_rect
+    bgui::element::begin_arranging();
+    bgui::s_main_layout->process_required_size(w_size);
+    bgui::s_main_layout->arrange();
+    bgui::element::end_arranging();
+
+    // --- Commit & Render phase: publish geometry and produce draw commands
+    bgui::s_main_layout->commit_geometry();
+    bgui::element::end_geometry_frame();
 
     bgui::get_context().m_last_mouse_left = bgui::get_pressed(bgui::input_key::mouse_left);
     bgui::get_context().m_last_mouse_pos = bgui::get_mouse_position();

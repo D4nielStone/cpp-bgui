@@ -11,7 +11,7 @@ namespace bgui {
             bgui::mode::match_parent,
             bgui::mode::wrap_content
         );
-        style.layout.padding = bgui::vec4i{12, 0, 8, 0};
+        style.layout.padding = bgui::vec4i{1, 1, 8, 8};
 
         auto& title = add<bgui::text>(
             "© Bubble Engine | ",

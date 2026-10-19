@@ -18,10 +18,66 @@ linear::linear(const orientation& ori) : m_orientation(ori), layout() {
     m_scrollbar.style.visual.visible = true;
 }
 
-void linear::on_update() {
-    if (m_scrollable && m_orientation == orientation::vertical)
-        m_scroll_content_height = 0;
+bool linear::can_scroll_in_direction(const float scroll_delta) const {
+    if (!m_scrollable || m_orientation != orientation::vertical ||
+        scroll_delta == 0.f)
+        return false;
 
+    const int max_scroll = std::max(
+        0, m_scroll_content_height - processed_height());
+    return scroll_delta < 0.f
+        ? m_scroll_offset < max_scroll
+        : m_scroll_offset > 0;
+}
+
+bool linear::has_scrollable_descendant_at(
+    const float x,
+    const float y,
+    const float scroll_delta
+) {
+    auto contains_scrollable = [&](auto&& self, layout& parent) -> bool {
+        auto& layers = parent.get_elements();
+        for (auto layer_it = layers.rbegin(); layer_it != layers.rend(); ++layer_it) {
+            auto& elements = layer_it->second;
+            for (auto element_it = elements.rbegin();
+                 element_it != elements.rend();
+                 ++element_it) {
+                auto* child = element_it->get();
+                if (!child->is_enabled())
+                    continue;
+
+                const auto rect = child->processed_rect();
+                if (x < rect.x || x > rect.x + rect.z ||
+                    y < rect.y || y > rect.y + rect.w)
+                    continue;
+
+                auto* child_layout = child->as_layout();
+                if (!child_layout)
+                    continue;
+
+                if (child_layout->clips_children()) {
+                    const auto clip = child_layout->get_children_clip_rect();
+                    if (x < clip.x || x > clip.x + clip.z ||
+                        y < clip.y || y > clip.y + clip.w)
+                        continue;
+                }
+
+                if (auto* scrollable = dynamic_cast<linear*>(child_layout);
+                    scrollable &&
+                    scrollable->can_scroll_in_direction(scroll_delta))
+                    return true;
+
+                if (self(self, *child_layout))
+                    return true;
+            }
+        }
+        return false;
+    };
+
+    return contains_scrollable(contains_scrollable, *this);
+}
+
+void linear::on_update() {
     const bool vertical = (m_orientation == orientation::vertical);
     if (m_scrollable && vertical) {
         const auto mouse = bgui::get_mouse_position();
@@ -31,16 +87,63 @@ void linear::on_update() {
             mouse.y >= processed_y() &&
             mouse.y <= processed_y() + processed_height();
         auto& context = bgui::get_context();
-        if (inside && context.m_scroll_delta_y != 0.f) {
+        const float scroll_delta = context.m_scroll_delta_y;
+        if (inside && can_scroll_in_direction(scroll_delta) &&
+            !has_scrollable_descendant_at(mouse.x, mouse.y, scroll_delta)) {
             const float scale = bgui::get_global_scale();
-            m_scroll_offset -= static_cast<int>(std::lround(
-                context.m_scroll_delta_y * 40.f * scale));
-            context.m_scroll_delta_y = 0.f;
+            const float scroll_pixels =
+                scroll_delta * 40.f * scale + m_scroll_remainder;
+            const int pixel_delta =
+                static_cast<int>(std::lround(scroll_pixels));
+            if (pixel_delta == 0) {
+                m_scroll_remainder = scroll_pixels;
+                context.m_scroll_delta_y = 0.f;
+            } else {
+                const int max_scroll = std::max(
+                    0, m_scroll_content_height - processed_height());
+                const int next_offset = std::clamp(
+                    m_scroll_offset - pixel_delta, 0, max_scroll);
+                if (next_offset != m_scroll_offset) {
+                    m_scroll_offset = next_offset;
+                    m_scroll_remainder = scroll_pixels - pixel_delta;
+                    context.m_scroll_delta_y = 0.f;
+                }
+            }
         }
     }
 
+    if (m_scrollable && vertical) {
+        const auto drag = m_scrollbar.is_drag();
+        if (drag.y != 0) {
+            const int padding_top = computed_style.layout.padding.y;
+            const int padding_bottom = computed_style.layout.padding.w;
+            const int track_height = std::max(
+                0, processed_height() - padding_top - padding_bottom);
+            const int thumb_travel = std::max(
+                0, track_height - m_scrollbar.processed_height());
+            if (thumb_travel > 0) {
+                const int max_scroll = std::max(
+                    0, m_scroll_content_height - processed_height());
+                m_scroll_offset += static_cast<int>(
+                    static_cast<long long>(drag.y) * max_scroll / thumb_travel);
+                m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
+            }
+            m_scrollbar.set_drag({0, 0});
+        }
+    }
+
+    layout::on_update();
+}
+
+void linear::arrange() {
+    const bool vertical = (m_orientation == orientation::vertical);
+    if (m_scrollable && vertical)
+        m_scroll_content_height = 0;
+
     for(auto& [lay, elems] : m_elements) {
     for (auto& elem : m_elements[lay]) {
+        if (!elem || !elem->is_enabled())
+            continue;
         if (elem->is_enabled()) {
             elem->calc_content_size(lay);
         }
@@ -96,11 +199,8 @@ void linear::on_update() {
     }
 
     for (auto& elem : m_elements[lay]) {
-        if(!elem->is_flex()) {
-            elem->on_update();
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
-        }
-        if(!elem->is_enabled()) continue;
         vec2i final_available = elem->processed_size();
 
         for (int axis = 0; axis < 2; ++axis) {
@@ -146,11 +246,8 @@ void linear::on_update() {
 
     int content_main = 0;
     for (auto& elem : m_elements[lay]) {
-        if(!elem->is_flex()) {
-            elem->on_update();
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
-        }
-        if(!elem->is_enabled()) continue;
         content_main += elem->computed_style.layout.margin[main];
         content_main += elem->processed_size()[main];
         content_main += elem->computed_style.layout.margin[main + 2];
@@ -181,11 +278,8 @@ void linear::on_update() {
     }
 
     for (auto& elem : m_elements[lay]) {
-        if(!elem->is_flex()) {
-            elem->on_update();
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
-        }
-        if(!elem->is_enabled()) continue;
 
         cursor_main += elem->computed_style.layout.margin[main];
 
@@ -228,30 +322,27 @@ void linear::on_update() {
 
         cursor_main += elem->processed_size()[main];
         cursor_main += elem->computed_style.layout.margin[main + 2];
-            elem->on_update();
+        elem->arrange();
+    }
+
+    for (auto& elem : m_elements[lay]) {
+        if (elem && elem->is_enabled() && !elem->is_flex())
+            elem->arrange();
     }
     }
 
-    if (m_scrollable && vertical) {
-        const auto drag = m_scrollbar.is_drag();
-        if (drag.y != 0) {
-            const int padding_top = computed_style.layout.padding.y;
-            const int padding_bottom = computed_style.layout.padding.w;
-            const int track_height = std::max(
-                0, processed_height() - padding_top - padding_bottom);
-            const int thumb_travel = std::max(
-                0, track_height - m_scrollbar.processed_height());
-            if (thumb_travel > 0) {
-                const int max_scroll = std::max(
-                    0, m_scroll_content_height - processed_height());
-                m_scroll_offset += static_cast<int>(
-                    static_cast<long long>(drag.y) * max_scroll / thumb_travel);
-                m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
-            }
-            m_scrollbar.set_drag({0, 0});
-        }
+    if (m_scrollable && vertical)
         update_scrollbar_rect();
-    }
+}
+
+void linear::prepare_geometry_frame() {
+    layout::prepare_geometry_frame();
+    m_scrollbar.prepare_geometry_frame();
+}
+
+void linear::commit_geometry() {
+    layout::commit_geometry();
+    m_scrollbar.commit_geometry();
 }
 
 void linear::set_scrollable(bool enabled) {
@@ -262,6 +353,7 @@ void linear::set_scrollable(bool enabled) {
     if (!enabled) {
         m_scroll_offset = 0;
         m_scroll_content_height = 0;
+        m_scroll_remainder = 0.f;
         m_scrollbar.set_enable(false);
     }
 }

@@ -16,9 +16,40 @@ layout::~layout() {
 void layout::on_update() {
     for(auto& [lay, elems] : m_elements) {
         for(auto& elem : elems) {
-            if(!elem->is_enabled()) continue;
-            elem->process_required_size(processed_size());
+            if (!elem || !elem->is_enabled())
+                continue;
             elem->on_update();
+        }
+    }
+}
+
+void layout::arrange() {
+    for (auto& [lay, elems] : m_elements) {
+        for (auto& elem : elems) {
+            if (!elem || !elem->is_enabled())
+                continue;
+            elem->process_required_size(processed_size());
+            elem->arrange();
+        }
+    }
+}
+
+void layout::prepare_geometry_frame() {
+    element::prepare_geometry_frame();
+    for (auto& [lay, elems] : m_elements) {
+        for (auto& elem : elems) {
+            if (elem)
+                elem->prepare_geometry_frame();
+        }
+    }
+}
+
+void layout::commit_geometry() {
+    element::commit_geometry();
+    for (auto& [lay, elems] : m_elements) {
+        for (auto& elem : elems) {
+            if (elem)
+                elem->commit_geometry();
         }
     }
 }

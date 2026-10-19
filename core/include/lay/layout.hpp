@@ -121,6 +121,9 @@ public:
     }
 
     void on_update() override;
+    void arrange() override;
+    void prepare_geometry_frame() override;
+    void commit_geometry() override;
 
     void get_requires(bgui::draw_data* calls);
 

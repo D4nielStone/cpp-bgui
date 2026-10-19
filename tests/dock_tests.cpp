@@ -663,6 +663,7 @@ TEST(DockTest, PinnedWindowUnpinsAfterDraggingItsHeader) {
     dock.cascade_style();
     dock.on_update();
     dock.on_update();
+    dock.arrange();
 
     bgui::linear* header = nullptr;
     for (auto& [lay, elements] : panel.get_elements()) {

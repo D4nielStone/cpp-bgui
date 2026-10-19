@@ -29,6 +29,18 @@ public:
 	}
 };
 
+static void run_layout_frame(layout& root, const vec2i& available) {
+	element::begin_geometry_frame();
+	root.prepare_geometry_frame();
+	root.on_update();
+	element::begin_arranging();
+	root.process_required_size(available);
+	root.arrange();
+	element::end_arranging();
+	root.commit_geometry();
+	element::end_geometry_frame();
+}
+
 TEST(LinearTest, VerticalLayoutFixedSizes) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
@@ -39,7 +51,7 @@ TEST(LinearTest, VerticalLayoutFixedSizes) {
 	auto second = layout.add_scoped<mock_element>(100, 75);
 	first->compute_style();
 	second->compute_style();
-	layout.on_update();
+	run_layout_frame(layout, {200, 400});
 
 	EXPECT_EQ(first->processed_y(), 0);
 	EXPECT_EQ(second->processed_y(), 50);
@@ -55,7 +67,7 @@ TEST(LinearTest, HorizontalLayoutFixedSizes) {
 	auto second = layout.add_scoped<mock_element>(75, 100);
 	first->compute_style();
 	second->compute_style();
-	layout.on_update();
+	run_layout_frame(layout, {400, 200});
 
 	EXPECT_EQ(first->processed_x(), 0);
 	EXPECT_EQ(second->processed_x(), 50);
@@ -73,7 +85,7 @@ TEST(LinearTest, StretchElementsShareRemainingSpace) {
 	auto second = layout.add_scoped<mock_element>(100, 0, mode::pixel, mode::stretch);
 	first->compute_style();
 	second->compute_style();
-	layout.on_update();
+	run_layout_frame(layout, {200, 400});
 
 	EXPECT_EQ(first->processed_height(), 200);
 	EXPECT_EQ(second->processed_height(), 200);
@@ -91,7 +103,7 @@ TEST(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
 	auto content = layout.add_scoped<mock_element>(200, 0, mode::pixel, mode::match_parent);
 	header->compute_style();
 	content->compute_style();
-	layout.on_update();
+	run_layout_frame(layout, {200, 400});
 
 	EXPECT_EQ(content->processed_y(), 50);
 	EXPECT_EQ(content->processed_height(), 350);
@@ -109,7 +121,7 @@ TEST(LinearTest, PaddingAffectsLayout) {
 
 	auto child = layout.add_scoped<mock_element>(100, 50);
 	child->compute_style();
-	layout.on_update();
+	run_layout_frame(layout, {200, 400});
 
 	EXPECT_EQ(child->processed_x(), 10);
 	EXPECT_EQ(child->processed_y(), 20);
@@ -133,8 +145,9 @@ TEST(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
 
 	auto& context = get_context();
 	context.m_mouse_position = {10, 10};
+	run_layout_frame(panel, {100, 100});
 	context.m_scroll_delta_y = -1.f;
-	panel.on_update();
+	run_layout_frame(panel, {100, 100});
 
 	EXPECT_EQ(panel.get_scroll_offset(), 40);
 	EXPECT_EQ(first->processed_y(), -40);
@@ -142,14 +155,88 @@ TEST(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
 	EXPECT_EQ(third->processed_y(), 60);
 
 	context.m_scroll_delta_y = -10.f;
-	panel.on_update();
+	run_layout_frame(panel, {100, 100});
 	EXPECT_EQ(panel.get_scroll_offset(), 50);
 	EXPECT_EQ(first->processed_y(), -50);
 
 	context.m_scroll_delta_y = 10.f;
-	panel.on_update();
+	run_layout_frame(panel, {100, 100});
 	EXPECT_EQ(panel.get_scroll_offset(), 0);
 	EXPECT_EQ(first->processed_y(), 0);
+	context.m_scroll_delta_y = 0.f;
+}
+
+TEST(LinearTest, NestedScrollableLayoutGetsWheelBeforeParent) {
+	linear parent(orientation::vertical);
+	parent.style.layout.require_size(100, 100);
+	parent.style.layout.require_mode(mode::pixel, mode::pixel);
+	parent.style.layout.set_padding(0, 0);
+	parent.compute_style();
+	parent.process_required_size({100, 100});
+	parent.set_scrollable(true);
+
+	auto inner = parent.add_scoped<linear>(orientation::vertical);
+	inner->style.layout.require_size(100, 100);
+	inner->style.layout.require_mode(mode::pixel, mode::pixel);
+	inner->style.layout.set_padding(0, 0);
+	inner->compute_style();
+	inner->set_scrollable(true);
+	auto first = inner->add_scoped<mock_element>(100, 50);
+	auto second = inner->add_scoped<mock_element>(100, 50);
+	auto third = inner->add_scoped<mock_element>(100, 50);
+	first->compute_style();
+	second->compute_style();
+	third->compute_style();
+
+	auto sibling = parent.add_scoped<mock_element>(100, 50);
+	sibling->compute_style();
+
+	auto& context = get_context();
+	context.m_mouse_position = {10, 10};
+	context.m_scroll_delta_y = 0.f;
+	run_layout_frame(parent, {100, 100});
+
+	context.m_scroll_delta_y = -10.f;
+	run_layout_frame(parent, {100, 100});
+	EXPECT_EQ(inner->get_scroll_offset(), 50);
+	EXPECT_EQ(parent.get_scroll_offset(), 0);
+
+	context.m_scroll_delta_y = -1.f;
+	run_layout_frame(parent, {100, 100});
+	EXPECT_EQ(inner->get_scroll_offset(), 50);
+	EXPECT_EQ(parent.get_scroll_offset(), 40);
+	context.m_scroll_delta_y = 0.f;
+}
+
+TEST(LinearTest, FractionalWheelDeltasAccumulate) {
+	linear panel(orientation::vertical);
+	panel.style.layout.require_size(100, 100);
+	panel.style.layout.require_mode(mode::pixel, mode::pixel);
+	panel.style.layout.set_padding(0, 0);
+	panel.compute_style();
+	panel.process_required_size({100, 100});
+	panel.set_scrollable(true);
+
+	auto first = panel.add_scoped<mock_element>(100, 50);
+	auto second = panel.add_scoped<mock_element>(100, 50);
+	auto third = panel.add_scoped<mock_element>(100, 50);
+	first->compute_style();
+	second->compute_style();
+	third->compute_style();
+
+	auto& context = get_context();
+	context.m_mouse_position = {10, 10};
+	context.m_scroll_delta_y = 0.f;
+	run_layout_frame(panel, {100, 100});
+
+	context.m_scroll_delta_y = -0.01f;
+	run_layout_frame(panel, {100, 100});
+	EXPECT_EQ(panel.get_scroll_offset(), 0);
+	EXPECT_EQ(context.m_scroll_delta_y, 0.f);
+
+	context.m_scroll_delta_y = -0.02f;
+	run_layout_frame(panel, {100, 100});
+	EXPECT_EQ(panel.get_scroll_offset(), 1);
 	context.m_scroll_delta_y = 0.f;
 }
 
@@ -174,8 +261,10 @@ TEST(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
 
 	auto& context = get_context();
 	context.m_mouse_position = {10, 10};
+	context.m_scroll_delta_y = 0.f;
+	run_layout_frame(panel, {100, 100});
 	context.m_scroll_delta_y = -10.f;
-	panel.on_update();
+	run_layout_frame(panel, {100, 100});
 	context.m_scroll_delta_y = 0.f;
 
 	draw_data data;
@@ -199,7 +288,7 @@ TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 	EXPECT_FALSE(panel.is_resizable());
 	panel.set_resizable(true);
 	EXPECT_TRUE(panel.is_resizable());
-	panel.on_update();
+	run_layout_frame(panel, {100, 100});
 
 	element* bottom_right = nullptr;
 	for (auto& [lay, elements] : panel.get_elements()) {
