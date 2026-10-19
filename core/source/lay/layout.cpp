@@ -24,6 +24,10 @@ void layout::on_update() {
 }
 
 void layout::arrange() {
+    if (!is_layout_dirty())
+        return;
+    clear_layout_dirty();
+
     for (auto& [lay, elems] : m_elements) {
         for (auto& elem : elems) {
             if (!elem || !elem->is_enabled())
@@ -61,6 +65,7 @@ std::map<layer, std::vector<std::unique_ptr<element>>> &layout::get_elements() {
 void layout::set_resizable(bool enabled) {
     if (m_resizable == enabled) return;
     m_resizable = enabled;
+    mark_layout_dirty();
     resize_module::configure(*this, enabled);
 }
 

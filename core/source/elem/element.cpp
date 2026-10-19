@@ -289,6 +289,10 @@ void element::process_required_size(const bgui::vec2i& available) {
         m_rect.z = m_arranged_rect.z;
         m_rect.w = m_arranged_rect.w;
     }
-    if (size_changed)
-        mark_layout_dirty();
+    if (size_changed) {
+        if (s_arranging_geometry)
+            m_layout_dirty = true;
+        else
+            mark_layout_dirty();
+    }
 }

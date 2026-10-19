@@ -791,6 +791,7 @@ TEST(DockTest, FloatingWindowTrafficLightsMinimizeAndToggleMaximize) {
     update_dock(dock);
 
     const auto initial_rect = panel.processed_rect();
+    auto& context = bgui::get_context();
     ASSERT_GT(initial_rect.z, 0);
     ASSERT_GT(initial_rect.w, 0);
 

@@ -1105,6 +1105,10 @@ namespace bgui {
     }
 
     void dock::arrange() {
+        if (!is_layout_dirty())
+            return;
+        clear_layout_dirty();
+
 
         const auto padding = computed_style.layout.padding;
         const int scale = std::max(1, static_cast<int>(std::round(get_global_scale())));

@@ -106,6 +106,7 @@ void linear::on_update() {
                 if (next_offset != m_scroll_offset) {
                     m_scroll_offset = next_offset;
                     m_scroll_remainder = scroll_pixels - pixel_delta;
+                    mark_layout_dirty();
                     context.m_scroll_delta_y = 0.f;
                 }
             }
@@ -127,6 +128,7 @@ void linear::on_update() {
                 m_scroll_offset += static_cast<int>(
                     static_cast<long long>(drag.y) * max_scroll / thumb_travel);
                 m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
+                mark_layout_dirty();
             }
             m_scrollbar.set_drag({0, 0});
         }
@@ -136,6 +138,10 @@ void linear::on_update() {
 }
 
 void linear::arrange() {
+    if (!is_layout_dirty())
+        return;
+    clear_layout_dirty();
+
     const bool vertical = (m_orientation == orientation::vertical);
     if (m_scrollable && vertical)
         m_scroll_content_height = 0;
@@ -358,6 +364,7 @@ void linear::set_scrollable(bool enabled) {
         return;
 
     m_scrollable = enabled;
+    mark_layout_dirty();
     if (!enabled) {
         m_scroll_offset = 0;
         m_scroll_content_height = 0;
