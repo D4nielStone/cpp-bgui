@@ -5,6 +5,7 @@
 #include <locale>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <vector>
 
 // Converte UTF-8 -> UTF-32 e também devolve, para cada codepoint,
@@ -492,9 +493,9 @@ void bgui::text::calc_content_size(const layer&) {
 
     max_width = std::max(max_width, line_width);
     set_content_size({
-        static_cast<int>(max_width + get_line_number_gutter_width(
-            font, m_scale * bgui::get_global_scale())),
-        static_cast<int>(line_count * line_height)
+        static_cast<int>(std::ceil(max_width + get_line_number_gutter_width(
+            font, m_scale * bgui::get_global_scale()))),
+        static_cast<int>(std::ceil(line_count * line_height))
     });
 }
 void bgui::text::set_font(const std::string &path) {
@@ -553,9 +554,11 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     float line_x = 0.f;
     float max_line_width = 0.0f;
     int line_count = 1;
-    int total_width = get_text_width(m_buffer);
+    const float total_width = get_text_width(m_buffer);
     const float gutter_width = get_line_number_gutter_width(font, scale);
-    const int combined_width = total_width + static_cast<int>(gutter_width);
+    const int combined_width = static_cast<int>(
+        std::ceil(total_width + gutter_width)
+    );
     float text_origin_x = static_cast<float>(processed_x());
     switch (computed_style.layout.align.x) {
         case bgui::alignment::start:
@@ -780,7 +783,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     }
 
     max_line_width = std::max(max_line_width, line_x);
-    int total_height = line_count * (ascent + descent + line_gap);
+    const int total_height = static_cast<int>(
+        std::ceil(line_count * (ascent + descent + line_gap))
+    );
 
     set_content_size({combined_width, total_height});
 }

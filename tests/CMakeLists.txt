@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
     all_tests
     element_tests.cpp
+    menu_bar_tests.cpp
     inputbox_tests.cpp
     combo_box_tests.cpp
     tree_tests.cpp
@@ -39,6 +40,7 @@ target_link_libraries(
 )
 
 add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
+add_test(NAME MenuBarTests COMMAND all_tests --gtest_filter=MenuBarTest.*)
 add_test(NAME InputAreaTests COMMAND all_tests --gtest_filter=InputAreaTest.*)
 add_test(NAME ValueControlTests COMMAND all_tests --gtest_filter=ValueControlTest.*)
 add_test(NAME VectorFieldTests COMMAND all_tests --gtest_filter=VectorFieldTest.*)
