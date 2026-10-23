@@ -26,12 +26,13 @@ void layout::on_update() {
 void layout::calculate_content_sizes() {
     for (auto& [lay, elems] : m_elements) {
         for (auto& elem : elems) {
-            if (!elem || !elem->is_enabled() || !elem->is_flex())
+            if (!elem || !elem->is_enabled())
                 continue;
 
             if (auto* child_layout = elem->as_layout())
                 child_layout->calculate_content_sizes();
-            elem->calc_content_size(lay);
+            if (elem->is_flex())
+                elem->calc_content_size(lay);
         }
         calc_content_size(lay);
     }

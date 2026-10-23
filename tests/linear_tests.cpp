@@ -100,6 +100,29 @@ TEST(LinearTest, MeasuresNestedWrapContentBeforeSizingItsParent) {
     EXPECT_EQ(root.processed_size(), (vec2i{120, 35}));
 }
 
+TEST(LinearTest, MeasuresContentInsideNonFlexLayouts) {
+    layout root;
+    auto& non_flex_container = root.add<linear>(orientation::vertical);
+    non_flex_container.set_flex(false);
+    non_flex_container.style.layout.require_mode(
+        mode::wrap_content,
+        mode::wrap_content
+    );
+    non_flex_container.compute_style();
+
+    auto& content = non_flex_container.add<measured_element>(
+        0,
+        0,
+        mode::wrap_content,
+        mode::wrap_content
+    );
+    content.compute_style();
+
+    root.calculate_content_sizes();
+
+    EXPECT_EQ(non_flex_container.get_content_size(), (vec2i{120, 35}));
+}
+
 TEST(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {
 	linear root(orientation::vertical);
 	root.style.layout.require_size(200, 200);
