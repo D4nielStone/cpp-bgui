@@ -4,6 +4,7 @@
 #include "os/asset_manager.hpp"
 #include "os/font.hpp"
 #include "os/os.hpp"
+#include "os/style_manager.hpp"
 
 #include <cmath>
 #include <utility>
@@ -33,7 +34,6 @@ namespace {
                 std::move(test_font)
             );
         }
-        fonts.set_default_font("menu-test", resolution);
     }
 
     void click_at(const bgui::vec2i& position) {
@@ -118,7 +118,12 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
     context.m_last_mouse_left = false;
 
     auto& root = bgui::get_layout();
-    auto& menu_bar = root.add<bgui::menu_bar>(root);
+    auto& editor_root = root.add<bgui::linear>(bgui::orientation::vertical);
+    editor_root.style.layout.require_mode(
+        bgui::mode::match_parent,
+        bgui::mode::match_parent
+    );
+    auto& menu_bar = editor_root.add<bgui::menu_bar>(editor_root);
     menu_bar.style.layout.require_mode(
         bgui::mode::match_parent,
         bgui::mode::wrap_content
@@ -139,6 +144,22 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
     );
 
     bgui::on_update();
+    SCOPED_TRACE(
+        testing::Message()
+        << "button content=" << action_button.get_content_size().x << "x"
+        << action_button.get_content_size().y
+        << ", label content=" << action_button.get_label().get_content_size().x
+        << "x" << action_button.get_label().get_content_size().y
+        << ", button width mode="
+        << static_cast<int>(action_button.computed_style.layout.size_mode.x)
+        << ", label width mode="
+        << static_cast<int>(
+            action_button.get_label().computed_style.layout.size_mode.x)
+    );
+    EXPECT_GE(
+        action_button.get_content_size().x,
+        action_button.get_label().get_content_size().x
+    );
     EXPECT_GE(
         action_button.processed_width(),
         static_cast<int>(std::ceil(action_button.get_label().get_text_width(
@@ -156,6 +177,24 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
         action_button.processed_height(),
         action_button.get_label().get_content_size().y
     );
+    EXPECT_GE(
+        action_button.get_label().processed_x(),
+        action_button.processed_x()
+    );
+    EXPECT_GE(
+        action_button.get_label().processed_y(),
+        action_button.processed_y()
+    );
+    EXPECT_LE(
+        action_button.get_label().processed_x() +
+            action_button.get_label().processed_width(),
+        action_button.processed_x() + action_button.processed_width()
+    );
+    EXPECT_LE(
+        action_button.get_label().processed_y() +
+            action_button.get_label().processed_height(),
+        action_button.processed_y() + action_button.processed_height()
+    );
     click_at(center_of(action_button));
     EXPECT_EQ(callback_count, 1);
 
@@ -163,7 +202,7 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
     ASSERT_EQ(callback_count, 1);
 
     bgui::on_update();
-    auto& popup_elements = root.get_elements().at(bgui::layer::overlay);
+    auto& popup_elements = editor_root.get_elements().at(bgui::layer::overlay);
     ASSERT_EQ(popup_elements.size(), 1U);
     auto* popup = dynamic_cast<bgui::linear*>(popup_elements.front().get());
     ASSERT_NE(popup, nullptr);
@@ -188,9 +227,122 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
         option_button->processed_height(),
         option_button->get_label().get_content_size().y
     );
-    EXPECT_GE(popup->processed_width(), option_button->processed_width());
+    EXPECT_GE(option_button->get_label().processed_x(), option_button->processed_x());
+    EXPECT_GE(option_button->get_label().processed_y(), option_button->processed_y());
+    EXPECT_LE(
+        option_button->get_label().processed_x() +
+            option_button->get_label().processed_width(),
+        option_button->processed_x() + option_button->processed_width()
+    );
+    EXPECT_LE(
+        option_button->get_label().processed_y() +
+            option_button->get_label().processed_height(),
+        option_button->processed_y() + option_button->processed_height()
+    );
+    EXPECT_GE(
+        option_button->processed_x(),
+        popup->processed_x()
+    );
+    EXPECT_GE(
+        option_button->processed_y(),
+        popup->processed_y()
+    );
+    EXPECT_LE(
+        option_button->processed_x() + option_button->processed_width(),
+        popup->processed_x() + popup->processed_width()
+    );
+    EXPECT_LE(
+        option_button->processed_y() + option_button->processed_height(),
+        popup->processed_y() + popup->processed_height()
+    );
 
     click_at(center_of(*option_button));
     EXPECT_EQ(callback_count, 2);
     EXPECT_FALSE(popup->is_enabled());
+}
+
+TEST(MenuBarTest, FileMenuSizesEachButtonAndPopupAroundDefaultFontText) {
+    bgui::scoped_interface interface;
+    bgui::style_manager::get_instance().apply_theme(bgui::dark_theme());
+    auto& context = bgui::get_context();
+    context.m_size = {800, 600};
+    context.m_input_map.clear();
+    context.m_last_mouse_left = false;
+
+    auto& root = bgui::get_layout();
+    auto& editor_root = root.add<bgui::linear>(bgui::orientation::vertical);
+    editor_root.style.layout.require_mode(
+        bgui::mode::match_parent,
+        bgui::mode::match_parent
+    );
+    auto& menu_bar = editor_root.add<bgui::menu_bar>(editor_root);
+    menu_bar.style.layout.require_mode(
+        bgui::mode::match_parent,
+        bgui::mode::wrap_content
+    );
+    auto& file_button = menu_bar.add_menu(
+        "Files",
+        0.3f,
+        [](bgui::context_menu& menu) {
+            menu.add_button("Save Project");
+            menu.add_button("Load Project");
+            menu.add_separator();
+            menu.add_button("Save UI");
+            menu.add_button("Load UI");
+        }
+    );
+
+    bgui::on_update();
+    click_at(center_of(file_button));
+    bgui::on_update();
+
+    auto& overlays = editor_root.get_elements().at(bgui::layer::overlay);
+    ASSERT_EQ(overlays.size(), 1U);
+    auto* popup = dynamic_cast<bgui::linear*>(overlays.front().get());
+    ASSERT_NE(popup, nullptr);
+    ASSERT_TRUE(popup->is_enabled());
+
+    const auto& options = popup->get_elements().at(bgui::layer::base);
+    ASSERT_EQ(options.size(), 5U);
+    for (const auto& option : options) {
+        auto* button = dynamic_cast<bgui::button*>(option.get());
+        if (!button) {
+            EXPECT_EQ(option->type, "element");
+            EXPECT_GE(option->processed_x(), popup->processed_x());
+            EXPECT_LE(
+                option->processed_x() + option->processed_width(),
+                popup->processed_x() + popup->processed_width()
+            );
+            continue;
+        }
+        auto& label = button->get_label();
+        EXPECT_GE(
+            button->get_content_size().y,
+            label.get_content_size().y +
+                button->computed_style.layout.padding.y +
+                button->computed_style.layout.padding.w
+        );
+        EXPECT_GE(button->processed_width(), label.get_content_size().x);
+        EXPECT_GE(button->processed_height(), label.get_content_size().y);
+        EXPECT_GE(label.processed_x(), button->processed_x());
+        EXPECT_GE(label.processed_y(), button->processed_y());
+        EXPECT_LE(
+            label.processed_x() + label.processed_width(),
+            button->processed_x() + button->processed_width()
+        );
+        EXPECT_LE(
+            label.processed_y() + label.processed_height(),
+            button->processed_y() + button->processed_height()
+        );
+        EXPECT_GE(button->processed_x(), popup->processed_x());
+        EXPECT_GE(button->processed_y(), popup->processed_y());
+        EXPECT_LE(
+            button->processed_x() + button->processed_width(),
+            popup->processed_x() + popup->processed_width()
+        );
+        EXPECT_LE(
+            button->processed_y() + button->processed_height(),
+            popup->processed_y() + popup->processed_height()
+        );
+    }
 }

@@ -29,6 +29,8 @@ namespace bgui {
         bool contains_point(int x, int y) const;
 
     private:
+        void update_size();
+
         bgui::button& m_button;
         bgui::layout& m_parent;
         bgui::linear* m_menu = nullptr;

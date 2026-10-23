@@ -94,7 +94,7 @@ namespace bgui {
         if (!m_menu)
             return;
 
-        m_menu->cascade_style();
+        update_size();
         m_menu->set_position(x, y);
         m_menu->set_enable(true);
         m_menu->set_flex(false);
@@ -110,10 +110,10 @@ namespace bgui {
         if (!m_menu)
             return;
 
+        update_size();
         const bool open = !m_menu->is_enabled();
 
         if (open) {
-            m_menu->cascade_style();
             m_menu->set_position(
                 m_button.processed_x(),
                 m_button.processed_y() +
@@ -125,6 +125,12 @@ namespace bgui {
         } else {
             m_menu->set_enable(false);
         }
+    }
+
+    void context_menu::update_size() {
+        m_menu->cascade_style();
+        m_menu->calculate_content_sizes();
+        m_menu->process_required_size(m_parent.processed_size());
     }
     bool context_menu::is_open() const {
         return m_menu && m_menu->is_enabled();

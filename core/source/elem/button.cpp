@@ -13,6 +13,14 @@ bgui::button::button(const std::string& name,
     type = "button";
     receives_input(true);
     m_label->receives_input(false);
+    m_label->style.layout.require_mode(
+        bgui::mode::wrap_content,
+        bgui::mode::wrap_content
+    );
+    style.layout.require_mode(
+        bgui::mode::wrap_content,
+        bgui::mode::wrap_content
+    );
 }
 
 bgui::button::~button() {
