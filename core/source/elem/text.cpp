@@ -218,14 +218,14 @@ size_t bgui::text::get_cursor_position_at(float x, float y) const {
         return 0;
 
     const auto rows = build_cursor_rows(m_buffer, font, scale, m_wrap_enabled);
-    const float row_position = (y - processed_y()) / line_height;
+    const float row_position =
+        (y - processed_y() - m_draw_offset.y) / line_height;
     const size_t row_index = static_cast<size_t>(std::clamp(
         static_cast<int>(std::floor(row_position)), 0,
         static_cast<int>(rows.size() - 1)));
 
-    const int total_width = static_cast<int>(get_text_width(m_buffer));
     const float gutter_width = get_line_number_gutter_width(font, scale);
-    const int combined_width = total_width + static_cast<int>(gutter_width);
+    const int combined_width = get_content_size().x;
     float origin_x = static_cast<float>(processed_x());
     switch (computed_style.layout.align.x) {
         case bgui::alignment::center:
@@ -238,6 +238,7 @@ size_t bgui::text::get_cursor_position_at(float x, float y) const {
             origin_x += gutter_width;
             break;
     }
+    origin_x += m_draw_offset.x;
 
     const float local_x = x - origin_x;
     const auto& stops = rows[row_index];
@@ -456,6 +457,7 @@ void bgui::text::on_update() {
 }
 
 void bgui::text::calc_content_size(const layer&) {
+    m_draw_offset = {0.f, 0.f};
     auto& font_manager = bgui::font_manager::get_instance();
     if (!font_manager.has_font(computed_style.visual.font)) {
         set_content_size({0, 0});
@@ -472,12 +474,18 @@ void bgui::text::calc_content_size(const layer&) {
     const float wrap_width = 500.f * bgui::get_global_scale();
     float line_width = 0.f;
     float max_width = 0.f;
+    float line_y = font.ascent * scale;
+    float min_visual_x = 0.f;
+    float max_visual_x = 0.f;
+    float min_visual_y = 0.f;
+    float max_visual_y = 0.f;
     int line_count = 1;
 
     for (char32_t character : utf8_to_utf32(m_buffer)) {
         if (character == U'\n') {
             max_width = std::max(max_width, line_width);
             line_width = 0.f;
+            line_y += line_height;
             ++line_count;
             continue;
         }
@@ -486,16 +494,42 @@ void bgui::text::calc_content_size(const layer&) {
         if (m_wrap_enabled && line_width + advance > wrap_width && line_width > 0.f) {
             max_width = std::max(max_width, line_width);
             line_width = 0.f;
+            line_y += line_height;
             ++line_count;
+        }
+        const auto glyph = font.chs.find(character);
+        if (glyph != font.chs.end() &&
+            glyph->second.size[0] > 0 && glyph->second.size[1] > 0) {
+            const float glyph_left =
+                line_width + glyph->second.bearing[0] * scale;
+            const float glyph_top =
+                line_y - glyph->second.bearing[1] * scale;
+            min_visual_x = std::min(min_visual_x, glyph_left);
+            max_visual_x = std::max(
+                max_visual_x,
+                glyph_left + glyph->second.size[0] * scale
+            );
+            min_visual_y = std::min(min_visual_y, glyph_top);
+            max_visual_y = std::max(
+                max_visual_y,
+                glyph_top + glyph->second.size[1] * scale
+            );
         }
         line_width += advance;
     }
 
     max_width = std::max(max_width, line_width);
+    const float text_width =
+        std::max(max_width, max_visual_x) - min_visual_x;
+    const float text_height = std::max(
+        line_count * line_height,
+        max_visual_y
+    ) - min_visual_y;
+    m_draw_offset = {-min_visual_x, -min_visual_y};
     set_content_size({
-        static_cast<int>(std::ceil(max_width + get_line_number_gutter_width(
+        static_cast<int>(std::ceil(text_width + get_line_number_gutter_width(
             font, m_scale * bgui::get_global_scale()))),
-        static_cast<int>(std::ceil(line_count * line_height))
+        static_cast<int>(std::ceil(text_height))
     });
 }
 void bgui::text::set_font(const std::string &path) {
@@ -541,6 +575,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     auto& font_manager = bgui::font_manager::get_instance();
     if (!font_manager.has_font(computed_style.visual.font))
         return;
+    calc_content_size(layer::base);
     const auto& font = font_manager.get_font(computed_style.visual.font);
     const auto& chs = font.chs;
     if (chs.empty()) return;
@@ -552,13 +587,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
 
     float line_y = ascent;
     float line_x = 0.f;
-    float max_line_width = 0.0f;
     int line_count = 1;
-    const float total_width = get_text_width(m_buffer);
     const float gutter_width = get_line_number_gutter_width(font, scale);
-    const int combined_width = static_cast<int>(
-        std::ceil(total_width + gutter_width)
-    );
+    const int combined_width = get_content_size().x;
     float text_origin_x = static_cast<float>(processed_x());
     switch (computed_style.layout.align.x) {
         case bgui::alignment::start:
@@ -571,6 +602,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             text_origin_x += processed_width() - combined_width + gutter_width;
             break;
     }
+    text_origin_x += m_draw_offset.x;
 
     m_material.m_texture = font.atlas;
 
@@ -602,7 +634,8 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         const auto& ch = it->second;
 
         float xpos = text_origin_x + x + scale * ch.bearing[0];
-        float ypos = processed_y() + y - (ch.bearing[1] * scale - ch.size[1] * scale);
+        float ypos = processed_y() + m_draw_offset.y + y -
+            (ch.bearing[1] * scale - ch.size[1] * scale);
         set_properties();
         data->enqueue({
             m_material, 6,
@@ -667,7 +700,10 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         if (ca == U'\n') {
             if (byte_position >= m_selection_start && byte_position < m_selection_end) {
                 draw_selection(
-                    text_origin_x + line_x, processed_y() + line_y - ascent, space_advance);
+                    text_origin_x + line_x,
+                    processed_y() + m_draw_offset.y + line_y - ascent,
+                    space_advance
+                );
             }
             if (m_cursor_visible && byte_position == m_cursor_position) {
                 cursor_x = line_x;
@@ -675,7 +711,6 @@ void bgui::text::get_requires(bgui::draw_data* data) {
                 cursor_position_found = true;
             }
             // End of line
-            max_line_width = std::max(max_line_width, line_x);
             line_y += (ascent + descent + line_gap);
             line_x = 0.f;
             current_indent_width = 0.f;
@@ -689,14 +724,16 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         if (m_wrap_enabled &&
             line_x + advance_this_char > 500.f * bgui::get_global_scale() &&
             line_x > 0.f) {
-            max_line_width = std::max(max_line_width, line_x);
             line_y += (ascent + descent + line_gap);
             line_x = 0.f;
             line_count++;
         }
         if (byte_position >= m_selection_start && byte_position < m_selection_end) {
             draw_selection(
-                text_origin_x + line_x, processed_y() + line_y - ascent, advance_this_char);
+                text_origin_x + line_x,
+                processed_y() + m_draw_offset.y + line_y - ascent,
+                advance_this_char
+            );
         }
         if (m_cursor_visible && byte_position == m_cursor_position) {
             cursor_x = line_x;
@@ -707,7 +744,10 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         const auto color_override =
             index < m_highlight_colors.size() ? m_highlight_colors[index] : std::nullopt;
         line_indent_widths[index] = current_indent_width;
-        codepoint_positions[index] = bgui::vec2{text_origin_x + line_x, line_y};
+        codepoint_positions[index] = bgui::vec2{
+            text_origin_x + line_x,
+            line_y + m_draw_offset.y
+        };
         if (at_line_indent && (ca == U' ' || ca == U'\t'))
             current_indent_width += ca == U'\t' ? space_advance * 4.f : advance_this_char;
         else
@@ -782,10 +822,4 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         data->m_draw_list.set_color(previous_draw_color);
     }
 
-    max_line_width = std::max(max_line_width, line_x);
-    const int total_height = static_cast<int>(
-        std::ceil(line_count * (ascent + descent + line_gap))
-    );
-
-    set_content_size({combined_width, total_height});
 }

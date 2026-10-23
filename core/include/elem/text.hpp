@@ -16,6 +16,7 @@ namespace bgui {
     private:
         std::string m_buffer, m_last_font;
         float m_scale;
+        bgui::vec2 m_draw_offset{0.f};
         size_t m_cursor_position = 0;
         bool m_cursor_visible = false;
         size_t m_selection_start = 0;

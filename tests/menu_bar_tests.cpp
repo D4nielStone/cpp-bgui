@@ -19,9 +19,11 @@ namespace {
             test_font.line_gap = 0.2f;
             for (char32_t codepoint = 32; codepoint < 127; ++codepoint) {
                 bgui::character glyph;
-                glyph.size = {7, 14};
-                glyph.bearing = {0, 11};
-                glyph.advance = 7;
+                glyph.size = codepoint == U' '
+                    ? bgui::vec<2, unsigned int>{0, 0}
+                    : bgui::vec<2, unsigned int>{9, 16};
+                glyph.bearing = {0, 12};
+                glyph.advance = 6;
                 test_font.chs.emplace(codepoint, glyph);
             }
 
@@ -60,35 +62,56 @@ namespace {
 
 TEST(MenuBarTest, TextContentSizeRoundsUpFractionalFontMetrics) {
     use_menu_test_font();
-    bgui::text label("Menu", 0.33f);
+    bgui::text label("Save Project", 0.33f);
     label.style.visual.font = "menu-test";
     label.compute_style();
     label.calc_content_size(bgui::layer::base);
 
     EXPECT_GE(
         label.get_content_size().x,
-        static_cast<int>(std::ceil(label.get_text_width(label.get_buffer())))
+        25
     );
     EXPECT_GE(
         label.get_content_size().y,
-        static_cast<int>(std::ceil((10.5f + 3.25f + 0.2f) * 0.33f))
+        6
     );
 
+    label.process_required_size({100, 100});
+    label.set_final_rect(
+        0,
+        0,
+        label.get_content_size().x,
+        label.get_content_size().y
+    );
     bgui::draw_data draw_data;
     label.get_requires(&draw_data);
     EXPECT_GE(
         label.get_content_size().x,
-        static_cast<int>(std::ceil(label.get_text_width(label.get_buffer())))
+        25
     );
     EXPECT_GE(
         label.get_content_size().y,
-        static_cast<int>(std::ceil((10.5f + 3.25f + 0.2f) * 0.33f))
+        6
     );
+    while (!draw_data.m_quad_requires.empty()) {
+        const auto& glyph = draw_data.m_quad_requires.front();
+        EXPECT_GE(glyph.m_rect.x, 0.f);
+        EXPECT_LE(
+            glyph.m_rect.x + glyph.m_rect.z,
+            static_cast<float>(label.processed_width())
+        );
+        EXPECT_GE(glyph.m_rect.y + glyph.m_rect.w, 0.f);
+        EXPECT_LE(
+            glyph.m_rect.y,
+            static_cast<float>(label.processed_height())
+        );
+        draw_data.m_quad_requires.pop();
+    }
 }
 
 TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
-    use_menu_test_font();
     bgui::scoped_interface interface;
+    use_menu_test_font();
     auto& context = bgui::get_context();
     context.m_size = {800, 600};
     context.m_input_map.clear();
@@ -125,6 +148,14 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
         action_button.processed_height(),
         static_cast<int>(std::ceil((10.5f + 3.25f + 0.2f) * 0.33f))
     );
+    EXPECT_GE(
+        action_button.processed_width(),
+        action_button.get_label().get_content_size().x
+    );
+    EXPECT_GE(
+        action_button.processed_height(),
+        action_button.get_label().get_content_size().y
+    );
     click_at(center_of(action_button));
     EXPECT_EQ(callback_count, 1);
 
@@ -149,6 +180,15 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
         option_button->processed_height(),
         static_cast<int>(std::ceil((10.5f + 3.25f + 0.2f) * 0.3f))
     );
+    EXPECT_GE(
+        option_button->processed_width(),
+        option_button->get_label().get_content_size().x
+    );
+    EXPECT_GE(
+        option_button->processed_height(),
+        option_button->get_label().get_content_size().y
+    );
+    EXPECT_GE(popup->processed_width(), option_button->processed_width());
 
     click_at(center_of(*option_button));
     EXPECT_EQ(callback_count, 2);
