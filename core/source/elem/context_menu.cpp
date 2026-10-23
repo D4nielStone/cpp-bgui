@@ -94,6 +94,7 @@ namespace bgui {
         if (!m_menu)
             return;
 
+        m_menu->cascade_style();
         m_menu->set_position(x, y);
         m_menu->set_enable(true);
         m_menu->set_flex(false);
@@ -112,6 +113,7 @@ namespace bgui {
         const bool open = !m_menu->is_enabled();
 
         if (open) {
+            m_menu->cascade_style();
             m_menu->set_position(
                 m_button.processed_x(),
                 m_button.processed_y() +

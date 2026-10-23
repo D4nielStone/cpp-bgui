@@ -40,3 +40,24 @@ TEST(ComboBoxTest, RejectsEmptyOptionsAndInvalidSelectionIndices) {
     bgui::combo_box control({"First"});
     EXPECT_THROW(control.set_selected_index(1), std::out_of_range);
 }
+
+TEST(ContextMenuTest, ComputesPopupAndItemStylesWhenFirstOpened) {
+    bgui::scoped_interface interface;
+    auto& root = bgui::get_layout();
+    auto& anchor = root.add<bgui::button>("Menu", 0.3f, []() {});
+    bgui::context_menu menu(root, anchor);
+    menu.add_item("A long menu item", 0.3f, []() {});
+
+    root.cascade_style();
+    menu.toggle();
+
+    auto& popup = *root.get_elements()[bgui::layer::overlay].back();
+    ASSERT_NE(popup.as_layout(), nullptr);
+    EXPECT_EQ(popup.computed_style.layout.limit_min.x, 200);
+
+    auto& item = *popup.as_layout()->get_elements()[bgui::layer::base].front();
+    EXPECT_EQ(
+        item.computed_style.layout.size_mode.x,
+        bgui::mode::match_parent
+    );
+}

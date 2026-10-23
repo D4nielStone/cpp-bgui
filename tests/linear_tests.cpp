@@ -52,6 +52,22 @@ static void run_layout_frame(layout& root, const vec2i& available) {
 	element::end_geometry_frame();
 }
 
+TEST(LinearTest, WrapContentMeasuresMatchParentChildrenByIntrinsicSize) {
+    linear layout(orientation::vertical);
+    layout.style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+    layout.compute_style();
+
+    auto child = layout.add_scoped<mock_element>(
+        0, 24, mode::match_parent, mode::wrap_content);
+    child->set_content_size({320, 24});
+    child->compute_style();
+
+    layout.calc_content_size(layer::base);
+
+    EXPECT_EQ(layout.get_content_size().x, 320);
+    EXPECT_EQ(layout.get_content_size().y, 24);
+}
+
 TEST(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {
 	linear root(orientation::vertical);
 	root.style.layout.require_size(200, 200);

@@ -453,7 +453,9 @@ void linear::calc_content_size(const layer& lay) {
         const auto measure_axis = [&](const int axis) {
             const auto& layout = elem->computed_style.layout;
             if (layout.size_mode[axis] == mode::wrap_content ||
-                layout.size_mode[axis] == mode::stretch)
+                layout.size_mode[axis] == mode::stretch ||
+                (layout.size_mode[axis] == mode::match_parent &&
+                 computed_style.layout.size_mode[axis] == mode::wrap_content))
                 return content_size[axis];
             if (layout.size_mode[axis] == mode::pixel) {
                 return std::clamp(

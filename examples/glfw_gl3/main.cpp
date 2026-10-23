@@ -39,6 +39,7 @@ int main() {
         );
         auto& floating = workspace.add<bgui::window>(
             "Floating window",
+            0.3f,
             true
         );
         floating.set_position(770, 95);
@@ -221,8 +222,6 @@ int main() {
                 modal.set_enable(true);
             }
         );
-        image.set_size(110.f, 70.f);
-        image.set_size_mode(bgui::mode::pixel, bgui::mode::pixel);
 
         auto& config_menu = menu_bar.add_button("Layout");
         config_menu.add_item(
