@@ -23,6 +23,20 @@ void layout::on_update() {
     }
 }
 
+void layout::calculate_content_sizes() {
+    for (auto& [lay, elems] : m_elements) {
+        for (auto& elem : elems) {
+            if (!elem || !elem->is_enabled() || !elem->is_flex())
+                continue;
+
+            if (auto* child_layout = elem->as_layout())
+                child_layout->calculate_content_sizes();
+            elem->calc_content_size(lay);
+        }
+        calc_content_size(lay);
+    }
+}
+
 void layout::arrange() {
     if (!is_layout_dirty())
         return;

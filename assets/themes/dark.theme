@@ -142,6 +142,25 @@ visual.border.radius = 0
 layout.padding = 6, 2
 layout.mode = match_parent, wrap_content
 
+[class.context-menu-popup]
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.border.normal = 0.17, 0.17, 0.17, 1.0
+visual.border.radius = 3
+visual.border.size = 1
+visual.visible = true
+layout.mode = wrap_content, wrap_content
+layout.padding = 2
+
+[class.context-menu-option]
+visual.background.normal = 0.12, 0.12, 0.12, 1.0
+visual.background.hover = 0.20, 0.20, 0.20, 1.0
+visual.background.pressed = 0.25, 0.25, 0.25, 1.0
+visual.border.normal = 0.12, 0.12, 0.12, 1.0
+visual.border.size = 0
+visual.border.radius = 0
+layout.padding = 8, 3
+layout.mode = match_parent, wrap_content
+
 [type.inputarea]
 visual.background.normal = 0.13, 0.13, 0.13, 1.0
 visual.background.focused = 0.13, 0.13, 0.13, 1.0

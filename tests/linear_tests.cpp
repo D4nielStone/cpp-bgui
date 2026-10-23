@@ -40,10 +40,21 @@ public:
 	}
 };
 
+class measured_element : public mock_element {
+public:
+	using mock_element::mock_element;
+
+	void calc_content_size(const layer&) override {
+		set_content_size({120, 35});
+	}
+};
+
 static void run_layout_frame(layout& root, const vec2i& available) {
 	element::begin_geometry_frame();
 	root.prepare_geometry_frame();
 	root.on_update();
+	if (root.is_layout_dirty())
+		root.calculate_content_sizes();
 	element::begin_arranging();
 	root.process_required_size(available);
 	root.arrange();
@@ -66,6 +77,27 @@ TEST(LinearTest, WrapContentMeasuresMatchParentChildrenByIntrinsicSize) {
 
     EXPECT_EQ(layout.get_content_size().x, 320);
     EXPECT_EQ(layout.get_content_size().y, 24);
+}
+
+TEST(LinearTest, MeasuresNestedWrapContentBeforeSizingItsParent) {
+    linear root(orientation::vertical);
+    root.style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+    root.compute_style();
+
+    auto nested = root.add_scoped<linear>(orientation::vertical);
+    nested->style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+    nested->compute_style();
+
+    auto content = nested->add_scoped<measured_element>(
+        0, 0, mode::wrap_content, mode::wrap_content);
+    content->compute_style();
+
+    root.calculate_content_sizes();
+    root.process_required_size({500, 500});
+
+    EXPECT_EQ(nested->get_content_size(), (vec2i{120, 35}));
+    EXPECT_EQ(root.get_content_size(), (vec2i{120, 35}));
+    EXPECT_EQ(root.processed_size(), (vec2i{120, 35}));
 }
 
 TEST(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {

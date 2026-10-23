@@ -875,6 +875,9 @@ void bgui::on_update() {
         bgui::get_context().m_char_buffer.clear();
     }
 
+    if (s_main_layout->is_layout_dirty())
+        s_main_layout->calculate_content_sizes();
+
     // --- Arrange phase: compute the new geometry into arranged_rect
     bgui::element::begin_arranging();
     bgui::s_main_layout->process_required_size(w_size);

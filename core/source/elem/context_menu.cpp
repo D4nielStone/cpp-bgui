@@ -13,7 +13,7 @@ namespace bgui {
             bgui::layer::overlay
         >(bgui::orientation::vertical);
 
-        m_menu->add_class("combo-box-popup");
+        m_menu->add_class("context-menu-popup");
         m_menu->set_flex(false);
 
         m_menu->style.layout.require_mode(
@@ -39,7 +39,7 @@ namespace bgui {
             }
         );
 
-        button.add_class("combo-box-option");
+        button.add_class("context-menu-option");
         button.style.layout.require_mode(
             bgui::mode::match_parent,
             bgui::mode::wrap_content
@@ -67,7 +67,7 @@ namespace bgui {
                 close();
             }
         );
-        button.add_class("combo-box-option");
+        button.add_class("context-menu-option");
         button.style.layout.require_mode(
             bgui::mode::match_parent,
             bgui::mode::wrap_content
