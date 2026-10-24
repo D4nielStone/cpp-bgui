@@ -325,6 +325,8 @@ void element::get_cached_requires(bgui::draw_data* calls) {
         bgui::draw_data cached;
         cached.m_clip_rect = requested_clip;
         cached.m_draw_list.set_color(input_color);
+        if (calls->m_draw_list.has_clip_rect())
+            cached.m_draw_list.set_clip_rect(calls->m_draw_list.get_clip_rect());
         get_requires(&cached);
 
         m_cached_draw_requires.clear();

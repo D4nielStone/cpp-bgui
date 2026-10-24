@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <queue>
+#include <utility>
 #include <vector>
 #include <optional>
 
@@ -16,6 +17,8 @@ namespace bgui{
     class draw_list {
         bgui::vec4 m_color{1.f, 1.f, 1.f, 1.f};
         std::vector<draw_vertex> m_vertices;
+        bgui::vec4i m_clip_rect{0, 0, 0, 0};
+        bool m_clip_enabled{false};
 
         void add_triangle_with_color(const bgui::vec2& a, const bgui::vec2& b,
                                      const bgui::vec2& c, const bgui::vec4& color) {
@@ -25,6 +28,13 @@ namespace bgui{
         }
 
     public:
+        void set_clip_rect(const bgui::vec4i& rect) {
+            m_clip_rect = rect;
+            m_clip_enabled = true;
+        }
+        void clear_clip_rect() { m_clip_enabled = false; }
+        const bgui::vec4i& get_clip_rect() const { return m_clip_rect; }
+        bool has_clip_rect() const { return m_clip_enabled; }
         void set_color(const bgui::vec4& color) { m_color = color; }
         const bgui::vec4& get_color() const { return m_color; }
         const std::vector<draw_vertex>& get_vertices() const { return m_vertices; }
@@ -51,7 +61,54 @@ namespace bgui{
         }
 
         void add_triangle(const bgui::vec2& a, const bgui::vec2& b, const bgui::vec2& c) {
-            add_triangle_with_color(a, b, c, m_color);
+            if (!m_clip_enabled) {
+                add_triangle_with_color(a, b, c, m_color);
+                return;
+            }
+
+            std::vector<bgui::vec2> polygon{a, b, c};
+            const float left = static_cast<float>(m_clip_rect.x);
+            const float top = static_cast<float>(m_clip_rect.y);
+            const float right = static_cast<float>(m_clip_rect.x + m_clip_rect.z);
+            const float bottom = static_cast<float>(m_clip_rect.y + m_clip_rect.w);
+            for (int edge = 0; edge < 4 && !polygon.empty(); ++edge) {
+                auto inside = [edge, left, top, right, bottom](const bgui::vec2& point) {
+                    if (edge == 0) return point.x >= left;
+                    if (edge == 1) return point.x <= right;
+                    if (edge == 2) return point.y >= top;
+                    return point.y <= bottom;
+                };
+                auto intersection = [edge, left, top, right, bottom](const bgui::vec2& start, const bgui::vec2& end) {
+                    if (edge < 2) {
+                        const float x = edge == 0 ? left : right;
+                        const float dx = end.x - start.x;
+                        if (std::abs(dx) < 0.000001f) return bgui::vec2{x, start.y};
+                        const float t = (x - start.x) / dx;
+                        return bgui::vec2{x, start.y + (end.y - start.y) * t};
+                    }
+                    const float y = edge == 2 ? top : bottom;
+                    const float dy = end.y - start.y;
+                    if (std::abs(dy) < 0.000001f) return bgui::vec2{start.x, y};
+                    const float t = (y - start.y) / dy;
+                    return bgui::vec2{start.x + (end.x - start.x) * t, y};
+                };
+
+                std::vector<bgui::vec2> clipped;
+                auto previous = polygon.back();
+                bool previous_inside = inside(previous);
+                for (const auto& current : polygon) {
+                    const bool current_inside = inside(current);
+                    if (current_inside != previous_inside)
+                        clipped.push_back(intersection(previous, current));
+                    if (current_inside)
+                        clipped.push_back(current);
+                    previous = current;
+                    previous_inside = current_inside;
+                }
+                polygon = std::move(clipped);
+            }
+            for (std::size_t index = 1; index + 1 < polygon.size(); ++index)
+                add_triangle_with_color(polygon[0], polygon[index], polygon[index + 1], m_color);
         }
 
         void add_quad(const bgui::vec2& a, const bgui::vec2& b,

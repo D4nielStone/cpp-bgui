@@ -105,7 +105,14 @@ void layout::get_requires(bgui::draw_data* data) {
                  rect.y + rect.w <= clip.y || rect.y >= clip.y + clip.w))
                 continue;
             // get the requires from each element
+            const auto old_draw_clip = data->m_draw_list.get_clip_rect();
+            const bool had_draw_clip = data->m_draw_list.has_clip_rect();
+            data->m_draw_list.set_clip_rect(clip);
             elem->get_cached_requires(data);
+            if (had_draw_clip)
+                data->m_draw_list.set_clip_rect(old_draw_clip);
+            else
+                data->m_draw_list.clear_clip_rect();
             // adjust the rect to be modular to this layout
             if(data->m_quad_requires.empty()) continue;
         }
