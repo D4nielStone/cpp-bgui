@@ -43,6 +43,8 @@ char32_t find_icon_glyph(const std::string_view name) {
         {"play_circle", 0xf144},
         {"bug", 0xf188},
         {"trash", 0xf1f8},
+        {"windows", 0xf17a},
+        {"linux", 0xf17c},
         {"trash_alt", 0xf2ed},
         {"directory", 0xf07b},
         {"directory_open", 0xf07c},

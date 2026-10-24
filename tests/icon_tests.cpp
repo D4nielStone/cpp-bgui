@@ -15,3 +15,11 @@ TEST(IconTest, ResolvesNamedNerdFontGlyph) {
 TEST(IconTest, RejectsUnknownName) {
     EXPECT_THROW((bgui::icon{"not_an_icon"}), std::invalid_argument);
 }
+
+TEST(IconTest, ResolvesLinuxAndWindowsPlatformGlyphs) {
+    const bgui::icon linux{"linux"};
+    const bgui::icon windows{"windows"};
+
+    EXPECT_EQ(linux.get_buffer(), "\xef\x85\xbc");
+    EXPECT_EQ(windows.get_buffer(), "\xef\x85\xba");
+}

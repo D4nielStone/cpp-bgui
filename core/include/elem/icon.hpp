@@ -18,7 +18,7 @@ inline constexpr std::array nerd_font_icon_codepoints{
     char32_t{0xf0c5}, char32_t{0xf0c7}, char32_t{0xf0d7}, char32_t{0xf0da},
     char32_t{0xf0e7}, char32_t{0xf0eb}, char32_t{0xf0f6}, char32_t{0xf0f7},
     char32_t{0xf111}, char32_t{0xf121}, char32_t{0xf144}, char32_t{0xf188},
-    char32_t{0xf1b2}, char32_t{0xf1f8},
+    char32_t{0xf17a}, char32_t{0xf17c}, char32_t{0xf1b2}, char32_t{0xf1f8},
     char32_t{0xf2ed}, char32_t{0xf65e}
 };
 
