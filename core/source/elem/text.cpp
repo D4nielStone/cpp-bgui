@@ -20,18 +20,37 @@ std::u32string utf8_to_utf32(const std::string& str, std::vector<size_t>* byte_l
         char32_t ch = 0;
         size_t len = 1;
 
-        if ((c & 0x80) == 0) {
+        if (c < 0x80) {
             ch = c;
-            len = 1;
-        } else if ((c & 0xE0) == 0xC0) {
-            ch = ((c & 0x1F) << 6) | (str[i + 1] & 0x3F);
-            len = 2;
-        } else if ((c & 0xF0) == 0xE0) {
-            ch = ((c & 0x0F) << 12) | ((str[i + 1] & 0x3F) << 6) | (str[i + 2] & 0x3F);
-            len = 3;
-        } else if ((c & 0xF8) == 0xF0) {
-            ch = ((c & 0x07) << 18) | ((str[i + 1] & 0x3F) << 12) | ((str[i + 2] & 0x3F) << 6) | (str[i + 3] & 0x3F);
-            len = 4;
+        } else {
+            // Invalid bytes consume one byte so cursor offsets always stay in bounds.
+            ch = U'\uFFFD';
+            size_t expected = 0;
+            char32_t minimum = 0;
+            char32_t decoded = 0;
+            if (c >= 0xC2 && c <= 0xDF) {
+                expected = 2; minimum = 0x80; decoded = c & 0x1F;
+            } else if (c >= 0xE0 && c <= 0xEF) {
+                expected = 3; minimum = 0x800; decoded = c & 0x0F;
+            } else if (c >= 0xF0 && c <= 0xF4) {
+                expected = 4; minimum = 0x10000; decoded = c & 0x07;
+            }
+            if (expected != 0 && expected <= str.size() - i) {
+                bool valid = true;
+                for (size_t offset = 1; offset < expected; ++offset) {
+                    const auto next = static_cast<unsigned char>(str[i + offset]);
+                    if ((next & 0xC0) != 0x80) {
+                        valid = false;
+                        break;
+                    }
+                    decoded = (decoded << 6) | (next & 0x3F);
+                }
+                if (valid && decoded >= minimum && decoded <= 0x10FFFF &&
+                    !(decoded >= 0xD800 && decoded <= 0xDFFF)) {
+                    ch = decoded;
+                    len = expected;
+                }
+            }
         }
 
         result.push_back(ch);

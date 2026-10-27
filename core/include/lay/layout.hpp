@@ -105,8 +105,6 @@ public:
 
                 elem->mark_style_dirty();
 
-                if (auto* child = elem->as_layout())
-                    child->mark_children_style_dirty();
             }
         }
     }

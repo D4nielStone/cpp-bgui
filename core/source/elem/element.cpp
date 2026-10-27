@@ -319,8 +319,12 @@ void element::get_cached_requires(bgui::draw_data* calls) {
 
     const auto requested_clip = calls->m_clip_rect;
     const auto input_color = calls->m_draw_list.get_color();
+    const bool draw_clip_enabled = calls->m_draw_list.has_clip_rect();
+    const auto draw_clip = calls->m_draw_list.get_clip_rect();
     if (m_render_dirty || !m_render_cache_valid ||
         m_render_cache_clip != requested_clip ||
+        m_render_cache_draw_clip_enabled != draw_clip_enabled ||
+        (draw_clip_enabled && m_render_cache_draw_clip != draw_clip) ||
         m_render_cache_input_color != input_color) {
         bgui::draw_data cached;
         cached.m_clip_rect = requested_clip;
@@ -337,6 +341,8 @@ void element::get_cached_requires(bgui::draw_data* calls) {
         }
         m_cached_draw_vertices = cached.m_draw_list.get_vertices();
         m_render_cache_clip = requested_clip;
+        m_render_cache_draw_clip_enabled = draw_clip_enabled;
+        m_render_cache_draw_clip = draw_clip;
         m_render_cache_input_color = input_color;
         m_render_cache_output_color = cached.m_draw_list.get_color();
         m_render_cache_valid = true;

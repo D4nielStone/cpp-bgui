@@ -29,6 +29,8 @@ namespace bgui {
         bool m_render_dirty = true;
         bool m_render_cache_valid = false;
         vec4i m_render_cache_clip{0, 0, 0, 0};
+        bool m_render_cache_draw_clip_enabled = false;
+        vec4i m_render_cache_draw_clip{0, 0, 0, 0};
         vec4 m_render_cache_input_color{1.f, 1.f, 1.f, 1.f};
         vec4 m_render_cache_output_color{1.f, 1.f, 1.f, 1.f};
         std::vector<draw_require> m_cached_draw_requires;
