@@ -1067,6 +1067,9 @@ namespace bgui {
             for (std::size_t index = 0; index < group.windows.size(); ++index) {
                 auto* tab = group.tabs[index];
                 auto* tab_window = group.windows[index];
+                const auto& title = tab_window->get_title().get_buffer();
+                if (tab->get_label().get_buffer() != title)
+                    tab->get_label().set_buffer(title);
                 const auto drag = tab->is_drag();
                 if (drag.x != 0 || drag.y != 0) {
                     group.active = tab_window;

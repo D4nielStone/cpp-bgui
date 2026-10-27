@@ -277,8 +277,14 @@ void element::compute_style() {
     if (layout_style_changed(previous_style.layout, computed_style.layout) ||
         visual_style_changed(previous_style.visual, computed_style.visual)) {
         mark_layout_dirty();
-        if (auto* lay = as_layout())
-            lay->mark_children_style_dirty();
+        if (auto* lay = as_layout()) {
+            // A scale/theme invalidation already marked the whole subtree.
+            // Only propagate inheritance changes to children still clean.
+            for (auto& [layer, children] : lay->get_elements())
+                for (auto& child : children)
+                    if (child && child->is_enabled() && !child->is_style_dirty())
+                        child->mark_style_dirty();
+        }
     }
 }
 void element::set_properties() {

@@ -62,6 +62,7 @@ namespace bgui {
         window& add_window(const std::string& title, dock_area area = dock_area::center, float scale = 1.0f);
         bool remove_window(window* value);
         void focus_window(window* value);
+        void merge_window_as_tab(window& anchor, window& added);
         configuration get_configuration();
         void apply_configuration(const configuration& value);
         void on_update() override;
@@ -121,7 +122,6 @@ namespace bgui {
         tab_group& ensure_tab_group(window& anchor);
         void ensure_tab_controls(tab_group& group);
         void split_window(window& anchor, window& added, bool horizontal, bool after);
-        void merge_window_as_tab(window& anchor, window& added);
         void sync_windows();
         void update_drop_targets();
         void sync_panel_splitters(dock_area area, panel& value, std::size_t count);

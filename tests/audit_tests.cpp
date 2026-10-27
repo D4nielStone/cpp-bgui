@@ -101,3 +101,54 @@ TEST(AuditTest, Utf8RejectsInvalidSequencesWithoutReadingPastInput) {
     EXPECT_EQ(utf8_to_utf32("A\xC3\xA7\xF0\x9F\x98\x80", &lengths), U"Aç😀");
     EXPECT_EQ(lengths, (std::vector<size_t>{1, 2, 4}));
 }
+
+TEST(AuditTest, ScaleChangeDuringUpdateReflowsInTheSameFrame) {
+    bgui::scoped_interface interface;
+    bgui::set_global_scale(1.f);
+    auto& element = bgui::get_layout().add<bgui::element>();
+    element.style.layout.require_size(100.f, 40.f);
+    bgui::on_update();
+    bgui::get_draw_data()->m_quad_requires = {};
+    bgui::get_draw_data()->m_draw_list.clear();
+    class zoom_on_update : public bgui::element {
+        void on_update() override { bgui::set_global_scale(1.1f); }
+    };
+    bgui::get_layout().add<zoom_on_update>();
+    bgui::on_update();
+    EXPECT_EQ(element.processed_width(), 110);
+    EXPECT_EQ(element.processed_height(), 44);
+    bgui::set_global_scale(1.f);
+}
+
+TEST(AuditTest, ScaleCascadeDoesNotRepeatedlyInvalidateDirtyDescendants) {
+    bgui::scoped_interface interface;
+    bgui::set_global_scale(1.f);
+    auto* parent = &bgui::get_layout();
+    std::vector<style_probe*> nodes;
+    for (int depth = 0; depth < 16; ++depth) {
+        auto& node = parent->add<style_probe>();
+        node.style.layout.require_size(100.f, 40.f);
+        nodes.push_back(&node);
+        parent = &node;
+    }
+    bgui::cascade_style();
+    bgui::set_global_scale(1.1f);
+    for (auto* node : nodes) node->visits = 0;
+    bgui::cascade_style();
+    for (auto* node : nodes) {
+        EXPECT_LE(node->visits, 3);
+        EXPECT_FALSE(node->is_style_dirty());
+        EXPECT_FLOAT_EQ(node->computed_style.layout.size.x, 110.f);
+    }
+    bgui::set_global_scale(1.f);
+}
+
+TEST(AuditTest, UnchangedScaleDoesNotInvalidateStyles) {
+    bgui::scoped_interface interface;
+    bgui::set_global_scale(2.f);
+    bgui::cascade_style();
+    ASSERT_FALSE(bgui::get_layout().is_style_dirty());
+    bgui::set_global_scale(2.f);
+    EXPECT_FALSE(bgui::get_layout().is_style_dirty());
+    bgui::set_global_scale(1.f);
+}

@@ -122,7 +122,8 @@ namespace {
 }
 
 bgui::inputbox::inputbox(const std::string& buffer, const std::string& placeholder, const float scale, std::function<void(const std::string)> action, bgui::input_mode mode) :
-    linear(), m_placeholder(placeholder), m_input_buffer(buffer),
+    linear(mode == input_mode::multiline ? orientation::vertical : orientation::horizontal),
+    m_placeholder(placeholder), m_input_buffer(buffer),
     m_cursor_position(buffer.size()), m_selection_anchor(std::numeric_limits<size_t>::max()),
     m_mode(mode), m_focused(false),
     m_backspace_down(false), m_delete_down(false), m_enter_down(false),

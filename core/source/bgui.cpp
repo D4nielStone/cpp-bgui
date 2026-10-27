@@ -566,6 +566,10 @@ static void set_keyboard_focus(bgui::element* element) {
     }
 }
 
+void bgui::focus_keyboard(element& value) {
+    set_keyboard_focus(&value);
+}
+
 void bgui::clear_keyboard_focus() {
     set_keyboard_focus(nullptr);
 }
@@ -870,9 +874,12 @@ void bgui::on_update() {
     // Resolve mouse focus before updating keyboard-driven elements.
     get_context().m_actual_cursor = cursor::arrow;
     s_mouse_target = nullptr;
+    const float scale_before_update = s_global_scale;
     update_inputs(*bgui::s_main_layout);
     clear_stale_mouse_hover(*bgui::s_main_layout, s_mouse_target);
     bgui::s_main_layout->on_update();
+    if (s_global_scale != scale_before_update)
+        cascade_style();
     bgui::get_context().m_scroll_delta_y = 0.f;
     bgui::get_context().m_scroll_delta_x = 0.f;
 
@@ -923,6 +930,8 @@ void bgui::set_global_scale(float scale) {
     if (scale <= 0.f) {
         throw std::invalid_argument("[BGUI] Global scale must be greater than zero.");
     }
+    if (s_global_scale == scale)
+        return;
     s_global_scale = scale;
     if (s_main_layout) {
         s_main_layout->mark_style_dirty();
