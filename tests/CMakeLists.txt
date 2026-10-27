@@ -56,6 +56,12 @@ add_test(NAME DrawTests COMMAND all_tests --gtest_filter=DrawDataTest.*:DrawList
 add_test(NAME ProfilingTests COMMAND all_tests --gtest_filter=ProfilingTest.*)
 add_test(NAME IconTests COMMAND all_tests --gtest_filter=IconTest.*)
 
+if(BGUI_USE_OPENGL AND BGUI_USE_GLFW)
+  add_executable(gl3_tests gl3_tests.cpp)
+  target_link_libraries(gl3_tests PRIVATE bgui GTest::gtest_main)
+  add_test(NAME GL3Tests COMMAND gl3_tests)
+endif()
+
 if(WIN32)
   # On Windows, do not link pthreads
   set(THREADS_PREFER_PTHREAD_FLAG OFF)
