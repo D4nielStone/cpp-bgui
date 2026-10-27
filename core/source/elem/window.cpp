@@ -152,7 +152,13 @@ void bgui::window::on_update() {
     m_title->set_drag({0, 0});
     linear::on_update();
 
-    const int header_height = m_header->processed_height();
+    // The icon occupies the header's content box. Including padding here
+    // feeds it back into wrap_content and grows the header every frame.
+    const auto& padding = m_header->computed_style.layout.padding;
+    const auto& margin = m_icon->computed_style.layout.margin;
+    const int header_height = std::max(
+        0, m_header->processed_height() - padding.y - padding.w -
+            margin.y - margin.w);
     const float scale = bgui::get_global_scale();
 
     if (header_height > 0 &&

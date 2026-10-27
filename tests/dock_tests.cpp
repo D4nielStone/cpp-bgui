@@ -907,3 +907,62 @@ TEST(DockTest, ConfigurationCanSaveAndRestoreWindowAndDockState) {
     EXPECT_NEAR(dock.get_configuration().left_ratio, 0.31f, 0.001f);
     std::filesystem::remove(config_path);
 }
+
+// Uses the editor header padding and the mutation/arrange/commit frame cycle.
+TEST(DockTest, UndockedContentFollowsWindowMovement) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& panel = dock.add_window("Panel", bgui::dock_area::center);
+    for (auto& [layer, elements] : panel.get_elements()) {
+        for (auto& element : elements) {
+            if (element->has_class("window-header"))
+                element->style.layout.padding = bgui::vec4i{0, 4, 0, 4};
+        }
+    }
+    auto& row = panel.add<bgui::linear>(bgui::orientation::horizontal);
+    row.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::wrap_content);
+    auto& button = row.add<bgui::button>("Content", 0.3f, [] {});
+    const auto frame = [&] {
+        dock.cascade_style();
+        bgui::element::begin_geometry_frame();
+        dock.prepare_geometry_frame();
+        dock.on_update();
+        dock.calculate_content_sizes();
+        bgui::element::begin_arranging();
+        dock.arrange();
+        bgui::element::end_arranging();
+        dock.commit_geometry();
+        bgui::element::end_geometry_frame();
+    };
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    dock.cascade_style();
+    frame();
+    auto& context = bgui::get_context();
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    panel.get_title().set_drag({100, 100});
+    panel.on_update();
+    dock.cascade_style();
+    frame();
+    ASSERT_TRUE(panel.is_floating());
+    for (int step = 0; step < 5; ++step) {
+        dock.cascade_style();
+        frame();
+    }
+    const auto before = button.processed_rect();
+    const auto window_before = panel.processed_rect();
+    panel.get_title().set_drag({80, 60});
+    frame();
+    EXPECT_EQ(panel.processed_x(), window_before.x + 80);
+    EXPECT_EQ(button.processed_x(), before.x + 80);
+    EXPECT_EQ(button.processed_y(), before.y + 60);
+    EXPECT_LE(button.processed_y() + button.processed_height(),
+              panel.processed_y() + panel.processed_height());
+    const auto settled = button.processed_rect();
+    for (int step = 0; step < 5; ++step)
+        frame();
+    EXPECT_EQ(button.processed_y(), settled.y);
+    EXPECT_EQ(button.processed_height(), settled.w);
+    context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
+}
