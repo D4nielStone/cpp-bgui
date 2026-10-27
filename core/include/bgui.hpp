@@ -83,6 +83,7 @@ namespace bgui {
     void enable_profiling(bool enabled = true);
     element* get_mouse_target();
     void clear_keyboard_focus();
+    element* get_keyboard_focus();
     void set_global_scale(float scale);
     float get_global_scale();
 };

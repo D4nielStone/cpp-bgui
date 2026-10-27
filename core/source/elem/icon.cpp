@@ -25,6 +25,7 @@ char32_t find_icon_glyph(const std::string_view name) {
         {"warning", 0xf071},
         {"chevron_down", 0xf078},
         {"chevron_left", 0xf079},
+        {"chevron_right", 0xf054},
         {"folder", 0xf07b},
         {"folder_open", 0xf07c},
         {"key", 0xf084},

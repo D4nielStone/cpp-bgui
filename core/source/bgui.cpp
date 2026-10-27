@@ -570,6 +570,10 @@ void bgui::clear_keyboard_focus() {
     set_keyboard_focus(nullptr);
 }
 
+bgui::element* bgui::get_keyboard_focus() {
+    return s_keyboard_focused;
+}
+
 void bgui::cancel_interactions(bgui::element* subtree) noexcept {
     if (!subtree)
         return;
@@ -870,6 +874,7 @@ void bgui::on_update() {
     clear_stale_mouse_hover(*bgui::s_main_layout, s_mouse_target);
     bgui::s_main_layout->on_update();
     bgui::get_context().m_scroll_delta_y = 0.f;
+    bgui::get_context().m_scroll_delta_x = 0.f;
 
     if (!s_keyboard_focused) {
         bgui::get_context().m_char_buffer.clear();

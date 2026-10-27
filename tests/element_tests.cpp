@@ -11,6 +11,21 @@
 
 using namespace bgui;
 
+#ifdef BGUI_USE_GLFW
+TEST(InteractionTest, AccumulatesBothTrackpadScrollAxesUntilTheFrameIsProcessed) {
+    bgui::scoped_interface interface;
+    auto& io = bgui::get_context();
+    io.m_scroll_delta_x = io.m_scroll_delta_y = 0.f;
+    bgui::glfw_scroll_callback(nullptr, 0.25, 0.5);
+    bgui::glfw_scroll_callback(nullptr, 0.5, -0.25);
+    EXPECT_FLOAT_EQ(io.m_scroll_delta_x, 0.75f);
+    EXPECT_FLOAT_EQ(io.m_scroll_delta_y, 0.25f);
+    bgui::on_update();
+    EXPECT_FLOAT_EQ(io.m_scroll_delta_x, 0.f);
+    EXPECT_FLOAT_EQ(io.m_scroll_delta_y, 0.f);
+}
+#endif
+
 namespace {
 const vec2i available_size = {400, 300};
 

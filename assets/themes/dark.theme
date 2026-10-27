@@ -87,6 +87,18 @@ layout.padding = 2, 0
 visual.background.normal = 0.0
 visual.border.normal = 0.0
 
+[class.tree-disclosure]
+visual.background.normal = 0.0
+visual.background.hover = 0.0
+visual.background.pressed = 0.0
+visual.background.focused = 0.0
+visual.border.normal = 0.0
+visual.border.hover = 0.0
+visual.border.pressed = 0.0
+visual.border.focused = 0.0
+visual.border.size = 0
+visual.border.radius = 0
+
 =========================
 BUTTON
 =========================
