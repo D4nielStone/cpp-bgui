@@ -23,6 +23,7 @@ namespace bgui {
 
     void image::set_texture(const texture& texture) {
         m_texture = texture;
+        m_flip_vertical = texture.m_external;
         m_material.m_texture = m_texture;
         mark_style_dirty();
     }

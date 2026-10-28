@@ -966,3 +966,79 @@ TEST(DockTest, UndockedContentFollowsWindowMovement) {
     EXPECT_EQ(button.processed_height(), settled.w);
     context.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::none;
 }
+
+TEST(DockTest, TrafficLightsFitInsideControlsAtEveryScale) {
+    bgui::scoped_interface interface;
+    for (float scale : {1.f, 1.5f, 2.f}) {
+        bgui::set_global_scale(scale);
+        auto& panel = bgui::get_layout().add<bgui::window>("Controls", 0.3f, true);
+        panel.style.layout.require_size(400.f, 240.f);
+        bgui::get_context().m_size = {1400, 900};
+        for (int frame = 0; frame < 4; ++frame) bgui::on_update();
+        auto* controls = panel.get_title().get_parent()->as_layout();
+        for (auto& [layer, children] : controls->get_elements()) {
+            for (auto& child : children) {
+                if (!child->has_class("window-controls")) continue;
+                int count = 0;
+                for (auto& [button_layer, buttons] : child->as_layout()->get_elements()) {
+                    for (auto& button : buttons) {
+                        ++count;
+                        EXPECT_GE(button->processed_width(), static_cast<int>(12 * scale));
+                        EXPECT_LE(button->processed_x() + button->processed_width(),
+                                  child->processed_x() + child->processed_width());
+                    }
+                }
+                EXPECT_EQ(count, 3);
+            }
+        }
+    }
+    bgui::set_global_scale(1.f);
+}
+
+TEST(DockTest, FloatingWindowDragAndCornerResizePublishExactGeometryInSameFrame) {
+    for (float scale : {1.f, 1.5f, 2.f}) {
+    bgui::scoped_interface interface;
+    bgui::set_global_scale(scale);
+    auto& io = bgui::get_context();
+    io.m_size = {1200, 900};
+    io.m_input_map.clear();
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& panel = dock.add<bgui::window>("Geometry", 0.3f, true);
+    panel.style.layout.require_size(400.f, 300.f);
+    panel.set_position(100, 100);
+    auto& row = panel.add<bgui::linear>();
+    row.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
+    auto& nested = row.add<bgui::linear>();
+    nested.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
+    auto& button = nested.add<bgui::button>("Content", 0.3f, [] {});
+    for (int frame = 0; frame < 5; ++frame) bgui::on_update();
+    for (int step = 0; step < 5; ++step) {
+        const auto before = panel.processed_rect();
+        const auto content = button.get_label().processed_rect();
+        panel.get_title().set_drag({13, 17});
+        bgui::on_update();
+        EXPECT_EQ(panel.processed_x(), before.x + 13);
+        EXPECT_EQ(panel.processed_y(), before.y + 17);
+        EXPECT_EQ(button.get_label().processed_x(), content.x + 13);
+        EXPECT_EQ(button.get_label().processed_y(), content.y + 17);
+    }
+    bgui::element* corner = nullptr;
+    for (auto& [layer, children] : panel.get_elements())
+        for (auto& child : children)
+            if (child->has_class("resize-left") && child->has_class("resize-top"))
+                corner = child.get();
+    ASSERT_NE(corner, nullptr);
+    for (int step = 0; step < 5; ++step) {
+        const auto before = panel.processed_rect();
+        corner->set_drag({7, 9});
+        bgui::on_update();
+        EXPECT_EQ(panel.processed_x(), before.x + 7);
+        EXPECT_EQ(panel.processed_y(), before.y + 9);
+        EXPECT_EQ(panel.processed_width(), before.z - 7);
+        EXPECT_EQ(panel.processed_height(), before.w - 9);
+        EXPECT_EQ(panel.processed_x() + panel.processed_width(), before.x + before.z);
+        EXPECT_EQ(panel.processed_y() + panel.processed_height(), before.y + before.w);
+    }
+    }
+    bgui::set_global_scale(1.f);
+}

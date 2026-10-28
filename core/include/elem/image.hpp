@@ -63,7 +63,7 @@ namespace bgui {
     private:
         std::function<void(const std::string&)> m_on_click;
         texture m_texture{};
-        bool m_flip_vertical{true};
+        bool m_flip_vertical{false};
         vec2 m_uv_min{0.f, 0.f};
         vec2 m_uv_max{1.f, 1.f};
     };

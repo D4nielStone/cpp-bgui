@@ -82,6 +82,8 @@ namespace bgui {
                         required_size.size = initial_size;
                     }
 
+                    int next_x = owner_x;
+                    int next_y = owner_y;
                     if (m_horizontal != 0) {
                         const int new_width = std::clamp(
                             owner_width + m_horizontal * delta.x,
@@ -89,7 +91,7 @@ namespace bgui {
                         (*required_size.size_mode)[0] = mode::pixel;
                         (*required_size.size)[0] = new_width / scale;
                         if (m_horizontal < 0 && !m_owner->is_flex())
-                            m_owner->set_position(owner_x + owner_width - new_width, owner_y);
+                            next_x = owner_x + owner_width - new_width;
                     }
                     if (m_vertical != 0) {
                         const int new_height = std::clamp(
@@ -98,9 +100,14 @@ namespace bgui {
                         (*required_size.size_mode)[1] = mode::pixel;
                         (*required_size.size)[1] = new_height / scale;
                         if (m_vertical < 0 && !m_owner->is_flex())
-                            m_owner->set_position(m_owner->processed_x(), owner_y + owner_height - new_height);
+                            next_y = owner_y + owner_height - new_height;
                     }
+                    if (!m_owner->is_flex())
+                        m_owner->set_position(next_x, next_y);
                     m_owner->mark_style_dirty();
+                    // Resize occurs during mutation, after the frame style cascade.
+                    // Resolve the requested size before this frame is arranged.
+                    m_owner->compute_style();
                     set_drag({0, 0});
                 }
             }

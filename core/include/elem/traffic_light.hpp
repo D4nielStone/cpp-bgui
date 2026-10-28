@@ -21,6 +21,7 @@ public:
           m_type(type) {
         receives_input(true);
         style.layout.require_size(12.f, 12.f);
+        style.layout.require_mode(mode::pixel, mode::pixel);
     }
 
     void get_requires(draw_data* calls) override;
