@@ -614,8 +614,15 @@ namespace bgui {
     }
 
     void dock::focus_window(window* value) {
-        if (value && value->get_parent() == this)
-            m_focused_window = value;
+        if (!value || value->get_parent() != this) return;
+        m_focused_window = value;
+        for (auto& group : m_tab_groups) {
+            if (std::find(group.windows.begin(), group.windows.end(), value) == group.windows.end())
+                continue;
+            group.active = value;
+            for (auto* member : group.windows) member->set_enable(member == value);
+        }
+        mark_layout_dirty();
     }
 
     dock::configuration dock::get_configuration() {
