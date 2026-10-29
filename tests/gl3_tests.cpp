@@ -3,6 +3,8 @@
 #include <bgui.hpp>
 #include <GLFW/glfw3.h>
 #include <array>
+#include <filesystem>
+#include "os/asset_manager.hpp"
 
 namespace {
 class GL3Test : public testing::Test {
@@ -72,4 +74,20 @@ TEST_F(GL3Test, ImageRoundsCornersAndPreservesTextureAndBorder) {
     EXPECT_EQ(pixel(32, 32)[0], 255); // Texture remains visible in the center.
     EXPECT_EQ(pixel(32, 8)[1], 255); // Border follows the image contour.
     EXPECT_EQ(glGetError(), GL_NO_ERROR);
+    // Exercise another decoded image in the same GL context as the UI renderer.
+    {
+    glClear(GL_COLOR_BUFFER_BIT);
+    const auto path = std::filesystem::path(__FILE__).parent_path() / "assets/rgb.jpg";
+    bgui::image image(bgui::asset_manager::get_instance().load_texture(path.string()));
+    image.compute_style();
+    image.set_final_rect(8, 8, 48, 48);
+    bgui::draw_data data;
+    data.m_clip_rect = {0, 0, 64, 64};
+    image.get_requires(&data);
+    bgui::gl3_render(&data);
+    EXPECT_GT(pixel(32, 32)[0], 240);
+    EXPECT_LT(pixel(32, 32)[1], 10);
+    EXPECT_LT(pixel(32, 32)[2], 10);
+    EXPECT_EQ(glGetError(), GL_NO_ERROR);
+}
 }

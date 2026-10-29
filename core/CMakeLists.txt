@@ -26,7 +26,8 @@ if(WIN32)
     # WIC provides native image decoding on Windows.
     target_link_libraries(bgui_core PRIVATE windowscodecs ole32)
 else()
-    # libpng provides PNG decoding on Linux and other non-Windows platforms.
+    # PNG and JPEG decoding on Linux and other non-Windows platforms.
     find_package(PNG REQUIRED)
-    target_link_libraries(bgui_core PRIVATE PNG::PNG)
+    find_package(JPEG REQUIRED)
+    target_link_libraries(bgui_core PRIVATE PNG::PNG JPEG::JPEG)
 endif()

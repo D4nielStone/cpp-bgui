@@ -3,6 +3,9 @@
 #include <array>
 #include <filesystem>
 #include <stdexcept>
+#include <fstream>
+#include <memory>
+#include <limits>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -10,6 +13,9 @@
 #include <wrl/client.h>
 #else
 #include <png.h>
+#include <cstdio>
+#include <csetjmp>
+#include <jpeglib.h>
 #endif
 
 namespace {
@@ -101,7 +107,84 @@ namespace {
         return loaded;
     }
 #else
+    struct jpeg_failure {
+        jpeg_error_mgr manager{};
+        std::jmp_buf jump;
+        char message[JMSG_LENGTH_MAX]{};
+    };
+
+    void jpeg_error(j_common_ptr decoder) {
+        auto* failure = reinterpret_cast<jpeg_failure*>(decoder->err);
+        decoder->err->format_message(decoder, failure->message);
+        std::longjmp(failure->jump, 1);
+    }
+
+    // All mutable resources live on the heap before setjmp. A libjpeg error must
+    // not jump past the construction/destruction of C++ containers or handles.
+    struct jpeg_state {
+        jpeg_decompress_struct decoder{};
+        jpeg_failure failure{};
+        FILE* file = nullptr;
+        bool created = false;
+        bgui::texture loaded;
+        std::vector<unsigned char> row;
+        ~jpeg_state() {
+            if (created) jpeg_destroy_decompress(&decoder);
+            if (file) std::fclose(file);
+        }
+    };
+
+    bgui::texture decode_jpeg(const std::filesystem::path& path) {
+        auto state = std::make_unique<jpeg_state>();
+        state->file = std::fopen(path.string().c_str(), "rb");
+        if (!state->file) throw std::runtime_error("[AssetManager] Could not open JPEG: " + path.string());
+        state->decoder.err = jpeg_std_error(&state->failure.manager);
+        state->failure.manager.error_exit = jpeg_error;
+        if (setjmp(state->failure.jump))
+            throw std::runtime_error("[AssetManager] Could not decode JPEG: " + std::string(state->failure.message));
+        state->created = true;
+        jpeg_create_decompress(&state->decoder);
+        jpeg_stdio_src(&state->decoder, state->file);
+        jpeg_read_header(&state->decoder, TRUE);
+        const bool cmyk = state->decoder.jpeg_color_space == JCS_CMYK || state->decoder.jpeg_color_space == JCS_YCCK;
+        state->decoder.out_color_space = cmyk ? JCS_CMYK : JCS_RGB;
+        jpeg_start_decompress(&state->decoder);
+        const auto width = static_cast<size_t>(state->decoder.output_width);
+        const auto height = static_cast<size_t>(state->decoder.output_height);
+        if (!width || !height || width > std::numeric_limits<size_t>::max() / height / 4)
+            throw std::runtime_error("[AssetManager] Invalid JPEG dimensions");
+        state->loaded.m_path = path.string();
+        state->loaded.m_size = {static_cast<float>(width), static_cast<float>(height)};
+        state->loaded.m_has_alpha = true; // RGBA storage, matching the PNG/WIC contract.
+        state->loaded.m_buffer.resize(width * height * 4);
+        state->row.resize(width * state->decoder.output_components);
+        while (state->decoder.output_scanline < height) {
+            const auto y = state->decoder.output_scanline;
+            JSAMPROW row = state->row.data();
+            jpeg_read_scanlines(&state->decoder, &row, 1);
+            for (size_t x = 0; x < width; ++x) {
+                auto* rgba = state->loaded.m_buffer.data() + (y * width + x) * 4;
+                const auto* pixel = state->row.data() + x * state->decoder.output_components;
+                for (size_t channel = 0; channel < 3; ++channel) {
+                    if (!cmyk) rgba[channel] = pixel[channel];
+                    else if (state->decoder.saw_Adobe_marker)
+                        rgba[channel] = (static_cast<unsigned>(pixel[channel]) * pixel[3] + 127) / 255;
+                    else rgba[channel] = ((255u - pixel[channel]) * (255u - pixel[3]) + 127) / 255;
+                }
+                rgba[3] = 255;
+            }
+        }
+        jpeg_finish_decompress(&state->decoder);
+        state->loaded.m_revision = 1;
+        return std::move(state->loaded);
+    }
+
     bgui::texture decode_texture(const std::filesystem::path& asset_path) {
+        std::ifstream input(asset_path, std::ios::binary);
+        unsigned char signature[2]{};
+        input.read(reinterpret_cast<char*>(signature), sizeof signature);
+        if (signature[0] == 0xff && signature[1] == 0xd8) return decode_jpeg(asset_path);
+
         png_image image{};
         image.version = PNG_IMAGE_VERSION;
         if (!png_image_begin_read_from_file(&image, asset_path.string().c_str()))

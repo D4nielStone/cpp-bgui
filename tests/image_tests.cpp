@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 #include "bgui.hpp"
+#include "os/asset_manager.hpp"
+#include <filesystem>
+#include <fstream>
+#include <chrono>
 
 using namespace bgui;
 
@@ -104,4 +108,34 @@ TEST(ImageTest, DraggedWindowPublishesImageDrawRectInSameFrame) {
         }
         EXPECT_TRUE(found);
     }
+}
+
+TEST(ImageTest, DecodesJpegRgbGrayscaleAndCmykToRgba) {
+    const auto fixtures = std::filesystem::path(__FILE__).parent_path() / "assets";
+    for (const auto* name : {"rgb.jpg", "gray.jpeg", "cmyk.jpg", "progressive.jpg"}) {
+        SCOPED_TRACE(name);
+        const auto& decoded = asset_manager::get_instance().load_texture((fixtures / name).string());
+        EXPECT_EQ(decoded.m_size.x, 3.f);
+        EXPECT_EQ(decoded.m_size.y, 2.f);
+        ASSERT_EQ(decoded.m_buffer.size(), 24u);
+        for (size_t i = 0; i < decoded.m_buffer.size(); i += 4) {
+            EXPECT_EQ(decoded.m_buffer[i + 3], 255);
+            if (std::string(name) == "gray.jpeg") {
+                EXPECT_NEAR(decoded.m_buffer[i], 128, 2);
+                EXPECT_EQ(decoded.m_buffer[i], decoded.m_buffer[i + 1]);
+                EXPECT_EQ(decoded.m_buffer[i], decoded.m_buffer[i + 2]);
+            } else {
+                EXPECT_GT(decoded.m_buffer[i], 240);
+                EXPECT_LT(decoded.m_buffer[i + 1], 10);
+                EXPECT_LT(decoded.m_buffer[i + 2], 10);
+            }
+        }
+    }
+}
+TEST(ImageTest, InvalidJpegThrowsInsteadOfTerminatingTheApplication) {
+    const auto path = std::filesystem::temp_directory_path() /
+        ("bgui-invalid-jpeg-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".jpg");
+    { std::ofstream out(path, std::ios::binary); out << "\xff\xd8invalid jpeg"; }
+    EXPECT_THROW(asset_manager::get_instance().load_texture(path.string()), std::runtime_error);
+    std::filesystem::remove(path);
 }

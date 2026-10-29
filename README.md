@@ -416,3 +416,10 @@ overlap. Relative paths are resolved using the regular `assets` search paths.
   ]
 }
 ```
+
+### Linux image dependencies
+
+PNG and JPEG images use libpng and libjpeg (including libjpeg-turbo). Install the
+headers and libraries before configuring: `sudo apt-get install libpng-dev libjpeg-dev`.
+JPEG RGB, grayscale and CMYK images are decoded into RGBA buffers for all backends.
+Windows continues to use WIC.
