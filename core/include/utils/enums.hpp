@@ -27,6 +27,7 @@ namespace bgui {
         ,left_control, right_control, left_alt, right_alt
         ,delete_key, f5, keypad_enter, space
         ,equal, minus, zero, keypad_add, keypad_subtract, keypad_zero
+        ,f3
     };
     enum class input_action {
         none,
