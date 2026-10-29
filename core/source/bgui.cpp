@@ -736,7 +736,7 @@ bool update_inputs(bgui::layout &lay){
         for (size_t i = elements.size(); i-- > 0; ) {
             auto elem = elements[i].get();
 
-            if (!elem->is_enabled())
+            if (!elem->is_enabled() || elem->input_passthrough())
                 continue;
             if (elem->id == profiling_overlay_id)
                 continue;

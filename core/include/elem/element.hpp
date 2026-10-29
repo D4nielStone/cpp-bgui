@@ -46,6 +46,7 @@ namespace bgui {
         material m_material;
         // Flag indicating if the element should process mouse/keyboard input. Not strictly style, but related to interaction.
         bool m_receives_input{true};
+        bool m_input_passthrough{false};
         
         vec2i m_last_drag{0, 0}, m_content_size{0, 0};
 
@@ -240,6 +241,10 @@ namespace bgui {
         bool receives_input() const {
             return m_receives_input;
         }
+
+        // Decorative overlays can exclude their entire subtree from hit testing.
+        void set_input_passthrough(bool enabled) { m_input_passthrough = enabled; }
+        bool input_passthrough() const { return m_input_passthrough; }
 
         /**
          * @brief Checks if the element is currently being dragged.
