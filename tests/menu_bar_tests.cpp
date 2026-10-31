@@ -119,6 +119,7 @@ TEST(MenuBarTest, ButtonsAndMenuOptionsRunCallbacksOnMouseRelease) {
 
     auto& root = bgui::get_layout();
     auto& editor_root = root.add<bgui::linear>(bgui::orientation::vertical);
+    editor_root.style.visual.font = "menu-test";
     editor_root.style.layout.require_mode(
         bgui::mode::match_parent,
         bgui::mode::match_parent

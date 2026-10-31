@@ -41,6 +41,7 @@ target_link_libraries(
     GTest::gtest_main 
 )
 
+add_test(NAME MatrixCompatibilityTests COMMAND all_tests --gtest_filter=MatrixCompatibility.*)
 add_test(NAME AuditTests COMMAND all_tests --gtest_filter=AuditTest.*)
 add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
 add_test(NAME MenuBarTests COMMAND all_tests --gtest_filter=MenuBarTest.*)
