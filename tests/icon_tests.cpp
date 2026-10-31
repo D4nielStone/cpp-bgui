@@ -17,9 +17,9 @@ TEST(IconTest, RejectsUnknownName) {
 }
 
 TEST(IconTest, ResolvesLinuxAndWindowsPlatformGlyphs) {
-    const bgui::icon linux{"linux"};
+    const bgui::icon l{"linux"};
     const bgui::icon windows{"windows"};
 
-    EXPECT_EQ(linux.get_buffer(), "\xef\x85\xbc");
+    EXPECT_EQ(l.get_buffer(), "\xef\x85\xbc");
     EXPECT_EQ(windows.get_buffer(), "\xef\x85\xba");
 }

@@ -12,15 +12,6 @@ namespace bgui {
             bgui::mode::wrap_content
         );
         style.layout.padding = bgui::vec4i{1, 1, 8, 8};
-
-        auto& title = add<bgui::text>(
-            "© Bubble Engine | ",
-            0.3
-        );
-        title.style.layout.require_mode(
-            bgui::mode::wrap_content,
-            bgui::mode::wrap_content
-        );
     }
 
     menu_bar::menu_bar(bgui::layout& root)
