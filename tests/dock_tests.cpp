@@ -1042,3 +1042,83 @@ TEST(DockTest, FloatingWindowDragAndCornerResizePublishExactGeometryInSameFrame)
     }
     bgui::set_global_scale(1.f);
 }
+
+// Clear existing work to isolate invalidations introduced by a single operation.
+namespace {
+    void clear_dock_audit_flags(bgui::element& value) {
+        if (auto* child_layout = value.as_layout()) {
+            for (auto& [layer, elements] : child_layout->get_elements()) {
+                for (auto& child : elements)
+                    clear_dock_audit_flags(*child);
+            }
+        }
+        value.clear_layout_dirty();
+        value.clear_style_dirty();
+    }
+
+    void prepare_audit_dock(bgui::dock& dock) {
+        dock.compute_style();
+        dock.process_required_size({900, 600});
+        dock.set_final_rect(0, 0, 900, 600);
+        dock.cascade_style();
+        update_dock(dock);
+    }
+}
+
+TEST(DockTest, IdleTabsShouldKeepLayoutClean) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor");
+    auto& other = dock.add_window("Other");
+    dock.merge_window_as_tab(anchor, other);
+    prepare_audit_dock(dock);
+    clear_dock_audit_flags(dock);
+
+    for (int frame = 0; frame < 3; ++frame) {
+        dock.on_update();
+        EXPECT_FALSE(dock.is_layout_dirty());
+    }
+}
+
+TEST(DockTest, AfterDetachIdleArrangeShouldKeepLayoutClean) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor");
+    auto& other = dock.add_window("Other");
+    dock.merge_window_as_tab(anchor, other);
+    prepare_audit_dock(dock);
+    other.set_floating(true);
+    update_dock(dock);
+    clear_dock_audit_flags(dock);
+
+    for (int frame = 0; frame < 3; ++frame) {
+        // Even when arrange is needed, hiding already hidden targets must not
+        // schedule another layout pass.
+        dock.mark_layout_dirty();
+        update_dock(dock);
+        EXPECT_FALSE(dock.is_layout_dirty());
+    }
+    EXPECT_TRUE(other.is_floating());
+}
+
+TEST(DockTest, DetachEnablesPreviouslyHiddenWindows) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& anchor = dock.add_window("Anchor");
+    auto& second = dock.add_window("Second");
+    auto& third = dock.add_window("Third");
+    dock.merge_window_as_tab(anchor, second);
+    dock.merge_window_as_tab(anchor, third);
+    prepare_audit_dock(dock);
+    EXPECT_FALSE(anchor.is_enabled());
+    EXPECT_FALSE(second.is_enabled());
+    EXPECT_TRUE(third.is_enabled());
+
+    third.set_floating(true);
+    dock.on_update();
+
+    EXPECT_TRUE(anchor.is_enabled());
+    EXPECT_TRUE(second.is_enabled());
+    EXPECT_TRUE(third.is_enabled());
+    EXPECT_TRUE(dock.get_configuration().tab_groups.empty());
+}

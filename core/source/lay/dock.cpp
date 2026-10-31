@@ -125,6 +125,9 @@ namespace bgui {
             if (amount == 0)
                 return;
 
+            // A divider drag changes geometry even when idle indicators no
+            // longer invalidate the dock on every frame.
+            mark_layout_dirty();
             m_resize(amount);
             set_drag({0, 0});
         }
@@ -768,12 +771,16 @@ namespace bgui {
             !bgui::get_pressed(input_key::mouse_left)) {
             for (auto* target : m_drop_targets) {
                 target->set_enable(false);
-                target->style.visual.visible = false;
-                target->mark_style_dirty();
+                if (target->style.visual.visible != false) {
+                    target->style.visual.visible = false;
+                    target->mark_style_dirty();
+                }
             }
             m_drop_preview->set_enable(false);
-            m_drop_preview->style.visual.visible = false;
-            m_drop_preview->mark_style_dirty();
+            if (m_drop_preview->style.visual.visible != false) {
+                m_drop_preview->style.visual.visible = false;
+                m_drop_preview->mark_style_dirty();
+            }
             return;
         }
 
@@ -1100,8 +1107,10 @@ namespace bgui {
                     tab->get_label().remove_class("dock-tab-label-active");
                 }
                 auto* indicator = group.active_indicators[index];
-                indicator->style.visual.visible = active;
-                indicator->mark_style_dirty();
+                if (indicator->style.visual.visible != active) {
+                    indicator->style.visual.visible = active;
+                    indicator->mark_style_dirty();
+                }
                 tab->set_enable(true);
                 tab_window->set_enable(active);
                 if (active)
