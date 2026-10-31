@@ -8,6 +8,7 @@
 #include "utils/texture.hpp"
 
 namespace bgui {
+    texture decode_texture_memory(const std::vector<unsigned char>& bytes, const std::string& name);
     /**
      * @brief Central cache and loader for backend-neutral image and font assets.
      *

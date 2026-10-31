@@ -1,3 +1,4 @@
+#include <os/resource_files.hpp>
 #include "utils/theme.hpp"
 #include "utils/theme_parser.hpp"
 #include "utils/theme_converter.hpp"
@@ -18,7 +19,7 @@ namespace {
         };
 
         for (const auto& candidate : candidates) {
-            if (candidate.empty() || !std::filesystem::is_regular_file(candidate))
+            if (candidate.empty() || !bgui::resource_files::exists(candidate))
                 continue;
 
             return bgui::convert_theme(bgui::parse_theme(candidate.string()));

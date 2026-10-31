@@ -1,3 +1,4 @@
+#include <os/resource_files.hpp>
 #pragma once
 #include <vector>
 #include <unordered_map>
@@ -116,7 +117,8 @@ namespace bgui {
     }
     theme_data parse_theme(const std::string& filename) {
         fs::path theme_path = resolve_path(filename);
-        std::ifstream file(theme_path.c_str());
+        if (!resource_files::exists(theme_path)) return {};
+        auto file = resource_files::stream(theme_path);
 
         if (!file) {
             detail::log_err() << "[Theme] Could not find the theme file "

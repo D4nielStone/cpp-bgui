@@ -1,3 +1,4 @@
+#include <os/resource_files.hpp>
 #include "os/asset_manager.hpp"
 
 #include <array>
@@ -21,7 +22,7 @@
 namespace {
     std::filesystem::path find_asset_path(const std::string& path) {
         const std::filesystem::path input(path);
-        if (input.is_absolute() && std::filesystem::is_regular_file(input))
+        if (input.is_absolute() && bgui::resource_files::exists(input))
             return input;
 
         const std::array<std::filesystem::path, 4> candidates = {
@@ -36,7 +37,7 @@ namespace {
         };
 
         for (const auto& candidate : candidates) {
-            if (!candidate.empty() && std::filesystem::is_regular_file(candidate))
+            if (!candidate.empty() && bgui::resource_files::exists(candidate))
                 return candidate;
         }
 
@@ -46,7 +47,7 @@ namespace {
 #ifdef _WIN32
     using Microsoft::WRL::ComPtr;
 
-    bgui::texture decode_texture(const std::filesystem::path& asset_path) {
+    bgui::texture decode_memory(const std::vector<unsigned char>& bytes, const std::string& name) {
         const HRESULT init_result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
         struct com_apartment {
             bool initialized;
@@ -67,10 +68,11 @@ namespace {
         }
 
         ComPtr<IWICBitmapDecoder> decoder;
-        result = factory->CreateDecoderFromFilename(
-            asset_path.wstring().c_str(), nullptr, GENERIC_READ,
-            WICDecodeMetadataCacheOnLoad, &decoder
-        );
+        ComPtr<IWICStream> stream;
+        result = factory->CreateStream(&stream);
+        if (bytes.size() > MAXDWORD) throw std::runtime_error("Image is too large.");
+        if (SUCCEEDED(result)) result = stream->InitializeFromMemory(const_cast<BYTE*>(bytes.data()), static_cast<DWORD>(bytes.size()));
+        if (SUCCEEDED(result)) result = factory->CreateDecoderFromStream(stream.Get(), nullptr, WICDecodeMetadataCacheOnLoad, &decoder);
 
         ComPtr<IWICBitmapFrameDecode> frame;
         ComPtr<IWICFormatConverter> converter;
@@ -89,7 +91,7 @@ namespace {
         if (SUCCEEDED(result)) result = converter->GetSize(&width, &height);
 
         bgui::texture loaded;
-        loaded.m_path = asset_path.string();
+        loaded.m_path = name;
         loaded.m_has_alpha = true;
         loaded.m_size = {static_cast<float>(width), static_cast<float>(height)};
         loaded.m_buffer.resize(static_cast<size_t>(width) * height * 4);
@@ -102,7 +104,7 @@ namespace {
         }
 
         if (FAILED(result))
-            throw std::runtime_error("[AssetManager] Could not decode asset: " + asset_path.string());
+            throw std::runtime_error("[AssetManager] Could not decode asset: " + name);
         loaded.m_revision = 1;
         return loaded;
     }
@@ -134,17 +136,15 @@ namespace {
         }
     };
 
-    bgui::texture decode_jpeg(const std::filesystem::path& path) {
+    bgui::texture decode_jpeg(const std::vector<unsigned char>& bytes, const std::string& name) {
         auto state = std::make_unique<jpeg_state>();
-        state->file = std::fopen(path.string().c_str(), "rb");
-        if (!state->file) throw std::runtime_error("[AssetManager] Could not open JPEG: " + path.string());
         state->decoder.err = jpeg_std_error(&state->failure.manager);
         state->failure.manager.error_exit = jpeg_error;
         if (setjmp(state->failure.jump))
             throw std::runtime_error("[AssetManager] Could not decode JPEG: " + std::string(state->failure.message));
         state->created = true;
         jpeg_create_decompress(&state->decoder);
-        jpeg_stdio_src(&state->decoder, state->file);
+        jpeg_mem_src(&state->decoder, bytes.data(), static_cast<unsigned long>(bytes.size()));
         jpeg_read_header(&state->decoder, TRUE);
         const bool cmyk = state->decoder.jpeg_color_space == JCS_CMYK || state->decoder.jpeg_color_space == JCS_YCCK;
         state->decoder.out_color_space = cmyk ? JCS_CMYK : JCS_RGB;
@@ -153,7 +153,7 @@ namespace {
         const auto height = static_cast<size_t>(state->decoder.output_height);
         if (!width || !height || width > std::numeric_limits<size_t>::max() / height / 4)
             throw std::runtime_error("[AssetManager] Invalid JPEG dimensions");
-        state->loaded.m_path = path.string();
+        state->loaded.m_path = name;
         state->loaded.m_size = {static_cast<float>(width), static_cast<float>(height)};
         state->loaded.m_has_alpha = true; // RGBA storage, matching the PNG/WIC contract.
         state->loaded.m_buffer.resize(width * height * 4);
@@ -179,20 +179,17 @@ namespace {
         return std::move(state->loaded);
     }
 
-    bgui::texture decode_texture(const std::filesystem::path& asset_path) {
-        std::ifstream input(asset_path, std::ios::binary);
-        unsigned char signature[2]{};
-        input.read(reinterpret_cast<char*>(signature), sizeof signature);
-        if (signature[0] == 0xff && signature[1] == 0xd8) return decode_jpeg(asset_path);
+    bgui::texture decode_memory(const std::vector<unsigned char>& bytes, const std::string& name) {
+        if (bytes.size() >= 2 && bytes[0] == 0xff && bytes[1] == 0xd8) return decode_jpeg(bytes, name);
 
         png_image image{};
         image.version = PNG_IMAGE_VERSION;
-        if (!png_image_begin_read_from_file(&image, asset_path.string().c_str()))
-            throw std::runtime_error("[AssetManager] Could not decode asset: " + asset_path.string());
+        if (!png_image_begin_read_from_memory(&image, bytes.data(), bytes.size()))
+            throw std::runtime_error("[AssetManager] Could not decode asset: " + name);
 
         image.format = PNG_FORMAT_RGBA;
         bgui::texture loaded;
-        loaded.m_path = asset_path.string();
+        loaded.m_path = name;
         loaded.m_has_alpha = true;
         loaded.m_size = {
             static_cast<float>(image.width),
@@ -213,6 +210,9 @@ namespace {
 }
 
 namespace bgui {
+    texture decode_texture_memory(const std::vector<unsigned char>& bytes, const std::string& name) {
+        return decode_memory(bytes, name);
+    }
     asset_manager& asset_manager::get_instance() {
         static asset_manager instance;
         return instance;
@@ -240,7 +240,7 @@ namespace bgui {
         if (cached != m_textures.end())
             return cached->second;
 
-        auto [it, inserted] = m_textures.emplace(resolved_path, decode_texture(resolved_path));
+        auto [it, inserted] = m_textures.emplace(resolved_path, decode_texture_memory(resource_files::read(resolved_path), resolved_path));
         return it->second;
     }
 
