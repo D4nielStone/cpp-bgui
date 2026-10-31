@@ -487,3 +487,17 @@ TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 	}
 	EXPECT_FALSE(has_resize_handle);
 }
+TEST(LinearTest, WrapContentMeasuresChildMinimumDimensions) {
+    bgui::scoped_interface ui_scope;
+    bgui::linear parent(bgui::orientation::vertical);
+    parent.style.layout.require_mode(bgui::mode::wrap_content, bgui::mode::wrap_content);
+    parent.style.layout.set_padding(0, 0);
+    auto& child = parent.add<bgui::element>();
+    child.style.layout.require_mode(bgui::mode::wrap_content, bgui::mode::wrap_content);
+    child.style.layout.set_margin(0, 0);
+    child.style.layout.limit_min = bgui::vec2i{100, 40};
+    parent.cascade_style();
+    parent.calculate_content_sizes();
+    EXPECT_GE(parent.get_content_size().x, 100);
+    EXPECT_GE(parent.get_content_size().y, 40);
+}
