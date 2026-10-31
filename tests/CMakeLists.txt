@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
     all_tests
     audit_tests.cpp
+    matrix_compat_tests.cpp
     element_tests.cpp
     menu_bar_tests.cpp
     inputbox_tests.cpp

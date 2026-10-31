@@ -59,14 +59,14 @@ using mat3 = mat<3, 3, float>;
 using mat2 = mat<2, 2, float>;
 
 // Column-major orthographic matrix (OpenGL-style)
-inline mat4 orthographic(float left, float right, float bottom, float top, float near = -1.f, float far = 1.f) {
+inline mat4 orthographic(float left, float right, float bottom, float top, float near_plane = -1.f, float far_plane = 1.f) {
     mat4 m;
     m(0, 0) = 2.f / (right - left);
     m(1, 1) = 2.f / (top - bottom);
-    m(2, 2) = -2.f / (far - near);
+    m(2, 2) = -2.f / (far_plane - near_plane);
     m(3, 0) = -(right + left) / (right - left);
     m(3, 1) = -(top + bottom) / (top - bottom);
-    m(3, 2) = -(far + near) / (far - near);
+    m(3, 2) = -(far_plane + near_plane) / (far_plane - near_plane);
     m(3, 3) = 1.f;
     return m;
 }
