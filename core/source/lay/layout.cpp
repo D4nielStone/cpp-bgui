@@ -26,7 +26,7 @@ void layout::on_update() {
 void layout::calculate_content_sizes() {
     for (auto& [lay, elems] : m_elements) {
         for (auto& elem : elems) {
-            if (!elem || !elem->is_enabled())
+            if (!elem || !elem->is_enabled() || !elem->is_layout_dirty())
                 continue;
 
             if (auto* child_layout = elem->as_layout())

@@ -346,3 +346,28 @@ TEST(MenuBarTest, FileMenuSizesEachButtonAndPopupAroundDefaultFontText) {
         );
     }
 }
+
+TEST(MenuBarTest, LongTextOnlyEmitsGlyphsIntersectingTheActiveClip) {
+    use_menu_test_font();
+    std::string content;
+    for (int line = 0; line < 200; ++line) content += "A\n";
+    bgui::text label(content, 1.f);
+    label.style.visual.font = "menu-test";
+    label.compute_style();
+    label.set_final_rect(0, 0, 100, 4000);
+    bgui::draw_data full;
+    full.m_clip_rect = {0, 0, 100, 10000};
+    label.get_requires(&full);
+    ASSERT_EQ(full.m_quad_requires.size(), 200u);
+    bgui::draw_data visible;
+    visible.m_clip_rect = {0, 0, 100, 20};
+    label.get_requires(&visible);
+    EXPECT_GT(visible.m_quad_requires.size(), 0u);
+    EXPECT_LE(visible.m_quad_requires.size(), 3u);
+    label.set_position(0, -200);
+    bgui::draw_data scrolled;
+    scrolled.m_clip_rect = visible.m_clip_rect;
+    label.get_cached_requires(&scrolled);
+    EXPECT_GT(scrolled.m_quad_requires.size(), 0u);
+    EXPECT_LE(scrolled.m_quad_requires.size(), 3u);
+}

@@ -169,3 +169,31 @@ TEST(AuditTest, UnchangedScaleDoesNotInvalidateStyles) {
     EXPECT_FALSE(bgui::get_layout().is_style_dirty());
     bgui::set_global_scale(1.f);
 }
+
+namespace {
+class measurement_probe final : public bgui::text {
+public:
+    int measurements{};
+    measurement_probe() : bgui::text("stable", .3f) {}
+    void calc_content_size(const bgui::layer& layer) override {
+        ++measurements;
+        bgui::text::calc_content_size(layer);
+    }
+};
+}
+
+TEST(AuditTest, ChangingOneTextDoesNotMeasureCleanSiblings) {
+    bgui::scoped_interface interface;
+    auto& root = bgui::get_layout();
+    auto& first = root.add<measurement_probe>();
+    auto& second = root.add<measurement_probe>();
+    bgui::on_update();
+    first.measurements = second.measurements = 0;
+    auto* data = bgui::get_draw_data();
+    data->m_quad_requires = {};
+    data->m_draw_list.clear();
+    first.set_buffer("changed content");
+    bgui::on_update();
+    EXPECT_GT(first.measurements, 0);
+    EXPECT_EQ(second.measurements, 0);
+}

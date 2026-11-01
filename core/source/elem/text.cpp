@@ -662,8 +662,10 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     float cursor_x = 0.f;
     float cursor_y = 0.f;
     bool cursor_position_found = false;
-    std::vector<std::optional<bgui::vec2>> codepoint_positions(codepoints.size());
-    std::vector<float> line_indent_widths(codepoints.size(), 0.f);
+    std::vector<std::optional<bgui::vec2>> codepoint_positions(
+        m_editor_guides_enabled ? codepoints.size() : 0);
+    std::vector<float> line_indent_widths(
+        m_editor_guides_enabled ? codepoints.size() : 0, 0.f);
     float current_indent_width = 0.f;
     bool at_line_indent = true;
     const auto space_glyph = chs.find(U' ');
@@ -683,6 +685,11 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         float xpos = text_origin_x + x + scale * ch.bearing[0];
         float ypos = processed_y() + m_draw_offset.y + y -
             (ch.bearing[1] * scale - ch.size[1] * scale);
+        const auto& clip = data->m_clip_rect;
+        if (clip.z > 0 && clip.w > 0 &&
+            (xpos + scale * ch.size[0] <= clip.x || xpos >= clip.x + clip.z ||
+             ypos <= clip.y || ypos - scale * ch.size[1] >= clip.y + clip.w))
+            return;
         set_properties();
         data->enqueue({
             m_material, 6,
@@ -790,11 +797,13 @@ void bgui::text::get_requires(bgui::draw_data* data) {
 
         const auto color_override =
             index < m_highlight_colors.size() ? m_highlight_colors[index] : std::nullopt;
-        line_indent_widths[index] = current_indent_width;
-        codepoint_positions[index] = bgui::vec2{
-            text_origin_x + line_x,
-            line_y + m_draw_offset.y
-        };
+        if (m_editor_guides_enabled) {
+            line_indent_widths[index] = current_indent_width;
+            codepoint_positions[index] = bgui::vec2{
+                text_origin_x + line_x,
+                line_y + m_draw_offset.y
+            };
+        }
         if (at_line_indent && (ca == U' ' || ca == U'\t'))
             current_indent_width += ca == U'\t' ? space_advance * 4.f : advance_this_char;
         else

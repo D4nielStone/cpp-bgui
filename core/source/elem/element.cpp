@@ -228,6 +228,7 @@ void element::on_update() {
 }
 
 void element::arrange() {
+    clear_layout_dirty();
 }
 
 vec2i bgui::element::is_drag() const {
