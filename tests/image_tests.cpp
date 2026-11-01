@@ -124,7 +124,16 @@ TEST(ImageTest, DecodesJpegRgbGrayscaleAndCmykToRgba) {
                 EXPECT_NEAR(decoded.m_buffer[i], 128, 2);
                 EXPECT_EQ(decoded.m_buffer[i], decoded.m_buffer[i + 1]);
                 EXPECT_EQ(decoded.m_buffer[i], decoded.m_buffer[i + 2]);
-            } else {
+            }
+#ifdef _WIN32
+            else if (std::string(name) == "cmyk.jpg") {
+                // WIC applies its default CMYK profile; libjpeg uses an unprofiled conversion.
+                EXPECT_GT(decoded.m_buffer[i], 200);
+                EXPECT_LT(decoded.m_buffer[i + 1], 80);
+                EXPECT_LT(decoded.m_buffer[i + 2], 80);
+            }
+#endif
+            else {
                 EXPECT_GT(decoded.m_buffer[i], 240);
                 EXPECT_LT(decoded.m_buffer[i + 1], 10);
                 EXPECT_LT(decoded.m_buffer[i + 2], 10);

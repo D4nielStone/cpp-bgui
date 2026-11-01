@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
     all_tests
     audit_tests.cpp
+    matrix_compat_tests.cpp
     element_tests.cpp
     menu_bar_tests.cpp
     inputbox_tests.cpp
@@ -40,6 +41,7 @@ target_link_libraries(
     GTest::gtest_main 
 )
 
+add_test(NAME MatrixCompatibilityTests COMMAND all_tests --gtest_filter=MatrixCompatibility.*)
 add_test(NAME AuditTests COMMAND all_tests --gtest_filter=AuditTest.*)
 add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
 add_test(NAME MenuBarTests COMMAND all_tests --gtest_filter=MenuBarTest.*)
