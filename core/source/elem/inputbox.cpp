@@ -174,25 +174,8 @@ void bgui::inputbox::on_pressed() {
 
 void bgui::inputbox::on_clicked() {
     const auto mouse = bgui::get_mouse_position();
-    if (m_mode == input_mode::multiline) {
-        m_cursor_position = m_text->get_cursor_position_at(
-            static_cast<float>(mouse.x), static_cast<float>(mouse.y));
-    } else {
-        const float local_x = static_cast<float>(mouse.x - m_text->processed_x());
-        size_t closest_position = 0;
-        float closest_distance = std::abs(local_x);
-        for (size_t position = 0;; position = next_utf8_character(m_input_buffer, position)) {
-            const float text_width = m_text->get_text_width(m_input_buffer.substr(0, position));
-            const float distance = std::abs(local_x - text_width);
-            if (distance < closest_distance) {
-                closest_position = position;
-                closest_distance = distance;
-            }
-            if (position == m_input_buffer.size())
-                break;
-        }
-        m_cursor_position = closest_position;
-    }
+    m_cursor_position = m_input_buffer.empty() ? 0 : m_text->get_cursor_position_at(
+        static_cast<float>(mouse.x), static_cast<float>(mouse.y));
     clear_selection();
     m_cursor_blink_start = bgui::get_time();
     set_focused(true);
@@ -286,7 +269,7 @@ void bgui::inputbox::on_update() {
             ctx.m_char_buffer.clear();
             m_cursor_blink_start = bgui::get_time();
         } else {
-        if (m_mode == input_mode::multiline) {
+        {
             const bool select_all_down = control_down &&
                 key_action(input_key::a) == input_action::press;
             if (select_all_down && !m_select_all_down) {
@@ -295,7 +278,8 @@ void bgui::inputbox::on_update() {
                 m_cursor_blink_start = bgui::get_time();
             }
             m_select_all_down = select_all_down;
-
+        }
+        if (m_mode == input_mode::multiline) {
             const bool copy_down = control_down &&
                 key_action(input_key::c) == input_action::press;
             if (copy_down && !m_copy_down && has_selection() && ctx.m_set_clipboard) {
@@ -325,7 +309,6 @@ void bgui::inputbox::on_update() {
             }
             m_paste_down = paste_down;
         } else {
-            m_select_all_down = false;
             m_copy_down = false;
             m_cut_down = false;
             m_paste_down = false;
@@ -394,16 +377,19 @@ void bgui::inputbox::on_update() {
             auto move
         ) {
             const size_t previous_position = m_cursor_position;
-            const bool extend = m_mode == input_mode::multiline && shift_down;
+            const bool extend = shift_down;
             process_repeating_key(action, now, was_down, next_repeat, [this, extend, key, move]() {
                 if (extend) {
                     if (m_selection_anchor == std::numeric_limits<size_t>::max())
                         m_selection_anchor = m_cursor_position;
                     move();
                 } else if (has_selection()) {
-                    m_cursor_position =
-                        (key == input_key::left || key == input_key::up)
-                        ? selection_start() : selection_end();
+                    if (key == input_key::home || key == input_key::end)
+                        move();
+                    else
+                        m_cursor_position =
+                            (key == input_key::left || key == input_key::up)
+                            ? selection_start() : selection_end();
                     clear_selection();
                 } else {
                     move();
@@ -740,5 +726,11 @@ void bgui::inputbox::clear_selection() {
 }
 
 void bgui::inputbox::get_requires(bgui::draw_data* data) {
+    if (m_mode != input_mode::multiline) {
+        m_text->reveal_cursor_horizontally(
+            static_cast<float>(std::max(processed_x(), m_text->processed_x())),
+            static_cast<float>(std::min(processed_x() + processed_width(),
+                m_text->processed_x() + m_text->processed_width())));
+    }
     linear::get_requires(data);
 }

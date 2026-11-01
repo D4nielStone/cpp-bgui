@@ -14,6 +14,9 @@
 namespace bgui {
     class text : public element {
     private:
+        friend class inputbox;
+        float m_horizontal_scroll = 0.f;
+        void reveal_cursor_horizontally(float left, float right);
         std::string m_buffer, m_last_font;
         float m_scale;
         bgui::vec2 m_draw_offset{0.f};

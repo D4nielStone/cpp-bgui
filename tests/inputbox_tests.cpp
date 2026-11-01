@@ -429,3 +429,106 @@ TEST(InputAreaTest, MissingHighlightConfigurationReportsAnError) {
         bgui::load_syntax_highlight_config("missing_highlight_config.json"),
         std::runtime_error);
 }
+
+TEST(InputAreaTest, SingleLineControlAReplacesEntireBuffer) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+    bgui::inputbox input("original");
+    input.set_focused(true);
+    context.m_input_map[bgui::input_key::right_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::a] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map.clear();
+    context.m_char_buffer = "replacement";
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "replacement");
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+}
+
+TEST(InputAreaTest, SingleLineScrollFollowsHomeEndAndResize) {
+    bgui::scoped_interface interface;
+    ensure_test_font();
+    auto& context = bgui::get_context();
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+    bgui::inputbox input("abcdefghijklmnopqrst", "", 1.f);
+    input.set_final_rect(20, 30, 40, 20);
+    input.get_label().set_final_rect(20, 30, 40, 20);
+    input.set_focused(true);
+    input.on_update();
+    auto draw = [&]() {
+        bgui::draw_data data;
+        input.get_requires(&data);
+    };
+    draw();
+    EXPECT_GT(input.get_label().get_cursor_position_at(55.f, 30.f), 10U);
+    const auto clicked_position = input.get_label().get_cursor_position_at(35.f, 30.f);
+    context.m_mouse_position = {35, 30};
+    input.on_clicked();
+    EXPECT_EQ(input.get_cursor_position(), clicked_position);
+    context.m_input_map[bgui::input_key::home] = bgui::input_action::press;
+    input.on_update();
+    draw();
+    EXPECT_EQ(input.get_cursor_position(), 0U);
+    EXPECT_EQ(input.get_label().get_cursor_position_at(20.f, 30.f), 0U);
+    context.m_input_map.clear();
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::press;
+    input.on_update();
+    draw();
+    EXPECT_EQ(input.get_cursor_position(), input.get_buffer().size());
+    EXPECT_GT(input.get_label().get_cursor_position_at(55.f, 30.f), 10U);
+    context.m_input_map.clear();
+    for (size_t position = input.get_buffer().size(); position > 0; --position) {
+        context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+        input.on_update();
+        draw();
+        EXPECT_EQ(input.get_cursor_position(), position - 1);
+        EXPECT_LE(input.get_label().get_cursor_position_at(20.f, 30.f), position - 1);
+        EXPECT_GE(input.get_label().get_cursor_position_at(60.f, 30.f), position - 1);
+        context.m_input_map[bgui::input_key::left] = bgui::input_action::release;
+        input.on_update();
+    }
+    context.m_input_map.clear();
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::press;
+    input.on_update();
+    draw();
+    input.set_final_rect(20, 30, 10000, 20);
+    input.get_label().set_final_rect(20, 30, 10000, 20);
+    draw();
+    EXPECT_EQ(input.get_label().get_cursor_position_at(20.f, 30.f), 0U);
+    context.m_input_map.clear();
+}
+
+TEST(InputAreaTest, NumberControlAReplacesSelectionAndEndMovesPastSelection) {
+    bgui::scoped_interface interface;
+    auto& context = bgui::get_context();
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+    bgui::inputbox input("12345", "", 0.33f, nullptr, bgui::input_mode::number);
+    input.set_focused(true);
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::a] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map.clear();
+    context.m_char_buffer = "67";
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "67");
+    context.m_input_map[bgui::input_key::left_shift] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::left] = bgui::input_action::press;
+    input.on_update();
+    context.m_input_map.clear();
+    context.m_input_map[bgui::input_key::left_control] = bgui::input_action::press;
+    context.m_input_map[bgui::input_key::end] = bgui::input_action::press;
+    input.on_update();
+    EXPECT_EQ(input.get_cursor_position(), 2U);
+    context.m_input_map.clear();
+    context.m_char_buffer = "8";
+    input.on_update();
+    EXPECT_EQ(input.get_buffer(), "678");
+    context.m_input_map.clear();
+    context.m_char_buffer.clear();
+}

@@ -257,7 +257,7 @@ size_t bgui::text::get_cursor_position_at(float x, float y) const {
             origin_x += gutter_width;
             break;
     }
-    origin_x += m_draw_offset.x;
+    origin_x += m_draw_offset.x - m_horizontal_scroll;
 
     const float local_x = x - origin_x;
     const auto& stops = rows[row_index];
@@ -590,6 +590,34 @@ float bgui::text::get_text_width(const std::string& t) const {
     return max_line_width;
 }
 
+void bgui::text::reveal_cursor_horizontally(float left, float right) {
+    auto& fonts = font_manager::get_instance();
+    if (right <= left || !fonts.has_font(computed_style.visual.font))
+        return;
+    calc_content_size(layer::base);
+    const auto& font = fonts.get_font(computed_style.visual.font);
+    const float scale = m_scale * bgui::get_global_scale();
+    float origin = static_cast<float>(processed_x()) + m_draw_offset.x +
+        get_line_number_gutter_width(font, scale);
+    if (computed_style.layout.align.x == alignment::center)
+        origin += (processed_width() - get_content_size().x) / 2;
+    else if (computed_style.layout.align.x == alignment::end)
+        origin += processed_width() - get_content_size().x;
+    const float caret_width = std::max(1.f, get_text_width("|"));
+    const float caret = origin + get_text_width(m_buffer.substr(0, m_cursor_position));
+    const float maximum = std::max(0.f, origin + get_text_width(m_buffer) + caret_width - right);
+    const float minimum = std::min(0.f, origin - left);
+    float offset = std::clamp(m_horizontal_scroll, minimum, maximum);
+    if (caret - offset < left)
+        offset = std::max(minimum, caret - left);
+    else if (caret + caret_width - offset > right)
+        offset = std::min(maximum, caret + caret_width - right);
+    if (offset != m_horizontal_scroll) {
+        m_horizontal_scroll = offset;
+        mark_render_dirty();
+    }
+}
+
 void bgui::text::get_requires(bgui::draw_data* data) {
     auto& font_manager = bgui::font_manager::get_instance();
     if (!font_manager.has_font(computed_style.visual.font))
@@ -621,7 +649,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             text_origin_x += processed_width() - combined_width + gutter_width;
             break;
     }
-    text_origin_x += m_draw_offset.x;
+    text_origin_x += m_draw_offset.x - m_horizontal_scroll;
 
     m_material.m_texture = font.atlas;
 
