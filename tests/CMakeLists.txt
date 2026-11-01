@@ -20,6 +20,7 @@ add_executable(
     value_control_tests.cpp
     vector_field_tests.cpp
     image_tests.cpp
+    grid_tests.cpp
     linear_tests.cpp
     dock_tests.cpp
     style_tests.cpp
@@ -53,6 +54,7 @@ add_test(NAME treeTests COMMAND all_tests --gtest_filter=treeTest.*)
 add_test(NAME InteractionTests COMMAND all_tests --gtest_filter=InteractionTest.*)
 add_test(NAME ConfigurationTests COMMAND all_tests --gtest_filter=ConfigurationTest.*)
 add_test(NAME ImageTests COMMAND all_tests --gtest_filter=ImageTest.*)
+add_test(NAME GridTests COMMAND all_tests --gtest_filter=GridTest.*)
 add_test(NAME LinearTests COMMAND all_tests --gtest_filter=LinearTest.*)
 add_test(NAME DockTests COMMAND all_tests --gtest_filter=DockTest.*)
 add_test(NAME StyleTests COMMAND all_tests --gtest_filter=StyleVisualTest.*:DeclarativeStyleTest.*:ModalThemeTest.*)

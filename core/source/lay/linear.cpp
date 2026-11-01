@@ -150,7 +150,7 @@ void linear::arrange() {
 
     for(auto& [lay, elems] : m_elements) {
     for (auto& elem : m_elements[lay]) {
-        if (!elem || !elem->is_enabled() || !elem->is_flex() || !elem->is_layout_dirty())
+        if (!elem || !elem->is_enabled() || !elem->is_flex())
             continue;
         elem->calc_content_size(lay);
     }

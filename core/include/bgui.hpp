@@ -24,6 +24,7 @@
 #include "lay/dock.hpp"
 #include "lay/modular.hpp"
 #include "lay/linear.hpp"
+#include "lay/grid.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
 #include "utils/draw.hpp"

@@ -423,3 +423,17 @@ PNG and JPEG images use libpng and libjpeg (including libjpeg-turbo). Install th
 headers and libraries before configuring: `sudo apt-get install libpng-dev libjpeg-dev`.
 JPEG RGB, grayscale and CMYK images are decoded into RGBA buffers for all backends.
 Windows continues to use WIC.
+
+### Grid layout
+
+`bgui::grid` arranges uniform cells from left to right and adds rows as needed.
+Cell dimensions and gaps use logical pixels and follow the global UI scale.
+For a responsive, scrollable file browser, place it in a scrollable vertical
+`linear`, using `match_parent` width and `wrap_content` height:
+
+```cpp
+auto& entries = browser.add<bgui::grid>(bgui::vec2i{180, 40}, bgui::vec2i{6, 6});
+entries.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::wrap_content);
+auto& item = entries.add<bgui::button>("File.lua", .28f);
+item.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
+```
