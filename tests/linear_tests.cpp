@@ -63,7 +63,19 @@ static void run_layout_frame(layout& root, const vec2i& available) {
 	element::end_geometry_frame();
 }
 
-TEST(LinearTest, WrapContentMeasuresMatchParentChildrenByIntrinsicSize) {
+class LinearTest : public testing::Test {
+    theme previous_theme;
+    void SetUp() override {
+        auto& manager = style_manager::get_instance();
+        previous_theme = manager.get_theme();
+        manager.apply_theme({});
+    }
+    void TearDown() override {
+        style_manager::get_instance().apply_theme(previous_theme);
+    }
+};
+
+TEST_F(LinearTest, WrapContentMeasuresMatchParentChildrenByIntrinsicSize) {
     linear layout(orientation::vertical);
     layout.style.layout.require_mode(mode::wrap_content, mode::wrap_content);
     layout.compute_style();
@@ -79,7 +91,7 @@ TEST(LinearTest, WrapContentMeasuresMatchParentChildrenByIntrinsicSize) {
     EXPECT_EQ(layout.get_content_size().y, 24);
 }
 
-TEST(LinearTest, MeasuresNestedWrapContentBeforeSizingItsParent) {
+TEST_F(LinearTest, MeasuresNestedWrapContentBeforeSizingItsParent) {
     linear root(orientation::vertical);
     root.style.layout.require_mode(mode::wrap_content, mode::wrap_content);
     root.compute_style();
@@ -100,7 +112,7 @@ TEST(LinearTest, MeasuresNestedWrapContentBeforeSizingItsParent) {
     EXPECT_EQ(root.processed_size(), (vec2i{120, 35}));
 }
 
-TEST(LinearTest, MeasuresContentInsideNonFlexLayouts) {
+TEST_F(LinearTest, MeasuresContentInsideNonFlexLayouts) {
     layout root;
     auto& non_flex_container = root.add<linear>(orientation::vertical);
     non_flex_container.set_flex(false);
@@ -123,7 +135,7 @@ TEST(LinearTest, MeasuresContentInsideNonFlexLayouts) {
     EXPECT_EQ(non_flex_container.get_content_size(), (vec2i{120, 35}));
 }
 
-TEST(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {
+TEST_F(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {
 	linear root(orientation::vertical);
 	root.style.layout.require_size(200, 200);
 	root.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -143,7 +155,7 @@ TEST(LinearTest, CleanLayoutsSkipArrangeUntilInvalidated) {
 	EXPECT_EQ(child->arrange_count, 2);
 }
 
-TEST(LinearTest, VerticalLayoutFixedSizes) {
+TEST_F(LinearTest, VerticalLayoutFixedSizes) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -159,7 +171,7 @@ TEST(LinearTest, VerticalLayoutFixedSizes) {
 	EXPECT_EQ(second->processed_y(), 50);
 }
 
-TEST(LinearTest, HorizontalLayoutFixedSizes) {
+TEST_F(LinearTest, HorizontalLayoutFixedSizes) {
 	linear layout(orientation::horizontal);
 	layout.style.layout.require_size(400, 200);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -175,7 +187,7 @@ TEST(LinearTest, HorizontalLayoutFixedSizes) {
 	EXPECT_EQ(second->processed_x(), 50);
 }
 
-TEST(LinearTest, StretchElementsShareRemainingSpace) {
+TEST_F(LinearTest, StretchElementsShareRemainingSpace) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -193,7 +205,7 @@ TEST(LinearTest, StretchElementsShareRemainingSpace) {
 	EXPECT_EQ(second->processed_height(), 200);
 }
 
-TEST(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
+TEST_F(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -213,7 +225,7 @@ TEST(LinearTest, MatchParentUsesRemainingSpaceOnMainAxis) {
 			  layout.processed_height());
 }
 
-TEST(LinearTest, NonFlexElementsDoNotConsumeFlowSpace) {
+TEST_F(LinearTest, NonFlexElementsDoNotConsumeFlowSpace) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -237,7 +249,7 @@ TEST(LinearTest, NonFlexElementsDoNotConsumeFlowSpace) {
 	EXPECT_EQ(overlay->processed_rect(), (vec4i{150, 20, 40, 40}));
 }
 
-TEST(LinearTest, PercentChildrenUseAvailableMainAxisSize) {
+TEST_F(LinearTest, PercentChildrenUseAvailableMainAxisSize) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -259,7 +271,7 @@ TEST(LinearTest, PercentChildrenUseAvailableMainAxisSize) {
 	EXPECT_EQ(second->processed_y(), 200);
 }
 
-TEST(LinearTest, StretchChildrenShareSpaceAfterMargins) {
+TEST_F(LinearTest, StretchChildrenShareSpaceAfterMargins) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -283,7 +295,7 @@ TEST(LinearTest, StretchChildrenShareSpaceAfterMargins) {
 	EXPECT_EQ(second->processed_y(), 235);
 }
 
-TEST(LinearTest, PaddingAffectsLayout) {
+TEST_F(LinearTest, PaddingAffectsLayout) {
 	linear layout(orientation::vertical);
 	layout.style.layout.require_size(200, 400);
 	layout.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -299,7 +311,7 @@ TEST(LinearTest, PaddingAffectsLayout) {
 	EXPECT_EQ(child->processed_y(), 20);
 }
 
-TEST(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
+TEST_F(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
 	linear panel(orientation::vertical);
 	panel.style.layout.require_size(100, 100);
 	panel.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -338,7 +350,7 @@ TEST(LinearTest, ScrollableVerticalLayoutScrollsAndClamps) {
 	context.m_scroll_delta_y = 0.f;
 }
 
-TEST(LinearTest, NestedScrollableLayoutGetsWheelBeforeParent) {
+TEST_F(LinearTest, NestedScrollableLayoutGetsWheelBeforeParent) {
 	linear parent(orientation::vertical);
 	parent.style.layout.require_size(100, 100);
 	parent.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -380,7 +392,7 @@ TEST(LinearTest, NestedScrollableLayoutGetsWheelBeforeParent) {
 	context.m_scroll_delta_y = 0.f;
 }
 
-TEST(LinearTest, FractionalWheelDeltasAccumulate) {
+TEST_F(LinearTest, FractionalWheelDeltasAccumulate) {
 	linear panel(orientation::vertical);
 	panel.style.layout.require_size(100, 100);
 	panel.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -412,7 +424,7 @@ TEST(LinearTest, FractionalWheelDeltasAccumulate) {
 	context.m_scroll_delta_y = 0.f;
 }
 
-TEST(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
+TEST_F(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
 	linear panel(orientation::vertical);
 	panel.style.layout.require_size(100, 100);
 	panel.style.layout.require_mode(mode::pixel, mode::pixel);
@@ -449,7 +461,7 @@ TEST(LinearTest, ScrollableLayoutSkipsElementsOutsideViewport) {
 	EXPECT_EQ(draw_counts[3], 1);
 }
 
-TEST(LinearTest, ResizablePanelCanBeEnabledAndResized) {
+TEST_F(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 	linear panel(orientation::vertical);
 	panel.style.layout.require_size(200, 160);
 	panel.style.layout.require_mode(mode::pixel, mode::pixel);

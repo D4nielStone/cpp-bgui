@@ -1,7 +1,34 @@
 #include <gtest/gtest.h>
 #include "bgui.hpp"
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 
 using namespace bgui;
+
+TEST(DeclarativeStyleTest, ThemeAlignmentShorthandInitializesBothAxes) {
+    const auto path = std::filesystem::temp_directory_path() /
+        ("bgui-alignment-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()) + ".theme");
+    struct cleanup {
+        std::filesystem::path path;
+        ~cleanup() { std::error_code error; std::filesystem::remove(path, error); }
+    } cleanup{path};
+    {
+        std::ofstream file(path);
+        file << "[base]\nlayout.align = center\n"
+                "[type.single]\nlayout.align = end\n"
+                "[type.pair]\nlayout.align = start, end\n";
+        ASSERT_TRUE(file.good());
+    }
+    const auto loaded = load_theme(path.string());
+    ASSERT_TRUE(loaded.base.layout.align);
+    EXPECT_EQ(*loaded.base.layout.align, (vec<2, alignment>{alignment::center, alignment::center}));
+    ASSERT_TRUE(loaded.types.at("single").layout.align);
+    EXPECT_EQ(*loaded.types.at("single").layout.align, (vec<2, alignment>{alignment::end, alignment::end}));
+    ASSERT_TRUE(loaded.types.at("pair").layout.align);
+    EXPECT_EQ(*loaded.types.at("pair").layout.align, (vec<2, alignment>{alignment::start, alignment::end}));
+}
 
 TEST(StyleVisualTest, ResolveBackgroundColor) {
 	bgui::scoped_interface interface;

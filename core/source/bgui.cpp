@@ -542,6 +542,15 @@ static void shutdown_interface() noexcept {
     s_draw_data.reset();
     std::queue<std::function<void()>> empty;
     s_functions.swap(empty);
+#ifdef BGUI_USE_FREETYPE
+    try {
+        bgui::shutdown_freetype();
+    } catch (const std::exception& error) {
+        bgui::detail::log_err() << "[BGUI] FreeType shutdown: " << error.what() << '\n';
+    } catch (...) {
+        bgui::detail::log_err() << "[BGUI] FreeType shutdown failed.\n";
+    }
+#endif
 }
 
 static void set_keyboard_focus(bgui::element* element) {

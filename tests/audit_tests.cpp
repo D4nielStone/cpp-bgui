@@ -19,6 +19,23 @@ public:
 };
 }
 
+#ifdef BGUI_USE_FREETYPE
+TEST(AuditTest, FreeTypeSupportsRepeatedSetupShutdownAndInterfaceScopes) {
+    for (int cycle = 0; cycle < 3; ++cycle) {
+        bgui::scoped_interface interface;
+        bgui::set_up_freetype();
+        bgui::shutdown_freetype();
+        bgui::shutdown_freetype();
+        bgui::set_up_freetype();
+        const auto& font = bgui::ft_load_font(
+            "lifecycle-" + std::to_string(cycle),
+            bgui::asset_manager::get_instance().resolve_asset_path("fonts/3270NerdFont-Regular.ttf"),
+            bgui::font_manager::m_default_resolution);
+        EXPECT_GT(font.atlas.m_size.x, 0);
+    }
+}
+#endif
+
 TEST(AuditTest, StyleInvalidationVisitsNestedLayoutsOnce) {
     bgui::scoped_interface interface;
     style_probe root;

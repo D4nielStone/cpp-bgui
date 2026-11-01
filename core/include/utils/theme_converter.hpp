@@ -122,7 +122,7 @@ namespace bgui {
                 alignment a = to_alignment(val[0]);
                 alignment b = val.size() > 1
                     ? to_alignment(val[1])
-                    : b;
+                    : a;
                 out.layout.align = {a, b};
             }
             else if (key == "layout.padding") {
