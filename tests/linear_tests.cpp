@@ -500,7 +500,7 @@ TEST_F(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 	EXPECT_FALSE(has_resize_handle);
 }
 
-TEST(LinearTest, WrapContentIncludesChildMinimumSize) {
+TEST_F(LinearTest, WrapContentIncludesChildMinimumSize) {
     scoped_interface interface;
     auto& parent = get_layout().add<linear>(orientation::vertical);
     parent.style.layout.require_mode(mode::wrap_content, mode::wrap_content);
