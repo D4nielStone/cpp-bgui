@@ -499,3 +499,16 @@ TEST_F(LinearTest, ResizablePanelCanBeEnabledAndResized) {
 	}
 	EXPECT_FALSE(has_resize_handle);
 }
+
+TEST(LinearTest, WrapContentIncludesChildMinimumSize) {
+    scoped_interface interface;
+    auto& parent = get_layout().add<linear>(orientation::vertical);
+    parent.style.layout.require_mode(mode::wrap_content, mode::wrap_content);
+    auto& child = parent.add<mock_element>(1, 1, mode::wrap_content, mode::wrap_content);
+    child.style.layout.limit_min = {40, 32};
+    on_update();
+    EXPECT_GE(parent.processed_width(), child.processed_width());
+    EXPECT_GE(parent.processed_height(), child.processed_height());
+    EXPECT_GE(parent.get_content_size().x, 40);
+    EXPECT_GE(parent.get_content_size().y, 32);
+}

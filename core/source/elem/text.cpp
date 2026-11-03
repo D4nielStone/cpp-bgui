@@ -636,17 +636,46 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     float line_x = 0.f;
     int line_count = 1;
     const float gutter_width = get_line_number_gutter_width(font, scale);
-    const int combined_width = get_content_size().x;
+    std::string display_buffer = m_buffer;
+    int available_width = processed_width();
+    bool button_label = false;
+    for (auto* parent = get_parent(); parent; parent = parent->get_parent()) {
+        if (parent->type != "button") continue;
+        button_label = true;
+        available_width = std::max(0, std::min(available_width,
+            parent->processed_x() + parent->processed_width() - processed_x() -
+            parent->computed_style.layout.padding.z));
+        break;
+    }
+    if (button_label && get_text_width(display_buffer) > available_width) {
+        const std::string suffix = "...";
+        const float suffix_width = get_text_width(suffix);
+        std::vector<size_t> lengths;
+        const auto characters = utf8_to_utf32(display_buffer, &lengths);
+        size_t bytes = 0;
+        float width = 0.f;
+        for (size_t i = 0; i < characters.size(); ++i) {
+            const float advance = get_text_width(display_buffer.substr(bytes, lengths[i]));
+            if (width + advance + suffix_width > available_width) break;
+            width += advance;
+            bytes += lengths[i];
+        }
+        display_buffer = suffix_width <= available_width
+            ? display_buffer.substr(0, bytes) + suffix : std::string{};
+    }
+    const int combined_width = button_label
+        ? std::min(available_width, static_cast<int>(get_text_width(display_buffer)))
+        : get_content_size().x;
     float text_origin_x = static_cast<float>(processed_x());
     switch (computed_style.layout.align.x) {
         case bgui::alignment::start:
             text_origin_x += gutter_width;
             break;
         case bgui::alignment::center:
-            text_origin_x += (processed_width() - combined_width) / 2 + gutter_width;
+            text_origin_x += ((button_label ? available_width : processed_width()) - combined_width) / 2 + gutter_width;
             break;
         case bgui::alignment::end:
-            text_origin_x += processed_width() - combined_width + gutter_width;
+            text_origin_x += (button_label ? available_width : processed_width()) - combined_width + gutter_width;
             break;
     }
     text_origin_x += m_draw_offset.x - m_horizontal_scroll;
@@ -657,7 +686,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     // e re-medir substrings dentro do loop (era O(n^2)) e evitando
     // usar índices de codepoint em std::string::substr (bug de bytes).
     std::vector<size_t> byte_lengths;
-    std::u32string codepoints = utf8_to_utf32(m_buffer, &byte_lengths);
+    std::u32string codepoints = utf8_to_utf32(display_buffer, &byte_lengths);
     size_t byte_position = 0;
     float cursor_x = 0.f;
     float cursor_y = 0.f;
