@@ -117,16 +117,13 @@ namespace bgui {
     void menu_bar::on_update() {
         bgui::linear::on_update();
 
-        const auto& context = bgui::get_context();
-        const bool clicked = bgui::get_pressed(bgui::input_key::mouse_left) &&
-            !context.m_last_mouse_left;
-        if (!clicked)
+        const auto mouse = bgui::get_mouse_press_position();
+        if (!mouse)
             return;
 
-        const auto mouse = bgui::get_mouse_position();
         for (auto& menu : m_menus) {
             if (menu && menu->is_open() &&
-                !menu->contains_point(mouse.x, mouse.y)) {
+                !menu->contains_point(mouse->x, mouse->y)) {
                 menu->close();
             }
         }

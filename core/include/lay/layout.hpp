@@ -88,6 +88,8 @@ public:
                 continue;
 
             cancel_interactions(it->get());
+            // Destructors may remove sibling popups from this same vector.
+            auto removed = std::move(*it);
             elems.erase(it);
             mark_layout_dirty();
             invalidate_cacheability();

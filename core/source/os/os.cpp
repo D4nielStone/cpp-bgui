@@ -37,6 +37,15 @@ bool bgui::get_pressed(const bgui::input_key& k) {
     return false;
 }
 
+std::optional<bgui::vec2i> bgui::get_mouse_press_position() {
+    const auto& io = get_context();
+    if (io.m_mouse_press_position)
+        return io.m_mouse_press_position;
+    if (!io.m_last_mouse_left && get_pressed(input_key::mouse_left))
+        return get_mouse_position();
+    return std::nullopt;
+}
+
 float bgui::get_time() {
     using namespace std::chrono;
     static auto start_time = high_resolution_clock::now();

@@ -135,21 +135,17 @@ void bgui::combo_box::on_update() {
     ensure_options_menu();
 
     if (m_options_menu->is_enabled()) {
-        const auto& context = bgui::get_context();
-        const bool clicked = bgui::get_pressed(bgui::input_key::mouse_left) &&
-            !context.m_last_mouse_left;
-        if (clicked) {
-            const auto mouse = bgui::get_mouse_position();
+        if (const auto mouse = bgui::get_mouse_press_position()) {
             const bool inside_combo =
-                mouse.x >= processed_x() &&
-                mouse.x <= processed_x() + processed_width() &&
-                mouse.y >= processed_y() &&
-                mouse.y <= processed_y() + processed_height();
+                mouse->x >= processed_x() &&
+                mouse->x <= processed_x() + processed_width() &&
+                mouse->y >= processed_y() &&
+                mouse->y <= processed_y() + processed_height();
             const bool inside_options =
-                mouse.x >= m_options_menu->processed_x() &&
-                mouse.x <= m_options_menu->processed_x() + m_options_menu->processed_width() &&
-                mouse.y >= m_options_menu->processed_y() &&
-                mouse.y <= m_options_menu->processed_y() + m_options_menu->processed_height();
+                mouse->x >= m_options_menu->processed_x() &&
+                mouse->x <= m_options_menu->processed_x() + m_options_menu->processed_width() &&
+                mouse->y >= m_options_menu->processed_y() &&
+                mouse->y <= m_options_menu->processed_y() + m_options_menu->processed_height();
             if (!inside_combo && !inside_options)
                 m_options_menu->set_enable(false);
         }

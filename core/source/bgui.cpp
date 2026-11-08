@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -260,6 +261,11 @@ namespace {
         return input.eof();
     }
 
+    bool read_count(std::istream& input, std::size_t& count) {
+        input >> std::ws;
+        return input.peek() != '-' && static_cast<bool>(input >> count);
+    }
+
     template<typename T>
     bool read_configuration_value(
         const configuration_sections& sections,
@@ -275,8 +281,12 @@ namespace {
             return false;
 
         std::istringstream input(value_entry->second);
-        if (!(input >> value))
+        if constexpr (std::is_same_v<T, std::size_t>) {
+            if (!read_count(input, value))
+                return false;
+        } else if (!(input >> value)) {
             return false;
+        }
         input >> std::ws;
         return input.eof();
     }
@@ -303,17 +313,18 @@ namespace {
 
     bool load_legacy_configuration(std::istream& input) {
         std::size_t dock_count = 0;
-        if (!(input >> dock_count))
+        if (!read_count(input, dock_count))
             return false;
 
-        std::vector<bgui::dock::configuration> configurations(dock_count);
-        for (auto& configuration : configurations) {
+        std::vector<bgui::dock::configuration> configurations;
+        for (std::size_t dock_index = 0; dock_index < dock_count; ++dock_index) {
+            bgui::dock::configuration configuration;
             std::size_t window_count = 0;
             if (!(input >> configuration.left_ratio >> configuration.right_ratio
-                        >> configuration.top_ratio >> configuration.bottom_ratio >> window_count))
+                        >> configuration.top_ratio >> configuration.bottom_ratio) ||
+                !read_count(input, window_count))
                 return false;
 
-            configuration.windows.reserve(window_count);
             for (std::size_t index = 0; index < window_count; ++index) {
                 bgui::dock::window_configuration window;
                 int area = 0;
@@ -327,6 +338,7 @@ namespace {
                 window.floating = floating != 0;
                 configuration.windows.push_back(std::move(window));
             }
+            configurations.push_back(std::move(configuration));
         }
 
         std::vector<bgui::dock*> docks;
@@ -351,10 +363,10 @@ namespace {
             !read_configuration_value(sections, "interface", "docks", dock_count))
             return false;
 
-        std::vector<bgui::dock::configuration> configurations(dock_count);
+        std::vector<bgui::dock::configuration> configurations;
         for (std::size_t dock_index = 0; dock_index < dock_count; ++dock_index) {
             const auto section = "dock." + std::to_string(dock_index);
-            auto& configuration = configurations[dock_index];
+            bgui::dock::configuration configuration;
             std::size_t window_count = 0;
             if (!read_configuration_value(sections, section, "left_ratio", configuration.left_ratio) ||
                 !read_configuration_value(sections, section, "right_ratio", configuration.right_ratio) ||
@@ -363,7 +375,6 @@ namespace {
                 !read_configuration_value(sections, section, "windows", window_count))
                 return false;
 
-            configuration.windows.reserve(window_count);
             for (std::size_t window_index = 0; window_index < window_count; ++window_index) {
                 const auto window_section = section + ".window." + std::to_string(window_index);
                 bgui::dock::window_configuration window;
@@ -386,15 +397,16 @@ namespace {
                 configuration.windows.push_back(std::move(window));
             }
 
-            if (version < 2)
+            if (version < 2) {
+                configurations.push_back(std::move(configuration));
                 continue;
+            }
 
             std::size_t split_count = 0;
             std::size_t tab_group_count = 0;
             if (!read_configuration_value(sections, section, "splits", split_count) ||
                 !read_configuration_value(sections, section, "tab_groups", tab_group_count))
                 return false;
-            configuration.splits.reserve(split_count);
             for (std::size_t split_index = 0; split_index < split_count; ++split_index) {
                 const auto split_section = section + ".split." + std::to_string(split_index);
                 bgui::dock::split_configuration split;
@@ -413,7 +425,6 @@ namespace {
                 configuration.splits.push_back(std::move(split));
             }
 
-            configuration.tab_groups.reserve(tab_group_count);
             for (std::size_t group_index = 0; group_index < tab_group_count; ++group_index) {
                 const auto group_section = section + ".tabs." + std::to_string(group_index);
                 bgui::dock::tab_group_configuration group;
@@ -422,7 +433,6 @@ namespace {
                     !read_configuration_string(sections, group_section, "active", group.active) ||
                     !read_configuration_value(sections, group_section, "windows", tab_count))
                     return false;
-                group.windows.reserve(tab_count);
                 for (std::size_t tab_index = 0; tab_index < tab_count; ++tab_index) {
                     std::string title;
                     if (!read_configuration_string(
@@ -432,6 +442,7 @@ namespace {
                 }
                 configuration.tab_groups.push_back(std::move(group));
             }
+            configurations.push_back(std::move(configuration));
         }
 
         std::vector<bgui::dock*> docks;
@@ -535,6 +546,8 @@ static void shutdown_interface() noexcept {
     s_profiling_enabled = false;
     reset_profiling_metrics();
     init_trigger = false;
+    bgui::get_context().m_mouse_left_events.clear();
+    bgui::get_context().m_mouse_press_position.reset();
     s_keyboard_focused = nullptr;
     s_mouse_target = nullptr;
     s_mouse_captured = nullptr;
@@ -674,7 +687,22 @@ static void clear_stale_mouse_hover(bgui::layout& lay, bgui::element* target) {
     }
 }
 
-bool update_inputs(bgui::layout &lay){
+static void dispatch_mouse_hit(bgui::element& element, bool click) {
+    s_mouse_target = &element;
+    element.on_mouse_hover();
+    if (!click || !s_mouse_target)
+        return;
+
+    s_mouse_captured = &element;
+    set_keyboard_focus(element.type == "inputarea" ? &element : nullptr);
+    element.on_clicked();
+    // Removal or disabling during the callback cancels capture.
+    if (s_mouse_captured)
+        s_mouse_captured->on_pressed();
+}
+
+static bool update_inputs(bgui::layout& lay, bool previous_pressed,
+                          const bgui::vec2i& previous_position) {
     auto m = bgui::get_mouse_position();
     float mx = m[0];
     float my = m[1];
@@ -687,8 +715,8 @@ bool update_inputs(bgui::layout &lay){
     }
 
     bool mouse_now = bgui::get_pressed(bgui::input_key::mouse_left);
-    bool mouse_click = (mouse_now && !bgui::get_context().m_last_mouse_left);
-    bool mouse_released = (!mouse_now && bgui::get_context().m_last_mouse_left);
+    bool mouse_click = (mouse_now && !previous_pressed);
+    bool mouse_released = (!mouse_now && previous_pressed);
 
     if (s_mouse_captured) {
         s_mouse_target = s_mouse_captured;
@@ -696,13 +724,14 @@ bool update_inputs(bgui::layout &lay){
             s_mouse_captured->on_released();
             s_mouse_captured = nullptr;
         } else if (mouse_now) {
-            s_mouse_captured->set_drag(m - bgui::get_context().m_last_mouse_pos);
+            s_mouse_captured->set_drag(m - previous_position);
         }
         return true;
     }
 
     if (auto* scrollable = dynamic_cast<bgui::linear*>(&lay)) {
-        auto& scrollbar = scrollable->get_scrollbar_element();
+        for (auto* bar : {&scrollable->get_scrollbar_element(), &scrollable->get_horizontal_scrollbar_element()}) {
+        auto& scrollbar = *bar;
         const float x = static_cast<float>(scrollbar.processed_x());
         const float y = static_cast<float>(scrollbar.processed_y());
         const float w = static_cast<float>(scrollbar.processed_width());
@@ -711,15 +740,9 @@ bool update_inputs(bgui::layout &lay){
             mx >= x && mx <= x + w && my >= y && my <= y + h;
 
         if (inside) {
-            s_mouse_target = &scrollbar;
-            scrollbar.on_mouse_hover();
-            if (mouse_click) {
-                s_mouse_captured = &scrollbar;
-                set_keyboard_focus(nullptr);
-                scrollbar.on_clicked();
-                scrollbar.on_pressed();
-            }
+            dispatch_mouse_hit(scrollbar, mouse_click);
             return true;
+        }
         }
     }
 
@@ -739,9 +762,9 @@ bool update_inputs(bgui::layout &lay){
         }
     }
     
-    for(size_t i = lay.get_elements().size(); i-- > 0; ) {
-        // iterate through elements in reverse order to prioritize topmost elements
-        auto& elements = lay.get_elements()[static_cast<bgui::layer>(i)];
+    auto& layers = lay.get_elements();
+    for (auto layer = layers.rbegin(); layer != layers.rend(); ++layer) {
+        auto& elements = layer->second;
         for (size_t i = elements.size(); i-- > 0; ) {
             auto elem = elements[i].get();
 
@@ -751,7 +774,7 @@ bool update_inputs(bgui::layout &lay){
                 continue;
 
             if (auto* cast = elem->as_layout())
-                if(update_inputs(*cast)) {
+                if(update_inputs(*cast, previous_pressed, previous_position)) {
                     return true;
                 }
             
@@ -767,8 +790,8 @@ bool update_inputs(bgui::layout &lay){
                 my >= y &&
                 my <= y + h;
 
-                if (inside) {
-                if(!elem->receives_input()) {
+            if (inside) {
+                if (!elem->receives_input()) {
                     // A non-interactive child bubbles the hit to its
                     // interactive parent, but a front-most sibling blocks
                     // elements behind it from receiving the click.
@@ -780,18 +803,7 @@ bool update_inputs(bgui::layout &lay){
                     }
                     return true;
                 }
-                s_mouse_target = elem;
-                elem->on_mouse_hover();
-                if (mouse_click) {
-                    s_mouse_captured = elem;
-                    if (elem->type == "inputarea") {
-                        set_keyboard_focus(elem);
-                    } else {
-                        set_keyboard_focus(nullptr);
-                    }
-                    elem->on_clicked();
-                    elem->on_pressed();
-                }
+                dispatch_mouse_hit(*elem, mouse_click);
                 return true;
             }
         }
@@ -884,9 +896,34 @@ void bgui::on_update() {
     get_context().m_actual_cursor = cursor::arrow;
     s_mouse_target = nullptr;
     const float scale_before_update = s_global_scale;
-    update_inputs(*bgui::s_main_layout);
+    auto& io = get_context();
+    const auto current_action = io.m_input_map[input_key::mouse_left];
+    const auto current_position = io.m_mouse_position;
+    const bool has_mouse_events = !io.m_mouse_left_events.empty();
+    bool previous_pressed = io.m_last_mouse_left;
+    auto previous_position = io.m_last_mouse_pos;
+    while (!io.m_mouse_left_events.empty()) {
+        const auto event = io.m_mouse_left_events.front();
+        io.m_mouse_left_events.pop_front();
+        io.m_mouse_position = event.position;
+        io.m_input_map[input_key::mouse_left] = event.action;
+        s_mouse_target = nullptr;
+        update_inputs(*s_main_layout, previous_pressed, previous_position);
+        previous_pressed = get_pressed(input_key::mouse_left);
+        previous_position = event.position;
+        if (event.action == input_action::press)
+            io.m_mouse_press_position = event.position;
+    }
+    io.m_mouse_position = current_position;
+    io.m_input_map[input_key::mouse_left] = current_action;
+    if (!has_mouse_events || current_position != previous_position ||
+        get_pressed(input_key::mouse_left) != previous_pressed) {
+        s_mouse_target = nullptr;
+        update_inputs(*s_main_layout, previous_pressed, previous_position);
+    }
     clear_stale_mouse_hover(*bgui::s_main_layout, s_mouse_target);
     bgui::s_main_layout->on_update();
+    io.m_mouse_press_position.reset();
     if (s_global_scale != scale_before_update)
         cascade_style();
     bgui::get_context().m_scroll_delta_y = 0.f;
@@ -915,7 +952,9 @@ void bgui::on_update() {
     // get new requires
     if(!get_draw_data()->m_quad_requires.empty()) bgui::detail::log_out() << "[BGUI] Warning: draw data not empty at beginning of frame.\nMake sure you are resetting draw data each frame.\n";
     get_draw_data()->m_clip_rect = {0, 0, w_size.x, w_size.y};
+    get_draw_data()->m_widget_vertex_begin = get_draw_list().get_vertices().size();
     bgui::s_main_layout->get_cached_requires(get_draw_data());
+    get_draw_data()->m_widget_vertex_end = get_draw_list().get_vertices().size();
     if (s_profiling_enabled) {
         const auto update_end = profiling_clock::now();
         s_profile_update_time_ms =

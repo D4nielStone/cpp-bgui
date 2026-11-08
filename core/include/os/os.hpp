@@ -1,5 +1,7 @@
 #pragma once
 #include <unordered_map>
+#include <deque>
+#include <optional>
 #include <string>
 #include "utils/vec.hpp"
 #include "utils/mat.hpp"
@@ -14,6 +16,11 @@ namespace bgui {
         vec2 start_window_pos;
         vec2 offset;
     };
+    struct mouse_button_event {
+        input_action action;
+        vec2i position;
+    };
+
     struct context {
         drag_info m_draginfo;
         bgui::vec2i m_size{800, 600};
@@ -29,10 +36,13 @@ namespace bgui {
         bool m_last_mouse_left = false;
         cursor m_actual_cursor = cursor::arrow;
         std::function<void()> m_refresh_func;
+        std::deque<mouse_button_event> m_mouse_left_events;
+        std::optional<vec2i> m_mouse_press_position;
     };
     context& get_context();
     bgui::vec2i get_context_size();
     bgui::vec2i get_mouse_position();
+    std::optional<vec2i> get_mouse_press_position();
     std::string read_file(const std::string& path);
     bgui::mat4 get_projection();
     bool get_pressed(const input_key&);

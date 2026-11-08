@@ -8,32 +8,31 @@ using namespace bgui;
 
 linear::linear(const orientation& ori) : m_orientation(ori), layout() {
     type = "linear";
-    m_scrollbar.type = "scrollbar";
-    m_scrollbar.set_parent(this);
-    m_scrollbar.receives_input(true);
-    m_scrollbar.style.visual.background.normal = color{0.45f, 0.45f, 0.45f, 0.85f};
-    m_scrollbar.style.visual.border.normal = color{0.f, 0.f, 0.f, 0.f};
-    m_scrollbar.style.visual.border_radius = 3.f;
-    m_scrollbar.style.visual.border_size = 0.f;
-    m_scrollbar.style.visual.visible = true;
+    for (auto* bar : {&m_scrollbar, &m_scrollbar_x}) {
+        bar->type = "scrollbar";
+        bar->set_parent(this);
+        bar->receives_input(true);
+        bar->set_enable(false);
+        bar->style.visual.background.normal = color{0.45f, 0.45f, 0.45f, 0.85f};
+        bar->style.visual.border.normal = color{0.f, 0.f, 0.f, 0.f};
+        bar->style.visual.border_radius = 3.f;
+        bar->style.visual.border_size = 0.f;
+        bar->style.visual.visible = true;
+    }
 }
 
-bool linear::can_scroll_in_direction(const float scroll_delta) const {
-    if (!m_scrollable || m_orientation != orientation::vertical ||
-        scroll_delta == 0.f)
-        return false;
-
-    const int max_scroll = std::max(
-        0, m_scroll_content_height - processed_height());
-    return scroll_delta < 0.f
-        ? m_scroll_offset < max_scroll
-        : m_scroll_offset > 0;
+bool linear::can_scroll_in_direction(const float scroll_delta, const int axis) const {
+    if (!m_scrollable || !std::isfinite(scroll_delta) || scroll_delta == 0.f) return false;
+    const int content = axis == 0 ? m_scroll_content_width : m_scroll_content_height;
+    const int offset = axis == 0 ? m_scroll_offset_x : m_scroll_offset;
+    const int max_scroll = std::max(0, content - processed_size()[axis]);
+    return scroll_delta < 0.f ? offset < max_scroll : offset > 0;
 }
 
 bool linear::has_scrollable_descendant_at(
     const float x,
     const float y,
-    const float scroll_delta
+    const float scroll_delta, const int axis
 ) {
     auto contains_scrollable = [&](auto&& self, layout& parent) -> bool {
         auto& layers = parent.get_elements();
@@ -64,7 +63,7 @@ bool linear::has_scrollable_descendant_at(
 
                 if (auto* scrollable = dynamic_cast<linear*>(child_layout);
                     scrollable &&
-                    scrollable->can_scroll_in_direction(scroll_delta))
+                    scrollable->can_scroll_in_direction(scroll_delta, axis))
                     return true;
 
                 if (self(self, *child_layout))
@@ -78,64 +77,49 @@ bool linear::has_scrollable_descendant_at(
 }
 
 void linear::on_update() {
-    const bool vertical = (m_orientation == orientation::vertical);
-    if (m_scrollable && vertical) {
+    if (m_scrollable) {
         const auto mouse = bgui::get_mouse_position();
-        const bool inside =
-            mouse.x >= processed_x() &&
-            mouse.x <= processed_x() + processed_width() &&
-            mouse.y >= processed_y() &&
-            mouse.y <= processed_y() + processed_height();
+        const auto clip = get_children_clip_rect();
+        const bool inside = mouse.x >= clip.x && mouse.x <= clip.x + clip.z &&
+            mouse.y >= clip.y && mouse.y <= clip.y + clip.w;
         auto& context = bgui::get_context();
-        const float scroll_delta = context.m_scroll_delta_y;
-        if (inside && can_scroll_in_direction(scroll_delta) &&
-            !has_scrollable_descendant_at(mouse.x, mouse.y, scroll_delta)) {
-            const float scale = bgui::get_global_scale();
-            const float scroll_pixels =
-                scroll_delta * 40.f * scale + m_scroll_remainder;
-            const int pixel_delta =
-                static_cast<int>(std::lround(scroll_pixels));
-            if (pixel_delta == 0) {
-                m_scroll_remainder = scroll_pixels;
-                context.m_scroll_delta_y = 0.f;
-            } else {
-                const int max_scroll = std::max(
-                    0, m_scroll_content_height - processed_height());
-                const int next_offset = std::clamp(
-                    m_scroll_offset - pixel_delta, 0, max_scroll);
-                if (next_offset != m_scroll_offset) {
-                    m_scroll_offset = next_offset;
-                    m_scroll_remainder = scroll_pixels - pixel_delta;
+        const bool shift = get_pressed(input_key::left_shift) || get_pressed(input_key::right_shift);
+        for (int axis = 0; axis < 2; ++axis) {
+            if (axis == 1 && shift) continue;
+            float& delta = axis == 0 && (!shift || context.m_scroll_delta_x != 0.f) ? context.m_scroll_delta_x : context.m_scroll_delta_y;
+            int& offset = axis == 0 ? m_scroll_offset_x : m_scroll_offset;
+            float& remainder = axis == 0 ? m_scroll_remainder_x : m_scroll_remainder;
+            const int content = axis == 0 ? m_scroll_content_width : m_scroll_content_height;
+            const int max_scroll = std::max(0, content - processed_size()[axis]);
+            if (inside && can_scroll_in_direction(delta, axis) &&
+                !has_scrollable_descendant_at(mouse.x, mouse.y, delta, axis)) {
+                const float pixels = delta * 40.f * bgui::get_global_scale() + remainder;
+                const int movement = static_cast<int>(std::clamp(std::round(double(pixels)),
+                    -double(max_scroll), double(max_scroll)));
+                const int next = std::clamp(offset - movement, 0, max_scroll);
+                if (next != offset || movement == 0) {
+                    offset = next;
+                    remainder = movement == 0 || std::abs(pixels) < max_scroll ? pixels - movement : 0.f;
+                    delta = 0.f;
                     mark_layout_dirty();
-                    context.m_scroll_delta_y = 0.f;
                 }
             }
-        }
-    }
-
-    if (m_scrollable && vertical) {
-        const auto drag = m_scrollbar.is_drag();
-        if (drag.y != 0) {
-            const int padding_top = computed_style.layout.padding.y;
-            const int padding_bottom = computed_style.layout.padding.w;
-            const int track_height = std::max(
-                0, processed_height() - padding_top - padding_bottom);
-            const int thumb_travel = std::max(
-                0, track_height - m_scrollbar.processed_height());
-            if (thumb_travel > 0) {
-                const int max_scroll = std::max(
-                    0, m_scroll_content_height - processed_height());
-                const int previous_offset = m_scroll_offset;
-                m_scroll_offset += static_cast<int>(
-                    static_cast<long long>(drag.y) * max_scroll / thumb_travel);
-                m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
-                if (m_scroll_offset != previous_offset)
+            auto& bar = axis == 0 ? m_scrollbar_x : m_scrollbar;
+            const auto drag = bar.is_drag();
+            if (drag[axis] != 0) {
+                const int padding = computed_style.layout.padding[axis] + computed_style.layout.padding[axis + 2];
+                const int travel = std::max(0, processed_size()[axis] - padding - bar.processed_size()[axis] -
+                    ((axis == 0 ? m_scroll_content_height > processed_height() : m_scroll_content_width > processed_width())
+                        ? 7 * std::max(1, static_cast<int>(std::lround(bgui::get_global_scale()))) : 0));
+                if (travel > 0) {
+                    const auto next = static_cast<long long>(offset) + static_cast<long long>(drag[axis]) * max_scroll / travel;
+                    offset = static_cast<int>(std::clamp(next, 0LL, static_cast<long long>(max_scroll)));
                     mark_layout_dirty();
+                }
+                bar.set_drag({0, 0});
             }
-            m_scrollbar.set_drag({0, 0});
         }
     }
-
     layout::on_update();
 }
 
@@ -145,8 +129,7 @@ void linear::arrange() {
     clear_layout_dirty();
 
     const bool vertical = (m_orientation == orientation::vertical);
-    if (m_scrollable && vertical)
-        m_scroll_content_height = 0;
+    if (m_scrollable) { m_scroll_content_height = 0; m_scroll_content_width = 0; }
 
     for(auto& [lay, elems] : m_elements) {
     for (auto& elem : m_elements[lay]) {
@@ -157,8 +140,7 @@ void linear::arrange() {
     calc_content_size(lay);
 
     if (m_elements[lay].empty()) {
-        if (m_scrollable && vertical && lay == layer::base)
-            m_scroll_offset = 0;
+        if (m_scrollable && lay == layer::base) { m_scroll_offset = 0; m_scroll_offset_x = 0; }
         continue;
     }
 
@@ -271,10 +253,15 @@ void linear::arrange() {
 
     content_main += pad_main_start + pad_main_end;
 
-    if (m_scrollable && vertical && lay == layer::base) {
-        m_scroll_content_height = content_main;
-        const int max_scroll = std::max(0, content_main - processed_height());
-        m_scroll_offset = std::clamp(m_scroll_offset, 0, max_scroll);
+    if (m_scrollable && lay == layer::base) {
+        int content_cross = pad_cross_start + pad_cross_end;
+        for (auto& elem : m_elements[lay]) if (elem && elem->is_enabled() && elem->is_flex())
+            content_cross = std::max(content_cross, pad_cross_start + pad_cross_end + elem->processed_size()[cross] +
+                elem->computed_style.layout.margin[cross] + elem->computed_style.layout.margin[cross + 2]);
+        m_scroll_content_height = vertical ? content_main : content_cross;
+        m_scroll_content_width = vertical ? content_cross : content_main;
+        m_scroll_offset = std::clamp(m_scroll_offset, 0, std::max(0, m_scroll_content_height - processed_height()));
+        m_scroll_offset_x = std::clamp(m_scroll_offset_x, 0, std::max(0, m_scroll_content_width - processed_width()));
     }
 
     int free_space = available[main] - (content_main - pad_main_start - pad_main_end);
@@ -322,15 +309,15 @@ void linear::arrange() {
 
         if (vertical) {
             elem->set_final_rect(
-                cross_pos + processed_x(),
+                cross_pos + processed_x() - (m_scrollable ? m_scroll_offset_x : 0),
                 cursor_main + processed_y() - (m_scrollable ? m_scroll_offset : 0),
                 elem->processed_width(),
                 elem->processed_height()
             );
         } else {
             elem->set_final_rect(
-                cursor_main + processed_x(),
-                cross_pos + processed_y(),
+                cursor_main + processed_x() - (m_scrollable ? m_scroll_offset_x : 0),
+                cross_pos + processed_y() - (m_scrollable ? m_scroll_offset : 0),
                 elem->processed_width(),
                 elem->processed_height()
             );
@@ -347,18 +334,19 @@ void linear::arrange() {
     }
     }
 
-    if (m_scrollable && vertical)
-        update_scrollbar_rect();
+    if (m_scrollable) update_scrollbar_rect();
 }
 
 void linear::prepare_geometry_frame() {
     layout::prepare_geometry_frame();
     m_scrollbar.prepare_geometry_frame();
+    m_scrollbar_x.prepare_geometry_frame();
 }
 
 void linear::commit_geometry() {
     layout::commit_geometry();
     m_scrollbar.commit_geometry();
+    m_scrollbar_x.commit_geometry();
 }
 
 void linear::set_scrollable(bool enabled) {
@@ -368,6 +356,9 @@ void linear::set_scrollable(bool enabled) {
     m_scrollable = enabled;
     mark_layout_dirty();
     if (!enabled) {
+        m_scroll_offset_x = m_scroll_content_width = 0;
+        m_scroll_remainder_x = 0.f;
+        m_scrollbar_x.set_enable(false);
         m_scroll_offset = 0;
         m_scroll_content_height = 0;
         m_scroll_remainder = 0.f;
@@ -376,50 +367,33 @@ void linear::set_scrollable(bool enabled) {
 }
 
 void linear::update_scrollbar_rect() {
-    if (!m_scrollable || m_orientation != orientation::vertical ||
-        m_scroll_content_height <= processed_height() || processed_height() <= 0) {
-        m_scrollbar.set_enable(false);
-        return;
-    }
-
     const int scale = std::max(1, static_cast<int>(std::lround(bgui::get_global_scale())));
-    const int bar_width = std::min(6 * scale, std::max(0, processed_width()));
-    const int padding_top = computed_style.layout.padding.y;
-    const int padding_bottom = computed_style.layout.padding.w;
-    const int track_height = std::max(0, processed_height() - padding_top - padding_bottom);
-    if (track_height <= 0 || m_scroll_content_height <= 0) {
-        m_scrollbar.set_enable(false);
-        return;
+    for (int axis = 0; axis < 2; ++axis) {
+        auto& bar = axis == 0 ? m_scrollbar_x : m_scrollbar;
+        const int extent = processed_size()[axis];
+        const int content = axis == 0 ? m_scroll_content_width : m_scroll_content_height;
+        const int offset = axis == 0 ? m_scroll_offset_x : m_scroll_offset;
+        const int padding_start = computed_style.layout.padding[axis];
+        const int padding_end = computed_style.layout.padding[axis + 2];
+        const int track = std::max(0, extent - padding_start - padding_end -
+            ((axis == 0 ? m_scroll_content_height > processed_height() : m_scroll_content_width > processed_width()) ? 7 * scale : 0));
+        const int thickness = std::min(6 * scale, std::max(0, processed_size()[1 - axis]));
+        if (!m_scrollable || content <= extent || track <= 0 || thickness <= 0) { bar.set_enable(false); continue; }
+        const int thumb = std::clamp(static_cast<int>(static_cast<long long>(track) * track / content), std::min(20 * scale, track), track);
+        const int position = static_cast<int>(static_cast<long long>(offset) * (track - thumb) / (content - extent));
+        if (axis == 0) bar.set_final_rect(processed_x() + padding_start + position,
+            processed_y() + processed_height() - thickness - scale, thumb, thickness);
+        else bar.set_final_rect(processed_x() + processed_width() - thickness - scale,
+            processed_y() + padding_start + position, thickness, thumb);
+        bar.set_enable(true);
     }
-
-    const int max_scroll = m_scroll_content_height - processed_height();
-    const int thumb_height = std::clamp(
-        static_cast<int>(static_cast<long long>(track_height) * track_height /
-                         m_scroll_content_height),
-        std::min(20 * scale, track_height),
-        track_height
-    );
-    const int thumb_travel = track_height - thumb_height;
-    const int thumb_y = processed_y() + padding_top +
-        static_cast<int>(static_cast<long long>(m_scroll_offset) * thumb_travel / max_scroll);
-
-    m_scrollbar.set_final_rect(
-        processed_x() + processed_width() - bar_width - scale,
-        thumb_y,
-        bar_width,
-        thumb_height
-    );
-    m_scrollbar.set_enable(bar_width > 0 && thumb_height > 0);
 }
 
 void linear::get_requires(bgui::draw_data* data) {
     layout::get_requires(data);
-    if (!m_scrollbar.is_enabled())
-        return;
-
     const auto inherited_clip = data->m_clip_rect;
     data->m_clip_rect = bgui::intersect_rect(inherited_clip, get_children_clip_rect());
-    m_scrollbar.get_cached_requires(data);
+    for (auto* bar : {&m_scrollbar, &m_scrollbar_x}) if (bar->is_enabled()) bar->get_cached_requires(data);
     data->m_clip_rect = inherited_clip;
 }
 

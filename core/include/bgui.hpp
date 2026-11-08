@@ -25,6 +25,7 @@
 #include "lay/modular.hpp"
 #include "lay/linear.hpp"
 #include "lay/grid.hpp"
+#include "panel_facade.hpp"
 #include "utils/mat.hpp"
 #include "utils/vec.hpp"
 #include "utils/draw.hpp"

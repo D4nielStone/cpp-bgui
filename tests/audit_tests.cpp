@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <filesystem>
+#include <fstream>
 #include "bgui.hpp"
 
 std::u32string utf8_to_utf32(const std::string&, std::vector<size_t>*);
@@ -196,4 +198,76 @@ TEST(AuditTest, ChangingOneTextDoesNotMeasureCleanSiblings) {
     bgui::on_update();
     EXPECT_GT(first.measurements, 0);
     EXPECT_EQ(second.measurements, 0);
+}
+
+namespace {
+class click_probe : public bgui::element {
+public:
+    int& clicks;
+    bool remove_on_click;
+    click_probe(int& count, bool remove_self) : clicks(count), remove_on_click(remove_self) {
+        receives_input(true);
+        style.layout.require_size(50, 50);
+    }
+
+    void on_clicked() override {
+        ++clicks;
+        if (remove_on_click)
+            get_parent()->remove(this);
+    }
+};
+
+void click_at_origin() {
+    auto& io = bgui::get_context();
+    io.m_mouse_position = {10, 10};
+    io.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    bgui::on_update();
+    io.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::release;
+    bgui::on_update();
+}
+}
+
+TEST(AuditTest, WidgetCanRemoveItselfDuringClick) {
+    bgui::scoped_interface interface;
+    int clicks = 0;
+    auto& root = bgui::get_layout();
+    root.add<click_probe>(clicks, true);
+    bgui::on_update();
+    click_at_origin();
+    EXPECT_EQ(clicks, 1);
+    EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+    EXPECT_TRUE(root.get_elements().at(bgui::layer::base).empty());
+}
+
+TEST(AuditTest, FirstClickHitsAnOverlayOnlyLayout) {
+    bgui::scoped_interface interface;
+    int clicks = 0;
+    bgui::get_layout().add<click_probe, bgui::layer::overlay>(clicks, false);
+    // Publish geometry without letting an earlier hit test populate the layer map.
+    bgui::get_context().m_mouse_position = {-1, -1};
+    auto& root = bgui::get_layout();
+    root.cascade_style();
+    root.process_required_size(bgui::get_context_size());
+    root.arrange();
+    click_at_origin();
+    EXPECT_EQ(clicks, 1);
+    EXPECT_EQ(root.get_elements().count(bgui::layer::base), 0U);
+}
+
+TEST(AuditTest, RejectsInvalidLayoutCounts) {
+    bgui::scoped_interface interface;
+    const auto path = std::filesystem::current_path() / "bgui-invalid-count-test.cfg";
+    for (const auto* contents : {
+            "cpp-bgui-ui 1\n-1\n",
+            "cpp-bgui-ui 1\n1\n0.2 0.2 0.2 0.2 18446744073709551615\n",
+            "[interface]\nformat = cpp-bgui-ui\nversion = 2\ndocks = -1\n",
+            "[interface]\nformat = cpp-bgui-ui\nversion = 2\ndocks = 18446744073709551615\n",
+            "[interface]\nformat = cpp-bgui-ui\nversion = 2\ndocks = 1\n"
+            "[dock.0]\nleft_ratio = 0.2\nright_ratio = 0.2\ntop_ratio = 0.2\n"
+            "bottom_ratio = 0.2\nwindows = -1\n"}) {
+        SCOPED_TRACE(contents);
+        std::ofstream(path) << contents;
+        EXPECT_FALSE(bgui::load_configuration(path.string()));
+    }
+    std::filesystem::remove(path);
 }

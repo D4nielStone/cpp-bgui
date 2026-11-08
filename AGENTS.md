@@ -24,3 +24,13 @@ The parent project's CI uses `bash scripts/build.sh <build-dir> --test`, which
 configures and builds cpp-bgui together with cpp-bengine and runs CTest. BGUI's
 standalone CMake project also supports `BGUI_TESTS=ON`; its test dependency is
 fetched by CMake FetchContent.
+
+## Custom panel API
+- `core/include/panel_facade.hpp` is the additive facade for dock panels and
+  nested content. Keep it independent of Bubble Engine/editor/ECS services.
+- Reuse native widgets and layout ownership. Facade/content objects borrow the
+  tree and must never remove widgets in their destructors or retain model state.
+- Preserve direct widget access through `native()` and `add<T>()`; avoid copying
+  widget state into the facade or replacing dock registration/input handling.
+- Document API/default/lifetime changes in `docs/PANEL_FACADE.md` and cover
+  composition, callbacks and lifecycle with headless `PanelFacadeTests`.

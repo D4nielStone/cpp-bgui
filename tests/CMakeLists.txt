@@ -19,6 +19,7 @@ add_executable(
     tree_tests.cpp
     value_control_tests.cpp
     vector_field_tests.cpp
+    panel_facade_tests.cpp
     image_tests.cpp
     grid_tests.cpp
     linear_tests.cpp
@@ -47,6 +48,7 @@ add_test(NAME ElementTests COMMAND all_tests --gtest_filter=ElementTest.*)
 add_test(NAME MenuBarTests COMMAND all_tests --gtest_filter=MenuBarTest.*)
 add_test(NAME InputAreaTests COMMAND all_tests --gtest_filter=InputAreaTest.*)
 add_test(NAME ValueControlTests COMMAND all_tests --gtest_filter=ValueControlTest.*)
+add_test(NAME PanelFacadeTests COMMAND all_tests --gtest_filter=PanelFacadeTest.*)
 add_test(NAME VectorFieldTests COMMAND all_tests --gtest_filter=VectorFieldTest.*)
 add_test(NAME ContextMenuTests COMMAND all_tests --gtest_filter=ContextMenuTest.*)
 add_test(NAME ComboBoxTests COMMAND all_tests --gtest_filter=ComboBoxTest.*)

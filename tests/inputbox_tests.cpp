@@ -379,6 +379,8 @@ TEST(InputAreaTest, TextDrawCallsAreClippedToInputBoxRect) {
 
     bgui::inputbox input("clipped", "");
     input.set_final_rect(20, 30, 40, 15);
+    input.cascade_style();
+    input.get_label().set_final_rect(20, 30, 100, 15);
 
     bgui::draw_data data;
     data.m_clip_rect = {0, 35, 100, 20};

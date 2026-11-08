@@ -437,3 +437,10 @@ entries.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::wrap_con
 auto& item = entries.add<bgui::button>("File.lua", .28f);
 item.style.layout.require_mode(bgui::mode::match_parent, bgui::mode::match_parent);
 ```
+
+## Custom panel facade
+
+Use `bgui::panel_facade` to build dock panels with a scrollable body, nested
+rows/columns and native controls. The API is additive and keeps ownership in
+the existing BGUI tree. See [the custom panel guide](docs/PANEL_FACADE.md) for
+examples, layout defaults and lifetime rules.

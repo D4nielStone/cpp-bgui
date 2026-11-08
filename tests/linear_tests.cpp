@@ -512,3 +512,57 @@ TEST_F(LinearTest, WrapContentIncludesChildMinimumSize) {
     EXPECT_GE(parent.get_content_size().x, 40);
     EXPECT_GE(parent.get_content_size().y, 32);
 }
+
+TEST_F(LinearTest, HorizontalOverflowSupportsTrackpadShiftWheelThumbAndResize) {
+    scoped_interface interface;
+    linear panel(orientation::vertical);
+    panel.style.layout.require_size(100, 100);
+    panel.style.layout.require_mode(mode::pixel, mode::pixel);
+    panel.style.layout.set_padding(0, 0);
+    panel.compute_style(); panel.process_required_size({100, 100}); panel.set_scrollable(true);
+    auto& child = panel.add<mock_element>(300, 150);
+    auto& io = get_context(); io.m_mouse_position = {10, 10};
+    run_layout_frame(panel, {100, 100});
+    EXPECT_TRUE(panel.get_horizontal_scrollbar_element().is_enabled());
+    io.m_scroll_delta_x = -1;
+    run_layout_frame(panel, {100, 100});
+    EXPECT_EQ(panel.get_horizontal_scroll_offset(), 40);
+    EXPECT_EQ(child.processed_x(), -40);
+    EXPECT_EQ(panel.get_scroll_offset(), 0);
+    io.m_input_map[input_key::left_shift] = input_action::press;
+    io.m_scroll_delta_y = -1;
+    run_layout_frame(panel, {100, 100});
+    EXPECT_EQ(panel.get_horizontal_scroll_offset(), 80);
+    EXPECT_EQ(panel.get_scroll_offset(), 0);
+    io.m_input_map[input_key::left_shift] = input_action::release;
+    panel.get_horizontal_scrollbar_element().set_drag({500, 0});
+    run_layout_frame(panel, {100, 100});
+    EXPECT_EQ(panel.get_horizontal_scroll_offset(), 200);
+    child.style.layout.require_size(50, 50); child.mark_style_dirty(); child.compute_style();
+    run_layout_frame(panel, {100, 100});
+    EXPECT_EQ(panel.get_horizontal_scroll_offset(), 0);
+    EXPECT_FALSE(panel.get_horizontal_scrollbar_element().is_enabled());
+}
+
+TEST_F(LinearTest, NestedHorizontalScrollBubblesAtTheBoundary) {
+    scoped_interface interface;
+    linear parent(orientation::vertical);
+    parent.style.layout.require_size(100, 100);
+    parent.style.layout.require_mode(mode::pixel, mode::pixel);
+    parent.style.layout.set_padding(0, 0);
+    parent.compute_style(); parent.process_required_size({100,100}); parent.set_scrollable(true);
+    auto& inner = parent.add<linear>(orientation::horizontal);
+    inner.style.layout.require_mode(mode::pixel, mode::pixel);
+    inner.style.layout.require_size(200, 60); inner.style.layout.set_padding(0,0);
+    inner.compute_style(); inner.set_scrollable(true);
+    inner.add<mock_element>(300, 60);
+    auto& io = get_context(); io.m_mouse_position = {10,10};
+    run_layout_frame(parent, {100,100});
+    io.m_scroll_delta_x = -10;
+    run_layout_frame(parent, {100,100});
+    EXPECT_EQ(inner.get_horizontal_scroll_offset(),100);
+    EXPECT_EQ(parent.get_horizontal_scroll_offset(),0);
+    io.m_scroll_delta_x = -1;
+    run_layout_frame(parent, {100,100});
+    EXPECT_EQ(parent.get_horizontal_scroll_offset(),40);
+}

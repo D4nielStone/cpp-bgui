@@ -11,6 +11,9 @@ layout::layout() : element() {
 
 layout::~layout() {
     bgui::cancel_interactions(this);
+    // Child destructors can call remove() on this layout to dismiss popups.
+    decltype(m_elements) children;
+    children.swap(m_elements);
 }
 
 void layout::on_update() {

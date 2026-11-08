@@ -356,8 +356,11 @@ void element::get_cached_requires(bgui::draw_data* calls) {
         m_render_dirty = false;
     }
 
-    for (const auto& require : m_cached_draw_requires)
+    const auto vertex_offset = calls->m_draw_list.get_vertices().size();
+    for (auto require : m_cached_draw_requires) {
+        require.m_preceding_vertices += vertex_offset;
         calls->m_quad_requires.push(require);
+    }
     calls->m_draw_list.append_vertices(m_cached_draw_vertices);
     calls->m_draw_list.set_color(m_render_cache_output_color);
 }
