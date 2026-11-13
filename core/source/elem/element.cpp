@@ -278,7 +278,9 @@ void element::compute_style() {
     if (layout_style_changed(previous_style.layout, computed_style.layout) ||
         visual_style_changed(previous_style.visual, computed_style.visual)) {
         mark_layout_dirty();
-        if (auto* lay = as_layout()) {
+        if (auto* lay = as_layout(); lay &&
+            visual_style_changed(previous_style.visual, computed_style.visual)) {
+            // Layout dimensions are not inherited style inputs.
             // A scale/theme invalidation already marked the whole subtree.
             // Only propagate inheritance changes to children still clean.
             for (auto& [layer, children] : lay->get_elements())

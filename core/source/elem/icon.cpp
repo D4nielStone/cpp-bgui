@@ -8,6 +8,10 @@ namespace {
 
 char32_t find_icon_glyph(const std::string_view name) {
     static const std::unordered_map<std::string_view, char32_t> glyphs{
+        {"square", 0xf096}, {"vertices", 0xf140}, {"edges", 0xf20e},
+        {"extrude", 0xf0b2}, {"redo", 0xf01e}, {"undo", 0xf0e2},
+        {"group", 0xf247}, {"cut", 0xf0c4}, {"material", 0xf042},
+        {"orbit", 0xf079}, {"frame", 0xf0b2},
         {"search", 0xf002},
         {"settings", 0xf013},
         {"home", 0xf015},

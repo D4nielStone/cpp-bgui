@@ -34,6 +34,91 @@ static bgui::element* s_keyboard_focused = nullptr;
 static bgui::element* s_mouse_target = nullptr;
 static bgui::element* s_mouse_captured = nullptr;
 static float s_global_scale = 1.f;
+static bgui::element* s_tooltip_target = nullptr;
+static std::chrono::steady_clock::time_point s_tooltip_since;
+namespace {
+class tooltip_view final : public bgui::linear {
+public:
+    bgui::text& title;
+    bgui::text& description;
+    tooltip_view() : bgui::linear(bgui::orientation::vertical),
+        title(add<bgui::text>("", .27f)), description(add<bgui::text>("", .24f)) {
+        receives_input(false);
+        set_input_passthrough(true);
+        style.visual.visible = true;
+        style.visual.background.normal = bgui::color{.055f,.055f,.055f,.98f};
+        style.visual.border.normal = bgui::color{.32f,.32f,.32f,1.f};
+        style.visual.border_size = 1.f;
+        style.visual.border_radius = 4.f;
+        for (auto* label : {&title, &description}) {
+            label->receives_input(false);
+            label->set_wrap(false);
+            label->style.layout.align = {bgui::alignment::start, bgui::alignment::start};
+        }
+        title.style.visual.text.normal = bgui::color{.94f,.94f,.94f,1.f};
+        description.style.visual.text.normal = bgui::color{.72f,.72f,.72f,1.f};
+    }
+};
+}
+static std::unique_ptr<tooltip_view> s_tooltip_view;
+
+static void draw_tooltip(const bgui::vec2i& size) {
+    auto* target = s_mouse_target;
+    if (bgui::get_pressed(bgui::input_key::mouse_left) ||
+        bgui::get_pressed(bgui::input_key::mouse_right) || s_mouse_captured)
+        target = nullptr;
+    if (target && target->get_tooltip().empty()) target = nullptr;
+    const auto now = std::chrono::steady_clock::now();
+    if (target != s_tooltip_target) {
+        s_tooltip_target = target;
+        s_tooltip_since = now;
+    }
+    if (!target || now - s_tooltip_since < target->get_tooltip_delay()) return;
+    if (!s_tooltip_view) s_tooltip_view = std::make_unique<tooltip_view>();
+    auto& view = *s_tooltip_view;
+    view.cascade_style();
+    const int padding = std::max(1, int(8 * bgui::get_global_scale()));
+    const int gap = target->get_tooltip_description().empty() ? 0 : std::max(1, int(4 * bgui::get_global_scale()));
+    const float max_width = std::max(1, std::min(int(320 * bgui::get_global_scale()), size.x) - 2 * padding);
+    const auto wrap = [max_width](bgui::text& label, const std::string& hint) {
+        std::string wrapped, line;
+        for (std::size_t i = 0; i < hint.size();) {
+            auto end = i + 1;
+            while (end < hint.size() && (static_cast<unsigned char>(hint[end]) & 0xc0) == 0x80) ++end;
+            const auto character = hint.substr(i, end - i);
+            if (character == "\n") {
+                wrapped += line + "\n";
+                line.clear();
+            } else {
+                if (!line.empty() && label.get_text_width(line + character) > max_width) {
+                    wrapped += line + "\n";
+                    line.clear();
+                }
+                line += character;
+            }
+            i = end;
+        }
+        label.set_buffer(wrapped + line);
+        label.calc_content_size(bgui::layer::base);
+    };
+    wrap(view.title, target->get_tooltip());
+    view.description.set_enable(!target->get_tooltip_description().empty());
+    wrap(view.description, target->get_tooltip_description());
+    const auto title = view.title.get_content_size();
+    const auto description = view.description.is_enabled() ? view.description.get_content_size() : bgui::vec2i{0,0};
+    const bgui::vec2i content{std::min(size.x, std::max(title.x, description.x) + 2 * padding),
+        std::min(size.y, title.y + description.y + gap + 2 * padding)};
+    const auto anchor = target->processed_rect();
+    const int x = std::clamp(anchor.x, 0, std::max(0, size.x - content.x));
+    int y = anchor.y + anchor.w + int(6 * bgui::get_global_scale());
+    if (y + content.y > size.y) y = anchor.y - content.y - int(6 * bgui::get_global_scale());
+    y = std::max(0, y);
+    view.set_final_rect(x, y, content.x, content.y);
+    view.title.set_final_rect(x + padding, y + padding, std::max(0, content.x - 2 * padding), title.y);
+    view.description.set_final_rect(x + padding, y + padding + title.y + gap,
+        std::max(0, content.x - 2 * padding), description.y);
+    view.get_cached_requires(bgui::get_draw_data());
+}
 
 namespace {
     constexpr const char* legacy_configuration_header = "cpp-bgui-ui 1";
@@ -552,6 +637,8 @@ static void shutdown_interface() noexcept {
     s_mouse_target = nullptr;
     s_mouse_captured = nullptr;
     bgui::s_main_layout.reset();
+    s_tooltip_view.reset();
+    s_tooltip_target = nullptr;
     s_draw_data.reset();
     std::queue<std::function<void()>> empty;
     s_functions.swap(empty);
@@ -603,6 +690,8 @@ bgui::element* bgui::get_keyboard_focus() {
 void bgui::cancel_interactions(bgui::element* subtree) noexcept {
     if (!subtree)
         return;
+    if (s_tooltip_target && contains_element(subtree, s_tooltip_target))
+        s_tooltip_target = nullptr;
     if (s_mouse_captured && contains_element(subtree, s_mouse_captured))
         s_mouse_captured = nullptr;
     if (s_mouse_target && contains_element(subtree, s_mouse_target))
@@ -921,6 +1010,7 @@ void bgui::on_update() {
         s_mouse_target = nullptr;
         update_inputs(*s_main_layout, previous_pressed, previous_position);
     }
+    if (has_mouse_events) s_tooltip_target = nullptr;
     clear_stale_mouse_hover(*bgui::s_main_layout, s_mouse_target);
     bgui::s_main_layout->on_update();
     io.m_mouse_press_position.reset();
@@ -954,6 +1044,7 @@ void bgui::on_update() {
     get_draw_data()->m_clip_rect = {0, 0, w_size.x, w_size.y};
     get_draw_data()->m_widget_vertex_begin = get_draw_list().get_vertices().size();
     bgui::s_main_layout->get_cached_requires(get_draw_data());
+    draw_tooltip(w_size);
     get_draw_data()->m_widget_vertex_end = get_draw_list().get_vertices().size();
     if (s_profiling_enabled) {
         const auto update_end = profiling_clock::now();

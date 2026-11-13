@@ -26,7 +26,7 @@ namespace bgui {
         explicit image(const std::string& texture_path, std::function<void(const std::string&)> on_click = nullptr);
 
         /**
-         * @brief Replaces the image texture and marks the element for style updates.
+         * @brief Replaces the image texture; only dimension changes invalidate layout.
          */
         void set_texture(const texture& texture);
 

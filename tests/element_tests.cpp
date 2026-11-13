@@ -372,3 +372,152 @@ TEST(DrawListTest, TessellatesPrimitivesWithEditableColor) {
 	for (const auto& vertex : list.get_vertices())
 		EXPECT_EQ(vertex.m_color, color);
 }
+
+TEST(ElementTest, TooltipWaitsAndCancelsOnExitPressDisableAndRemoval) {
+    bgui::scoped_interface interface;
+    auto& io = bgui::get_context();
+    io.m_size = {400, 300};
+    io.m_input_map.clear();
+    auto& root = bgui::get_layout();
+    auto& button = root.add<bgui::button>("Tool", .34f, [] {});
+    button.style.layout.require_size(40, 30);
+    button.set_tooltip("Information", std::chrono::hours{1});
+    auto frame = [] {
+        auto* data = bgui::get_draw_data();
+        *data = bgui::draw_data{};
+        bgui::on_update();
+        return data->m_quad_requires.size();
+    };
+    frame();
+    io.m_mouse_position = {button.processed_x() + 5, button.processed_y() + 5};
+    const auto waiting = frame();
+    ASSERT_EQ(bgui::get_mouse_target(), &button);
+    button.set_tooltip("Information", std::chrono::milliseconds{0});
+    const auto visible = frame();
+    EXPECT_GT(visible, waiting);
+    EXPECT_EQ(bgui::get_mouse_target(), &button);
+    io.m_mouse_position = {200, 200};
+    EXPECT_EQ(frame(), waiting);
+    io.m_mouse_position = {5, 5};
+    EXPECT_EQ(frame(), visible);
+    io.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::press;
+    EXPECT_EQ(frame(), waiting);
+    io.m_input_map[bgui::input_key::mouse_left] = bgui::input_action::release;
+    frame();
+    button.set_enable(false);
+    frame();
+    EXPECT_NE(bgui::get_mouse_target(), &button);
+    button.set_enable(true);
+    frame();
+    root.remove(&button);
+    EXPECT_NO_THROW(frame());
+}
+
+TEST(ElementTest, TooltipDefaultsAndNegativeDelay) {
+    bgui::element element;
+    EXPECT_TRUE(element.get_tooltip().empty());
+    element.set_tooltip("Hint");
+    EXPECT_EQ(element.get_tooltip_delay(), std::chrono::milliseconds{650});
+    element.set_tooltip("", std::chrono::milliseconds{-1});
+    EXPECT_TRUE(element.get_tooltip().empty());
+    EXPECT_EQ(element.get_tooltip_delay(), std::chrono::milliseconds{0});
+}
+
+TEST(ElementTest, TooltipFitsContextAndRestartsAfterRootReplacement) {
+    bgui::scoped_interface interface;
+    auto& io = bgui::get_context();
+    io.m_size = {400, 300};
+    io.m_input_map.clear();
+    auto& button = bgui::get_layout().add<bgui::button>("Tool", .34f, [] {});
+    button.style.layout.require_size(30, 30);
+    button.set_position(370, 270);
+    button.set_tooltip("Informação sobre a ferramenta", std::chrono::milliseconds{0});
+    auto frame = [] {
+        *bgui::get_draw_data() = bgui::draw_data{};
+        bgui::on_update();
+    };
+    io.m_mouse_position = {0, 0};
+    frame();
+    const auto baseline = bgui::get_draw_data()->m_quad_requires.size();
+    io.m_mouse_position = {375, 275};
+    frame();
+    ASSERT_EQ(bgui::get_mouse_target(), &button);
+    auto calls = bgui::get_draw_data()->m_quad_requires;
+    ASSERT_GT(calls.size(), baseline);
+    for (std::size_t i = 0; i < baseline; ++i) calls.pop();
+    const auto bubble = calls.front().m_rect;
+    EXPECT_GE(bubble.x, 0);
+    EXPECT_GE(bubble.y, 0);
+    EXPECT_LE(bubble.x + bubble.z, io.m_size.x);
+    EXPECT_LE(bubble.y + bubble.w, button.processed_y());
+    bgui::set_layout<bgui::layout>();
+    EXPECT_NO_THROW(frame());
+    EXPECT_EQ(bgui::get_mouse_target(), nullptr);
+}
+
+TEST(ElementTest, TooltipDescriptionKeepsItsTitleAndDrawsAnOpaqueDarkSurface) {
+    bgui::scoped_interface interface;
+    auto& io = bgui::get_context(); io.m_size = {400,300}; io.m_input_map.clear();
+    auto& button = bgui::get_layout().add<bgui::button>("Save", .3f, [] {});
+    button.style.layout.require_size(50,30);
+    button.set_tooltip("Save", "Writes the pending model changes to disk.", std::chrono::milliseconds{0});
+    EXPECT_EQ(button.get_tooltip(), "Save");
+    EXPECT_EQ(button.get_tooltip_description(), "Writes the pending model changes to disk.");
+    bgui::on_update();
+    io.m_mouse_position = {button.processed_x()+5,button.processed_y()+5};
+    *bgui::get_draw_data() = bgui::draw_data{}; bgui::on_update();
+    auto calls = bgui::get_draw_data()->m_quad_requires;
+    bool background = false;
+    while (!calls.empty()) {
+        const auto& material = calls.front().m_material;
+        const auto color = material.m_properties.find("bg_color");
+        if (color != material.m_properties.end() && color->second.m_type == 0x2) {
+            const auto value = color->second.m_value.m_vec4;
+            if (std::abs(value.r - .055f) < .0001f && value.r == value.g && value.g == value.b && value.a >= .98f)
+                background = true;
+        }
+        calls.pop();
+    }
+    EXPECT_TRUE(background);
+    button.set_tooltip("Saved");
+    EXPECT_FALSE(button.get_tooltip_description().empty());
+}
+
+TEST(DrawDataTest, ThousandRowsReuseGeometryAndOnlyRebuildChangedRow) {
+    layout root;
+    std::vector<draw_count_probe*> rows;
+    for (int index = 0; index < 1000; ++index) {
+        auto& row = root.add<draw_count_probe>();
+        row.set_final_rect(0, index * 20, 100, 20);
+        rows.push_back(&row);
+    }
+    auto draw = [&]() {
+        draw_data calls;
+        calls.m_clip_rect = {0, 0, 100, 20000};
+        root.get_cached_requires(&calls);
+        EXPECT_EQ(calls.m_quad_requires.size(), 1001u);
+    };
+    draw();
+    for (int frame = 0; frame < 10; ++frame) draw();
+    for (auto* row : rows) EXPECT_EQ(row->draw_count, 1);
+    rows[500]->mark_render_dirty();
+    draw();
+    for (int index = 0; index < 1000; ++index)
+        EXPECT_EQ(rows[index]->draw_count, index == 500 ? 2 : 1);
+}
+
+TEST(ElementTest, ParentResizeDoesNotInvalidateDescendantStyles) {
+    layout root;
+    auto& nested = root.add<layout>();
+    auto& leaf = nested.add<element>();
+    root.cascade_style();
+    root.style.layout.require_size(800.f, 600.f);
+    root.compute_style();
+    EXPECT_TRUE(root.is_layout_dirty());
+    EXPECT_FALSE(nested.is_style_dirty());
+    EXPECT_FALSE(leaf.is_style_dirty());
+    root.style.visual.text.normal = color{1.f, 0.f, 0.f, 1.f};
+    root.compute_style();
+    EXPECT_TRUE(nested.is_style_dirty());
+    EXPECT_TRUE(leaf.is_style_dirty());
+}

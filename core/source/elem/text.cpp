@@ -498,6 +498,7 @@ void bgui::text::calc_content_size(const layer&) {
     float max_visual_x = 0.f;
     float min_visual_y = 0.f;
     float max_visual_y = 0.f;
+    bool has_visual_bounds = false;
     int line_count = 1;
 
     for (char32_t character : utf8_to_utf32(m_buffer)) {
@@ -523,6 +524,11 @@ void bgui::text::calc_content_size(const layer&) {
                 line_width + glyph->second.bearing[0] * scale;
             const float glyph_top =
                 line_y - glyph->second.bearing[1] * scale;
+            if (type == "icon" && !has_visual_bounds) {
+                min_visual_x = max_visual_x = glyph_left;
+                min_visual_y = max_visual_y = glyph_top;
+            }
+            has_visual_bounds = true;
             min_visual_x = std::min(min_visual_x, glyph_left);
             max_visual_x = std::max(
                 max_visual_x,
@@ -535,6 +541,16 @@ void bgui::text::calc_content_size(const layer&) {
             );
         }
         line_width += advance;
+    }
+
+    if (type == "icon") {
+        m_draw_offset = has_visual_bounds
+            ? vec2{-min_visual_x, -min_visual_y} : vec2{0.f};
+        set_content_size(has_visual_bounds ? vec2i{
+            static_cast<int>(std::ceil(max_visual_x - min_visual_x)),
+            static_cast<int>(std::ceil(max_visual_y - min_visual_y))
+        } : vec2i{0});
+        return;
     }
 
     max_width = std::max(max_width, line_width);
@@ -639,7 +655,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     std::string display_buffer = m_buffer;
     int available_width = processed_width();
     bool button_label = false;
-    for (auto* parent = get_parent(); parent; parent = parent->get_parent()) {
+    for (auto* parent = get_parent(); type != "icon" && parent; parent = parent->get_parent()) {
         if (parent->type != "button") continue;
         button_label = true;
         available_width = std::max(0, std::min(available_width,
@@ -672,13 +688,26 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             text_origin_x += gutter_width;
             break;
         case bgui::alignment::center:
-            text_origin_x += ((button_label ? available_width : processed_width()) - combined_width) / 2 + gutter_width;
+            text_origin_x += ((button_label ? available_width : processed_width()) - combined_width) * .5f + gutter_width;
             break;
         case bgui::alignment::end:
             text_origin_x += (button_label ? available_width : processed_width()) - combined_width + gutter_width;
             break;
     }
     text_origin_x += m_draw_offset.x - m_horizontal_scroll;
+    float text_origin_y = static_cast<float>(processed_y());
+    if (type == "icon") {
+        switch (computed_style.layout.align.y) {
+            case alignment::start:
+                break;
+            case alignment::center:
+                text_origin_y += (processed_height() - get_content_size().y) * .5f;
+                break;
+            case alignment::end:
+                text_origin_y += processed_height() - get_content_size().y;
+                break;
+        }
+    }
 
     m_material.m_texture = font.atlas;
 
@@ -712,7 +741,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         const auto& ch = it->second;
 
         float xpos = text_origin_x + x + scale * ch.bearing[0];
-        float ypos = processed_y() + m_draw_offset.y + y -
+        float ypos = text_origin_y + m_draw_offset.y + y -
             (ch.bearing[1] * scale - ch.size[1] * scale);
         const auto& clip = data->m_clip_rect;
         if (clip.z > 0 && clip.w > 0 &&

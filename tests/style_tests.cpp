@@ -6,6 +6,29 @@
 
 using namespace bgui;
 
+TEST(DeclarativeStyleTest, BorderDimensionsDoNotOverrideBorderColor) {
+    const auto path = std::filesystem::temp_directory_path() /
+        ("bgui-border-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()) + ".theme");
+    struct cleanup {
+        std::filesystem::path path;
+        ~cleanup() { std::error_code error; std::filesystem::remove(path, error); }
+    } cleanup{path};
+    {
+        std::ofstream file(path);
+        file << "[base]\nvisual.border.size = 1\nvisual.border.radius = 4\n"
+                "visual.border.normal = 0.2, 0.2, 0.2, 1\n";
+        ASSERT_TRUE(file.good());
+    }
+    const auto converted = load_theme(path.string()).base;
+    ASSERT_TRUE(converted.visual.border_size.has_value());
+    EXPECT_FLOAT_EQ(*converted.visual.border_size, 1.f);
+    ASSERT_TRUE(converted.visual.border_radius.has_value());
+    EXPECT_FLOAT_EQ(*converted.visual.border_radius, 4.f);
+    ASSERT_TRUE(converted.visual.border.normal.has_value());
+    EXPECT_EQ(*converted.visual.border.normal, (color{.2f, .2f, .2f, 1.f}));
+}
+
 TEST(DeclarativeStyleTest, ThemeAlignmentShorthandInitializesBothAxes) {
     const auto path = std::filesystem::temp_directory_path() /
         ("bgui-alignment-" + std::to_string(

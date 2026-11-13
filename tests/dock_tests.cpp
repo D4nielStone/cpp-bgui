@@ -1122,3 +1122,63 @@ TEST(DockTest, DetachEnablesPreviouslyHiddenWindows) {
     EXPECT_TRUE(third.is_enabled());
     EXPECT_TRUE(dock.get_configuration().tab_groups.empty());
 }
+
+TEST(DockTest, GenericRemovalRepairsTabbedWindowReferences) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& first = dock.add_window("First", bgui::dock_area::center);
+    auto& second = dock.add_window("Second", bgui::dock_area::center);
+    auto& third = dock.add_window("Third", bgui::dock_area::center);
+    dock.merge_window_as_tab(first, second);
+    dock.merge_window_as_tab(first, third);
+    dock.focus_window(&first);
+    // Removal through panel_content/layout must be safe as well as remove_window.
+    ASSERT_TRUE(static_cast<bgui::layout&>(dock).remove(&first));
+    auto config = dock.get_configuration();
+    ASSERT_EQ(config.windows.size(), 2u);
+    ASSERT_EQ(config.tab_groups.size(), 1u);
+    EXPECT_EQ(config.tab_groups.front().windows.size(), 2u);
+    dock.on_update();
+    ASSERT_TRUE(static_cast<bgui::layout&>(dock).remove(&second));
+    dock.on_update();
+    EXPECT_TRUE(third.is_enabled());
+    ASSERT_TRUE(static_cast<bgui::layout&>(dock).remove(&third));
+    dock.on_update();
+    EXPECT_TRUE(dock.get_configuration().windows.empty());
+}
+
+TEST(DockTest, QueuedTabSelectionSurvivesGenericWindowRemoval) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& first = dock.add_window("First", bgui::dock_area::center);
+    dock.add_window("Second", bgui::dock_area::center);
+    dock.get_configuration();
+    bgui::element* tab = nullptr;
+    for (auto& [layer, elements] : dock.get_elements())
+        for (auto& candidate : elements)
+            if (candidate->has_class("dock-tab")) {
+                tab = candidate.get();
+                break;
+            }
+    ASSERT_NE(tab, nullptr);
+    tab->on_released();
+    ASSERT_TRUE(static_cast<bgui::layout&>(dock).remove(&first));
+    bgui::on_update();
+    EXPECT_EQ(dock.get_configuration().windows.size(), 1u);
+}
+
+TEST(DockTest, ReplacingRootCancelsQueuedTabSelection) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.add_window("First", bgui::dock_area::center);
+    dock.get_configuration();
+    bgui::element* tab = nullptr;
+    for (auto& [layer, elements] : dock.get_elements())
+        for (auto& candidate : elements)
+            if (candidate->has_class("dock-tab"))
+                tab = candidate.get();
+    ASSERT_NE(tab, nullptr);
+    tab->on_released();
+    bgui::set_layout<bgui::layout>();
+    EXPECT_NO_THROW(bgui::on_update());
+}

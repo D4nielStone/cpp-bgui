@@ -148,3 +148,112 @@ TEST(ImageTest, InvalidJpegThrowsInsteadOfTerminatingTheApplication) {
     EXPECT_THROW(asset_manager::get_instance().load_texture(path.string()), std::runtime_error);
     std::filesystem::remove(path);
 }
+
+TEST(ImageTest, FramebufferReplacementKeepsLayoutCleanAndUpdatesCachedDraw) {
+    image value;
+    value.set_external_texture(71, {640.f, 480.f});
+    value.compute_style();
+    value.clear_layout_dirty();
+    draw_data first;
+    value.get_cached_requires(&first);
+    value.set_external_texture(72, {640.f, 480.f});
+    EXPECT_FALSE(value.is_style_dirty());
+    EXPECT_FALSE(value.is_layout_dirty());
+    draw_data next;
+    value.get_cached_requires(&next);
+    ASSERT_EQ(next.m_quad_requires.size(), 1u);
+    EXPECT_EQ(next.m_quad_requires.front().m_material.m_texture.m_id, 72u);
+    value.set_external_texture(72, {800.f, 600.f}, false);
+    EXPECT_TRUE(value.is_layout_dirty());
+    draw_data resized;
+    value.get_cached_requires(&resized);
+    EXPECT_EQ(resized.m_quad_requires.front().m_uv_min, (vec2{0.f, 0.f}));
+}
+
+TEST(ImageTest, RepeatedExternalFrameDoesNotInvalidateParentGeometryCache) {
+    class draw_probe final : public element {
+    public:
+        int draws{0};
+        void get_requires(draw_data* calls) override {
+            ++draws;
+            element::get_requires(calls);
+        }
+    };
+    layout root;
+    auto& sibling = root.add<draw_probe>();
+    sibling.set_final_rect(0, 0, 20, 20);
+    auto& preview = root.add<image>();
+    preview.set_final_rect(20, 0, 40, 30);
+    preview.set_external_texture(81, {40.f, 30.f});
+    root.cascade_style();
+    root.clear_layout_dirty();
+    preview.clear_layout_dirty();
+    for (int frame = 0; frame < 10; ++frame) {
+        preview.set_external_texture(81, {40.f, 30.f});
+        draw_data calls;
+        root.get_cached_requires(&calls);
+        EXPECT_FALSE(root.is_layout_dirty());
+        EXPECT_FALSE(preview.is_style_dirty());
+    }
+    EXPECT_EQ(sibling.draws, 1);
+}
+
+TEST(ImageTest, ExternalFlipAndSizeSettersInvalidateOnlyWhenChanged) {
+    image value;
+    value.set_external_texture(91, {40.f, 30.f}, true);
+    value.set_size(40.f, 30.f);
+    value.compute_style();
+    value.clear_layout_dirty();
+    value.set_size(40.f, 30.f);
+    value.set_size_mode(mode::pixel, mode::pixel);
+    EXPECT_FALSE(value.is_style_dirty());
+    EXPECT_FALSE(value.is_layout_dirty());
+    value.set_external_texture(91, {40.f, 30.f}, false);
+    EXPECT_FALSE(value.is_layout_dirty());
+    draw_data calls;
+    value.get_cached_requires(&calls);
+    EXPECT_EQ(calls.m_quad_requires.front().m_uv_min, (vec2{0.f, 0.f}));
+    value.use_natural_size();
+    EXPECT_TRUE(value.is_style_dirty());
+    value.compute_style();
+    value.clear_layout_dirty();
+    value.use_natural_size();
+    EXPECT_FALSE(value.is_style_dirty());
+    EXPECT_FALSE(value.is_layout_dirty());
+}
+
+TEST(ImageTest, RepeatedDockResizePublishesPreviewGeometryInTheSameFrame) {
+    scoped_interface interface;
+    auto& dock = get_layout().add<bgui::dock>();
+    dock.style.layout.require_mode(mode::match_parent, mode::match_parent);
+    auto& window = dock.add_window("Preview", dock_area::center);
+    auto& preview = window.add<image>();
+    preview.set_size_mode(mode::match_parent, mode::match_parent);
+    preview.set_external_texture(101, {640.f, 480.f});
+    for (const float scale : {1.f, 1.5f, 1.f}) {
+        set_global_scale(scale);
+        for (const vec2i size : {vec2i{900, 600}, vec2i{240, 180}, vec2i{1200, 800}, vec2i{900, 600}}) {
+            get_context().m_size = size;
+            get_draw_data()->m_quad_requires = {};
+            get_draw_data()->m_draw_list.clear();
+            on_update();
+            bool found = false;
+            auto calls = get_draw_data()->m_quad_requires;
+            while (!calls.empty()) {
+                const auto& call = calls.front();
+                if (call.m_material.m_texture.m_id == 101) {
+                    found = true;
+                    EXPECT_EQ(call.m_rect.x, preview.processed_x());
+                    EXPECT_EQ(call.m_rect.y, preview.processed_y());
+                    EXPECT_EQ(call.m_rect.z, preview.processed_width());
+                    EXPECT_EQ(call.m_rect.w, preview.processed_height());
+                    EXPECT_GT(call.m_rect.z, 0.f);
+                    EXPECT_GT(call.m_rect.w, 0.f);
+                }
+                calls.pop();
+            }
+            EXPECT_TRUE(found);
+        }
+    }
+    set_global_scale(1.f);
+}

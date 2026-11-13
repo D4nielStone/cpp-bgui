@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <chrono>
+#include <string>
 #include <memory>
 #include <limits.h>
 
@@ -24,6 +26,9 @@ namespace bgui {
      */
     class element {
     private:
+        std::string m_tooltip;
+        std::string m_tooltip_description;
+        std::chrono::milliseconds m_tooltip_delay{650};
         bool m_style_dirty  = true;
         bool m_layout_dirty = true;
         bool m_render_dirty = true;
@@ -112,6 +117,20 @@ namespace bgui {
          * @brief Virtual destructor.
          */
         virtual ~element();
+
+        // Empty text disables the hint. The UI owns no additional target references.
+        void set_tooltip(std::string text, std::chrono::milliseconds delay = std::chrono::milliseconds{650}) {
+            m_tooltip = std::move(text);
+            m_tooltip_delay = std::max(delay, std::chrono::milliseconds{0});
+        }
+        void set_tooltip(std::string title, std::string description,
+            std::chrono::milliseconds delay = std::chrono::milliseconds{650}) {
+            set_tooltip(std::move(title), delay);
+            m_tooltip_description = std::move(description);
+        }
+        const std::string& get_tooltip() const { return m_tooltip; }
+        const std::string& get_tooltip_description() const { return m_tooltip_description; }
+        std::chrono::milliseconds get_tooltip_delay() const { return m_tooltip_delay; }
 
         void add_class(const std::string& cls);
         void remove_class(const std::string& cls);

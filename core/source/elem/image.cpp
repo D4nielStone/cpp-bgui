@@ -22,19 +22,30 @@ namespace bgui {
     }
 
     void image::set_texture(const texture& texture) {
+        const bool size_changed = m_texture.m_size != texture.m_size;
         m_texture = texture;
         m_flip_vertical = texture.m_external;
         m_material.m_texture = m_texture;
-        mark_style_dirty();
+        if (size_changed)
+            mark_layout_dirty();
+        else
+            mark_render_dirty();
     }
 
     void image::set_size(const float width, const float height) {
+        if (style.layout.size && *style.layout.size == vec2{width, height} &&
+            style.layout.size_mode &&
+            *style.layout.size_mode == vec<2, mode>{mode::pixel, mode::pixel})
+            return;
         style.layout.require_size(width, height);
         style.layout.require_mode(mode::pixel, mode::pixel);
         mark_style_dirty();
     }
 
     void image::set_size_mode(const mode width_mode, const mode height_mode) {
+        if (style.layout.size_mode &&
+            *style.layout.size_mode == vec<2, mode>{width_mode, height_mode})
+            return;
         style.layout.require_mode(width_mode, height_mode);
         mark_style_dirty();
     }
@@ -48,8 +59,7 @@ namespace bgui {
     }
 
     void image::use_natural_size() {
-        style.layout.require_mode(mode::wrap_content, mode::wrap_content);
-        mark_style_dirty();
+        set_size_mode(mode::wrap_content, mode::wrap_content);
     }
 
     void image::calc_content_size(const layer&) {
@@ -65,6 +75,9 @@ namespace bgui {
         const vec2& size,
         const bool flip_vertical
     ) {
+        if (m_texture.m_external && m_texture.m_id == texture_id &&
+            m_texture.m_size == size && m_flip_vertical == flip_vertical)
+            return;
         texture external{};
         external.m_path = "external:" + std::to_string(texture_id);
         external.m_id = texture_id;

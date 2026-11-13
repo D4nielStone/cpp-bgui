@@ -89,6 +89,12 @@ namespace bgui {
                 auto state = to_state(key.substr(18));
                 apply_key_color(out.visual.background, state, val);
             }
+            else if (key == "visual.border.radius") {
+                out.visual.border_radius = to_float(val[0]);
+            }
+            else if (key == "visual.border.size") {
+                out.visual.border_size = to_float(val[0]);
+            }
             else if (key.starts_with("visual.border.")) {
                 auto state = to_state(key.substr(14));
                 apply_key_color(out.visual.border, state, val);
@@ -99,12 +105,6 @@ namespace bgui {
             }
             else if (key == "visual.visible") {
                 out.visual.visible = to_bool(val[0]);
-            }
-            else if (key == "visual.border.radius") {
-                out.visual.border_radius = to_float(val[0]);
-            }
-            else if (key == "visual.border.size") {
-                out.visual.border_size = to_float(val[0]);
             }
             else if (key == "visual.font") {
                 out.visual.font = val[0];

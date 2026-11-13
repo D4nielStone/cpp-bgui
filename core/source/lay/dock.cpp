@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <functional>
 #include <numeric>
+#include <memory>
 #include <utility>
 #include <unordered_set>
 
@@ -85,7 +86,12 @@ namespace bgui {
         void on_released() override {
             element::on_released();
             bgui::get_context().m_actual_cursor = bgui::cursor::hand;
-            bgui::add_function(m_on_select);
+            bgui::add_function([
+                alive = std::weak_ptr<const bool>{m_alive}, on_select = m_on_select
+            ]() {
+                if (!alive.expired() && on_select)
+                    on_select();
+            });
         }
 
         void on_clicked() override {
@@ -101,6 +107,7 @@ namespace bgui {
     private:
         text* m_label;
         std::function<void()> m_on_select;
+        std::shared_ptr<const bool> m_alive = std::make_shared<const bool>(true);
     };
 
     class dock_splitter final : public element {
@@ -321,6 +328,7 @@ namespace bgui {
             auto& tab = add<dock_tab, layer::base>(
                 tab_window->get_title().get_buffer(), 0.3,
                 [this, tab_window]() {
+                    sync_windows();
                     const auto found = std::find_if(
                         m_tab_groups.begin(),
                         m_tab_groups.end(),
@@ -497,7 +505,35 @@ namespace bgui {
             return remove_split;
         }), m_nested_splits.end());
 
+        if (m_drop_target_window && !owned_windows.contains(m_drop_target_window))
+            m_drop_target_window = nullptr;
+
         for (auto group = m_tab_groups.begin(); group != m_tab_groups.end();) {
+            // layout::remove and borrowed panel views can bypass remove_window.
+            // Discard dead members before reading any window state.
+            for (std::size_t index = 0; index < group->windows.size();) {
+                if (owned_windows.contains(group->windows[index])) {
+                    ++index;
+                    continue;
+                }
+                remove(group->tabs[index]);
+                group->windows.erase(group->windows.begin() + index);
+                group->tabs.erase(group->tabs.begin() + index);
+                group->active_indicators.erase(group->active_indicators.begin() + index);
+                group->separators.erase(group->separators.begin() + index);
+            }
+            if (group->windows.empty()) {
+                if (group->overflow)
+                    remove(group->overflow);
+                group = m_tab_groups.erase(group);
+                continue;
+            }
+            if (!owned_windows.contains(group->anchor))
+                group->anchor = group->windows.front();
+            if (!owned_windows.contains(group->active)) {
+                group->active = group->windows.front();
+                group->active->set_enable(true);
+            }
             const bool has_floating_member = std::any_of(group->windows.begin(), group->windows.end(), [](const window* value) {
                 return value->is_floating();
             });
