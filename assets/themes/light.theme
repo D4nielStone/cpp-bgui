@@ -236,6 +236,13 @@ visual.visible = true
 [class.dock-tab-active]
 visual.background.normal = 0.97, 0.98, 0.99, 1.0
 
+[class.dock-tab-compact-dot]
+visual.background.normal = 0.28, 0.32, 0.38, 1.0
+visual.border.normal = 0
+visual.border.size = 0
+visual.border.radius = 100
+visual.visible = true
+
 [class.dock-tab-active-indicator]
 visual.background.normal = 0.20, 0.43, 0.78, 1.0
 visual.border.normal = 0.0
@@ -243,7 +250,17 @@ visual.visible = true
 
 [class.dock-tab-overflow]
 visual.background.normal = 0.90, 0.92, 0.95, 1.0
-visual.text.normal = 0.25, 0.29, 0.34, 1.0
+visual.background.hover = 0.83, 0.87, 0.92, 1.0
+visual.background.pressed = 0.76, 0.82, 0.89, 1.0
+visual.border.radius = 5
+layout.padding = 0
+visual.visible = true
+
+[class.dock-overflow-dot]
+visual.background.normal = 0.28, 0.32, 0.38, 1.0
+visual.border.normal = 0
+visual.border.size = 0
+visual.border.radius = 100
 visual.visible = true
 
 [class.entities-filter-bar]

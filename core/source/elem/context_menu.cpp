@@ -1,4 +1,6 @@
 #include "elem/menu_bar.hpp"
+#include "os/os.hpp"
+#include <algorithm>
 
 namespace bgui {
     context_menu::context_menu(
@@ -95,7 +97,13 @@ namespace bgui {
             return;
 
         update_size();
-        m_menu->set_position(x, y);
+        const auto viewport = bgui::get_context_size();
+        const auto size = m_menu->processed_size();
+        if (y + size.y > viewport.y && m_button.processed_y() >= size.y)
+            y = m_button.processed_y() - size.y;
+        m_menu->set_position(
+            std::clamp(x, 0, std::max(0, viewport.x - size.x)),
+            std::clamp(y, 0, std::max(0, viewport.y - size.y)));
         m_menu->set_enable(true);
         m_menu->set_flex(false);
     }

@@ -534,3 +534,45 @@ TEST(InputAreaTest, NumberControlAReplacesSelectionAndEndMovesPastSelection) {
     context.m_input_map.clear();
     context.m_char_buffer.clear();
 }
+
+TEST(InputAreaTest, LargeTextChunksKeepVisibleRenderingAndLineNumbers) {
+    bgui::scoped_interface interface;
+    ensure_test_font();
+    std::string source;
+    for (int i = 0; i < 4096; ++i) source += "hello\n";
+    bgui::text label(source, 1.f);
+    label.set_wrap(false);
+    label.set_line_numbers_enabled(true);
+    label.set_editor_guides_enabled(false);
+    label.compute_style();
+    label.set_final_rect(0, 0, 300, 50000);
+    EXPECT_EQ(label.chunk_count(), 65u);
+    EXPECT_TRUE(label.line_numbers_enabled());
+    bgui::draw_data data;
+    data.m_clip_rect = {0, 20000, 300, 30};
+    label.get_requires(&data);
+    EXPECT_GT(data.m_quad_requires.size(), 0u);
+    EXPECT_LT(data.m_quad_requires.size(), 100u);
+    bgui::text reference(source, 1.f);
+    reference.set_wrap(true);
+    reference.set_line_numbers_enabled(true);
+    reference.compute_style();
+    reference.set_final_rect(0, 0, 300, 50000);
+    bgui::draw_data expected;
+    expected.m_clip_rect = data.m_clip_rect;
+    reference.get_requires(&expected);
+    ASSERT_EQ(data.m_quad_requires.size(), expected.m_quad_requires.size());
+    while (!data.m_quad_requires.empty()) {
+        EXPECT_EQ(data.m_quad_requires.front().m_rect, expected.m_quad_requires.front().m_rect);
+        data.m_quad_requires.pop();
+        expected.m_quad_requires.pop();
+    }
+    EXPECT_EQ(label.get_buffer(), source);
+    const auto size = label.get_content_size();
+    label.calc_content_size(bgui::layer::base);
+    EXPECT_EQ(label.get_content_size(), size);
+    label.set_buffer("short");
+    EXPECT_EQ(label.chunk_count(), 1u);
+    label.calc_content_size(bgui::layer::base);
+    EXPECT_LT(label.get_content_size().y, size.y);
+}

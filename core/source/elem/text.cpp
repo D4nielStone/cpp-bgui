@@ -221,6 +221,8 @@ void bgui::text::set_editor_guides_enabled(bool enabled) {
     if (m_editor_guides_enabled == enabled)
         return;
     m_editor_guides_enabled = enabled;
+    m_metrics_valid = false;
+    mark_layout_dirty();
     update_highlight_colors();
     mark_render_dirty();
 }
@@ -274,11 +276,10 @@ size_t bgui::text::get_cursor_position_at(float x, float y) const {
 }
 
 float bgui::text::get_line_number_gutter_width(const font& font, float scale) const {
-    if (!m_editor_guides_enabled)
+    if (!m_editor_guides_enabled && !m_line_numbers_enabled)
         return 0.f;
 
-    const size_t line_count = static_cast<size_t>(
-        std::count(m_buffer.begin(), m_buffer.end(), '\n')) + 1;
+    const size_t line_count = m_line_count;
     const size_t digit_count = std::to_string(line_count).size();
     float widest_digit = 0.f;
     for (char32_t digit = U'0'; digit <= U'9'; ++digit) {
@@ -329,8 +330,19 @@ size_t bgui::text::get_vertical_cursor_position(size_t position, int direction) 
 }
 
 void bgui::text::update_highlight_colors() {
-    std::vector<size_t> byte_lengths;
-    const std::u32string codepoints = utf8_to_utf32(m_buffer, &byte_lengths);
+    m_metrics_valid = false;
+    m_byte_lengths.clear();
+    m_codepoints = utf8_to_utf32(m_buffer, &m_byte_lengths);
+    const auto& codepoints = m_codepoints;
+    const auto& byte_lengths = m_byte_lengths;
+    m_chunks = {{0, 0, 1}};
+    m_line_count = 1;
+    size_t byte = 0;
+    for (size_t i = 0; i < codepoints.size(); ++i) {
+        byte += byte_lengths[i];
+        if (codepoints[i] == U'\n' && ++m_line_count % 64 == 1)
+            m_chunks.push_back({i + 1, byte, m_line_count});
+    }
     m_highlight_colors.assign(codepoints.size(), std::nullopt);
     m_brace_pairs.assign(codepoints.size(), std::nullopt);
     m_scope_pairs.clear();
@@ -489,6 +501,13 @@ void bgui::text::calc_content_size(const layer&) {
     }
 
     const float scale = m_scale * bgui::get_global_scale();
+    if (type != "icon" && m_metrics_valid && m_metrics_font == &font &&
+        m_metrics_scale == scale && m_metrics_wrap == m_wrap_enabled &&
+        m_metrics_numbers == (m_line_numbers_enabled || m_editor_guides_enabled)) {
+        set_content_size(m_metrics_size);
+        m_draw_offset = m_metrics_offset;
+        return;
+    }
     const float line_height = (font.ascent + font.descent + font.line_gap) * scale;
     const float wrap_width = 500.f * bgui::get_global_scale();
     float line_width = 0.f;
@@ -501,7 +520,7 @@ void bgui::text::calc_content_size(const layer&) {
     bool has_visual_bounds = false;
     int line_count = 1;
 
-    for (char32_t character : utf8_to_utf32(m_buffer)) {
+    for (char32_t character : m_codepoints) {
         if (character == U'\n') {
             max_width = std::max(max_width, line_width);
             line_width = 0.f;
@@ -566,8 +585,16 @@ void bgui::text::calc_content_size(const layer&) {
             font, m_scale * bgui::get_global_scale()))),
         static_cast<int>(std::ceil(text_height))
     });
+    m_metrics_valid = true;
+    m_metrics_font = &font;
+    m_metrics_scale = scale;
+    m_metrics_wrap = m_wrap_enabled;
+    m_metrics_numbers = m_line_numbers_enabled || m_editor_guides_enabled;
+    m_metrics_size = get_content_size();
+    m_metrics_offset = m_draw_offset;
 }
 void bgui::text::set_font(const std::string &path) {
+    m_metrics_valid = false;
     font_manager::get_instance().m_font_queue.push(path);
     mark_layout_dirty();
 }
@@ -652,7 +679,8 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     float line_x = 0.f;
     int line_count = 1;
     const float gutter_width = get_line_number_gutter_width(font, scale);
-    std::string display_buffer = m_buffer;
+    const std::string& source_buffer = m_buffer;
+    std::string display_buffer;
     int available_width = processed_width();
     bool button_label = false;
     for (auto* parent = get_parent(); type != "icon" && parent; parent = parent->get_parent()) {
@@ -663,6 +691,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             parent->computed_style.layout.padding.z));
         break;
     }
+    if (button_label) display_buffer = source_buffer;
     if (button_label && get_text_width(display_buffer) > available_width) {
         const std::string suffix = "...";
         const float suffix_width = get_text_width(suffix);
@@ -711,12 +740,29 @@ void bgui::text::get_requires(bgui::draw_data* data) {
 
     m_material.m_texture = font.atlas;
 
-    // Converte a string inteira UMA única vez, evitando reconverter
-    // e re-medir substrings dentro do loop (era O(n^2)) e evitando
-    // usar índices de codepoint em std::string::substr (bug de bytes).
-    std::vector<size_t> byte_lengths;
-    std::u32string codepoints = utf8_to_utf32(display_buffer, &byte_lengths);
+    std::vector<size_t> label_lengths;
+    std::u32string label_codepoints;
+    if (button_label) label_codepoints = utf8_to_utf32(display_buffer, &label_lengths);
+    const auto& codepoints = button_label ? label_codepoints : m_codepoints;
+    const auto& byte_lengths = button_label ? label_lengths : m_byte_lengths;
     size_t byte_position = 0;
+    size_t first_codepoint = 0;
+    const float row_height = ascent + descent + line_gap;
+    const bool chunked = !button_label && !m_wrap_enabled && !m_editor_guides_enabled &&
+        row_height > 0.f && data->m_clip_rect.w > 0;
+    if (chunked) {
+        const auto first_line = static_cast<size_t>(std::max(0.f,
+            std::floor((data->m_clip_rect.y - text_origin_y - m_draw_offset.y) / row_height))) + 1;
+        const auto chunk = std::upper_bound(m_chunks.begin(), m_chunks.end(), first_line,
+            [](size_t line, const text_chunk& value) { return line < value.line; });
+        if (chunk != m_chunks.begin()) {
+            const auto& start = *std::prev(chunk);
+            first_codepoint = start.codepoint;
+            byte_position = start.byte;
+            line_count = static_cast<int>(start.line);
+            line_y += (start.line - 1) * row_height;
+        }
+    }
     float cursor_x = 0.f;
     float cursor_y = 0.f;
     bool cursor_position_found = false;
@@ -781,7 +827,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     };
 
     auto draw_line_number = [&](int number) {
-        if (!m_editor_guides_enabled)
+        if (!m_editor_guides_enabled && !m_line_numbers_enabled)
             return;
         const std::string label = std::to_string(number);
         float label_width = 0.f;
@@ -790,7 +836,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
             if (glyph != chs.end())
                 label_width += glyph->second.advance * scale;
         }
-        float number_x = -5.f * bgui::get_global_scale() - label_width;
+        float number_x = m_horizontal_scroll - 5.f * bgui::get_global_scale() - label_width;
         const bgui::vec4 number_color{0.53f, 0.53f, 0.53f, 1.f};
         for (char digit : label) {
             const char32_t character = static_cast<unsigned char>(digit);
@@ -801,7 +847,9 @@ void bgui::text::get_requires(bgui::draw_data* data) {
     };
     draw_line_number(line_count);
 
-    for (size_t index = 0; index < codepoints.size(); ++index) {
+    for (size_t index = first_codepoint; index < codepoints.size(); ++index) {
+        if (chunked && text_origin_y + m_draw_offset.y + line_y - ascent >
+            data->m_clip_rect.y + data->m_clip_rect.w) break;
         const char32_t ca = codepoints[index];
         // Mede o glifo atual para decidir, incrementalmente, se ele
         // ainda cabe na linha (equivalente ao antigo "> 100", mas

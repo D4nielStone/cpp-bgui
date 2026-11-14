@@ -12,6 +12,7 @@
 namespace bgui {
     class dock_tab;
     class text;
+    class button;
     class window;
     class dock_splitter;
 
@@ -94,7 +95,8 @@ namespace bgui {
             std::vector<dock_tab*> tabs;
             std::vector<element*> active_indicators;
             std::vector<element*> separators;
-            text* overflow{nullptr};
+            button* overflow{nullptr};
+            bool collapsed{false};
         };
 
         std::array<panel, 5> m_panels;

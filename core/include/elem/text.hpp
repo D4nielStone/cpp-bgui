@@ -26,6 +26,19 @@ namespace bgui {
         size_t m_selection_end = 0;
         bool m_wrap_enabled = true;
         bool m_editor_guides_enabled = false;
+        bool m_line_numbers_enabled = false;
+        struct text_chunk { size_t codepoint; size_t byte; size_t line; };
+        std::vector<text_chunk> m_chunks;
+        std::u32string m_codepoints;
+        std::vector<size_t> m_byte_lengths;
+        size_t m_line_count = 1;
+        bool m_metrics_valid = false;
+        const font* m_metrics_font = nullptr;
+        float m_metrics_scale = 0.f;
+        bool m_metrics_wrap = false;
+        bool m_metrics_numbers = false;
+        vec2i m_metrics_size{0};
+        vec2 m_metrics_offset{0.f};
         std::shared_ptr<const std::vector<syntax_highlight_rule>> m_highlight_rules;
         std::vector<std::optional<bgui::vec4>> m_highlight_colors;
         std::vector<std::optional<size_t>> m_brace_pairs;
@@ -46,6 +59,14 @@ namespace bgui {
         }
         bool is_wrap_enabled() const { return m_wrap_enabled; }
         void set_editor_guides_enabled(bool enabled);
+        void set_line_numbers_enabled(bool enabled) {
+            if (m_line_numbers_enabled == enabled) return;
+            m_line_numbers_enabled = enabled;
+            m_metrics_valid = false;
+            mark_layout_dirty();
+        }
+        bool line_numbers_enabled() const { return m_line_numbers_enabled; }
+        size_t chunk_count() const { return m_chunks.size(); }
         void on_update() override;
         void calc_content_size(const layer& lay) override;
         float get_text_width(const std::string& t) const;

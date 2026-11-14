@@ -2,11 +2,13 @@
 
 #include "bgui.hpp"
 #include "elem/text.hpp"
+#include "elem/context_menu.hpp"
 #include "elem/window.hpp"
 #include "lay/linear.hpp"
 #include "os/os.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <functional>
@@ -16,6 +18,49 @@
 #include <unordered_set>
 
 namespace bgui {
+    class dock_options final : public button {
+    public:
+        context_menu menu;
+        dock_options() : button("", .3f, nullptr), menu(*this, *this) {
+            get_label().set_enable(false);
+            for (auto& dot : m_dots) {
+                dot = &add<element, layer::overlay>();
+                dot->add_class("dock-overflow-dot");
+                dot->receives_input(false);
+                dot->set_flex(false);
+            }
+        }
+        void on_released() override {
+            element::on_released();
+            bgui::add_function([this, alive = std::weak_ptr<const bool>{m_alive}] {
+                if (alive.expired()) return;
+                if (menu.is_open()) menu.close();
+                else menu.open(processed_x() + processed_width() -
+                    static_cast<int>(200 * get_global_scale()), processed_y() + processed_height());
+            });
+        }
+        void arrange() override {
+            button::arrange();
+            const int diameter = std::max(2, static_cast<int>(std::lround(3 * get_global_scale())));
+            const int gap = std::max(2, static_cast<int>(std::lround(3 * get_global_scale())));
+            const int x = processed_x() + (processed_width() - 3 * diameter - 2 * gap) / 2;
+            const int y = processed_y() + (processed_height() - diameter) / 2;
+            for (std::size_t i = 0; i < m_dots.size(); ++i)
+                m_dots[i]->set_final_rect(x + static_cast<int>(i) * (diameter + gap), y,
+                    diameter, diameter);
+        }
+        void on_update() override {
+            button::on_update();
+            const auto mouse = get_mouse_position();
+            if (menu.is_open() && (get_pressed(input_key::escape) ||
+                (get_pressed(input_key::mouse_left) && !menu.contains_point(mouse.x, mouse.y))))
+                menu.close();
+        }
+    private:
+        std::array<element*, 3> m_dots{};
+        std::shared_ptr<const bool> m_alive = std::make_shared<const bool>(true);
+    };
+
     class dock_tab final : public linear {
     public:
         dock_tab(
@@ -37,6 +82,20 @@ namespace bgui {
                 mode::stretch,
                 mode::wrap_content
             );
+            m_dot = &add<element, layer::overlay>();
+            m_dot->add_class("dock-tab-compact-dot");
+            m_dot->set_flex(false);
+            m_dot->receives_input(false);
+            m_dot->set_enable(false);
+        }
+
+        void mark_dragged() { m_dragged = true; }
+        void set_compact(bool compact) {
+            if (m_compact == compact) return;
+            m_compact = compact;
+            m_label->set_enable(!compact);
+            m_dot->set_enable(compact);
+            mark_layout_dirty();
         }
 
         text& get_label() {
@@ -57,6 +116,12 @@ namespace bgui {
         }
 
         void arrange() override {
+            if (m_compact) {
+                const int diameter = std::max(4, static_cast<int>(std::lround(7 * get_global_scale())));
+                m_dot->set_final_rect(processed_x() + (processed_width() - diameter) / 2,
+                    processed_y() + (processed_height() - diameter) / 2, diameter, diameter);
+                return;
+            }
             const auto& padding = computed_style.layout.padding;
             const auto& margin = m_label->computed_style.layout.margin;
             const int x = processed_x() + padding.x + margin.x;
@@ -86,6 +151,10 @@ namespace bgui {
         void on_released() override {
             element::on_released();
             bgui::get_context().m_actual_cursor = bgui::cursor::hand;
+            if (m_dragged) {
+                m_dragged = false;
+                return;
+            }
             bgui::add_function([
                 alive = std::weak_ptr<const bool>{m_alive}, on_select = m_on_select
             ]() {
@@ -96,6 +165,7 @@ namespace bgui {
 
         void on_clicked() override {
             element::on_clicked();
+            m_dragged = false;
             bgui::get_context().m_actual_cursor = bgui::cursor::hand;
         }
 
@@ -106,6 +176,9 @@ namespace bgui {
 
     private:
         text* m_label;
+        element* m_dot{};
+        bool m_compact{};
+        bool m_dragged{false};
         std::function<void()> m_on_select;
         std::shared_ptr<const bool> m_alive = std::make_shared<const bool>(true);
     };
@@ -341,8 +414,10 @@ namespace bgui {
                         }
                     );
                     if (found != m_tab_groups.end()) {
-                        found->active = tab_window;
+                        const bool collapse = found->active == tab_window && !found->collapsed;
                         focus_window(tab_window);
+                        found->collapsed = collapse;
+                        mark_layout_dirty();
                     }
                 }
             );
@@ -370,7 +445,31 @@ namespace bgui {
         }
 
         if (!group.overflow) {
-            auto& overflow = add<text, layer::base>("...", 0.3f);
+            auto& overflow = add<dock_options, layer::base>();
+            auto* control = &overflow;
+            auto find_group = [this, control]() {
+                return std::find_if(m_tab_groups.begin(), m_tab_groups.end(),
+                    [control](const tab_group& value) { return value.overflow == control; });
+            };
+            overflow.menu.add_button("Expand / collapse", [this, find_group] {
+                auto found = find_group();
+                if (found == m_tab_groups.end()) return;
+                found->collapsed = !found->collapsed;
+                mark_layout_dirty();
+            });
+            overflow.menu.add_button("Next tab", [this, find_group] {
+                auto found = find_group();
+                if (found == m_tab_groups.end() || found->windows.empty()) return;
+                auto active = std::find(found->windows.begin(), found->windows.end(), found->active);
+                const auto next = (std::distance(found->windows.begin(), active) + 1) % found->windows.size();
+                focus_window(found->windows[next]);
+            });
+            overflow.menu.add_button("Float panel", [this, find_group] {
+                auto found = find_group();
+                if (found == m_tab_groups.end() || !found->active) return;
+                found->active->set_floating(true);
+                mark_layout_dirty();
+            });
             overflow.add_class("dock-tab-overflow");
             overflow.style.layout.require_mode(
                 mode::wrap_content,
@@ -659,6 +758,7 @@ namespace bgui {
             if (std::find(group.windows.begin(), group.windows.end(), value) == group.windows.end())
                 continue;
             group.active = value;
+            group.collapsed = false;
             for (auto* member : group.windows) member->set_enable(member == value);
         }
         mark_layout_dirty();
@@ -1122,6 +1222,7 @@ namespace bgui {
                     tab->get_label().set_buffer(title);
                 const auto drag = tab->is_drag();
                 if (drag.x != 0 || drag.y != 0) {
+                    tab->mark_dragged();
                     group.active = tab_window;
                     focus_window(tab_window);
                     if (m_tab_dragged_window != tab_window) {
@@ -1148,7 +1249,7 @@ namespace bgui {
                     indicator->mark_style_dirty();
                 }
                 tab->set_enable(true);
-                tab_window->set_enable(active);
+                tab_window->set_enable(active && !group.collapsed);
                 if (active)
                     tab_window->get_title().set_drag(drag);
                 tab->set_drag({0, 0});
@@ -1212,6 +1313,47 @@ namespace bgui {
             --remaining_column_count;
         }
 
+        const auto area_collapsed = [this](dock_area area) {
+            const auto& windows = get_panel(area).windows;
+            return !windows.empty() && std::all_of(windows.begin(), windows.end(), [this](window* value) {
+                const auto group = std::find_if(m_tab_groups.begin(), m_tab_groups.end(), [value](const tab_group& group) {
+                    return std::find(group.windows.begin(), group.windows.end(), value) != group.windows.end();
+                });
+                return group != m_tab_groups.end() && group->collapsed;
+            });
+        };
+        const auto tab_height_for_area = [this](dock_area area) {
+            int header = 1;
+            const auto& windows = get_panel(area).windows;
+            for (const auto& group : m_tab_groups)
+                if (std::find(windows.begin(), windows.end(), group.anchor) != windows.end())
+                    for (auto* tab : group.tabs)
+                        header = std::max(header, tab->preferred_height());
+            return header;
+        };
+        if (has_middle_column) {
+            for (const auto index : {0u, 2u}) {
+                const auto area = index == 0 ? dock_area::left : dock_area::right;
+                if (!area_collapsed(area)) continue;
+                const int compact = std::min(column_sizes[index], tab_height_for_area(area));
+                column_sizes[1] += column_sizes[index] - compact;
+                column_sizes[index] = compact;
+            }
+        } else {
+            const bool left_collapsed = area_collapsed(dock_area::left);
+            const bool right_collapsed = area_collapsed(dock_area::right);
+            if (left_collapsed) {
+                const int compact = std::min(column_sizes[0], tab_height_for_area(dock_area::left));
+                if (has_right && !right_collapsed) column_sizes[2] += column_sizes[0] - compact;
+                column_sizes[0] = compact;
+            }
+            if (right_collapsed) {
+                const int compact = std::min(column_sizes[2], tab_height_for_area(dock_area::right));
+                if (has_left && !left_collapsed) column_sizes[0] += column_sizes[2] - compact;
+                column_sizes[2] = compact;
+            }
+        }
+
         int left_x = x;
         int middle_x = x + (has_left ? column_sizes[0] + m_splitter_size : 0);
         int right_x = x + width - column_sizes[2];
@@ -1248,6 +1390,30 @@ namespace bgui {
             row_space -= row_sizes[i];
             remaining_row_weight -= row_weights[i];
             --remaining_row_count;
+        }
+
+        if (has_center) {
+            for (const auto index : {0u, 2u}) {
+                const auto area = index == 0 ? dock_area::top : dock_area::bottom;
+                if (!area_collapsed(area)) continue;
+                const int header = tab_height_for_area(area);
+                const int compact = std::min(row_sizes[index], header);
+                row_sizes[1] += row_sizes[index] - compact;
+                row_sizes[index] = compact;
+            }
+        } else {
+            const auto compact_row = [&](unsigned index, unsigned neighbor, dock_area area) {
+                const int compact = std::min(row_sizes[index], tab_height_for_area(area));
+                const bool neighbor_exists = neighbor == 0 ? has_top : has_bottom;
+                const bool neighbor_collapsed = area_collapsed(neighbor == 0 ? dock_area::top : dock_area::bottom);
+                if (neighbor_exists && !neighbor_collapsed)
+                    row_sizes[neighbor] += row_sizes[index] - compact;
+                row_sizes[index] = compact;
+            };
+            if (area_collapsed(dock_area::top))
+                compact_row(0, 2, dock_area::top);
+            if (area_collapsed(dock_area::bottom))
+                compact_row(2, 0, dock_area::bottom);
         }
 
         int top_y = y;
@@ -1320,7 +1486,7 @@ namespace bgui {
             int remaining_extent = content_extent;
             int cursor = horizontal ? panel.bounds.x : panel.bounds.y;
             std::function<void(window*, const vec4i&)> arrange_window;
-            arrange_window = [this, &arrange_window, scale](window* value, const vec4i& bounds) {
+            arrange_window = [this, &arrange_window, scale, area](window* value, const vec4i& bounds) {
                 auto remaining = bounds;
                 for (auto& split : m_nested_splits) {
                     if (split.anchor != value)
@@ -1392,6 +1558,32 @@ namespace bgui {
                     return;
                 }
 
+                const bool compact = group->collapsed &&
+                    (area == dock_area::left || area == dock_area::right);
+                for (auto* tab : group->tabs) tab->set_compact(compact);
+                if (compact) {
+                    int header = 1;
+                    for (auto* tab : group->tabs) header = std::max(header, tab->preferred_height());
+                    const int side = std::min(remaining.z, header);
+                    int tab_y = remaining.y;
+                    const int overflow_y = std::max(remaining.y, remaining.y + remaining.w - side);
+                    for (std::size_t index = 0; index < group->tabs.size(); ++index) {
+                        auto* tab = group->tabs[index];
+                        const int square = std::min(side, std::max(0, overflow_y - tab_y));
+                        tab->set_final_rect(remaining.x, tab_y, side, square);
+                        tab->arrange();
+                        group->windows[index]->set_enable(false);
+                        group->active_indicators[index]->set_final_rect(
+                            remaining.x, tab_y, std::max(2, side / 8), square);
+                        group->separators[index]->style.visual.visible = false;
+                        tab_y += square;
+                    }
+                    group->overflow->set_final_rect(remaining.x, overflow_y, side,
+                        std::min(side, remaining.w));
+                    group->overflow->arrange();
+                    return;
+                }
+
                 int tab_height = 0;
                 for (auto* tab : group->tabs)
                     tab_height = std::max(tab_height, tab->preferred_height());
@@ -1405,20 +1597,13 @@ namespace bgui {
                     );
                 };
                 int tab_x = remaining.x;
-                const int overflow_width = std::min(
-                    remaining.z,
-                    std::max(
-                        24 * scale,
-                        static_cast<int>(std::ceil(
-                            group->overflow->get_text_width("...") + 8 * scale
-                        ))
-                    )
-                );
+                const int overflow_width = std::min(remaining.z, 28 * scale);
                 const int tab_right = remaining.x + remaining.z - overflow_width;
                 group->overflow->set_enable(true);
                 group->overflow->set_final_rect(
                     tab_right, remaining.y, overflow_width, tab_height
                 );
+                group->overflow->arrange();
                 for (std::size_t tab_index = 0; tab_index < group->windows.size(); ++tab_index) {
                     auto* tab_window = group->windows[tab_index];
                     auto* tab = group->tabs[tab_index];
@@ -1466,8 +1651,8 @@ namespace bgui {
                         scaled_pixels(1),
                         std::max(0, tab_height - scaled_pixels(6))
                     );
-                    tab_window->set_enable(active);
-                    if (active) {
+                    tab_window->set_enable(active && !group->collapsed);
+                    if (active && !group->collapsed) {
                         tab_window->set_final_rect(
                             remaining.x, remaining.y + tab_height, remaining.z,
                             std::max(0, remaining.w - tab_height)
@@ -1511,7 +1696,8 @@ namespace bgui {
                     continue;
                 if (element->has_class("dock-drop-zone") ||
                     element->has_class("dock-drop-preview") ||
-                    element->has_class("dock-tab"))
+                    element->has_class("dock-tab") ||
+                    element->has_class("dock-tab-overflow"))
                     continue;
                 if (!element->is_enabled())
                     continue;
@@ -1535,6 +1721,8 @@ namespace bgui {
                 if (element->has_class("dock-splitter"))
                     return 0;
                 if (element->has_class("dock-drop-preview"))
+                    return 6;
+                if (element->has_class("dock-tab-overflow"))
                     return 6;
                 if (element->has_class("dock-tab"))
                     return 3;

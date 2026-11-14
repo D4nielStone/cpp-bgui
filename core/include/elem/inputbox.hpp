@@ -40,6 +40,9 @@ namespace bgui {
         bool m_right_down;
         bool m_up_down;
         bool m_down_down;
+        bool m_mouse_selecting{false};
+        bool m_page_up_down{false}, m_page_down_down{false};
+        float m_page_up_next_time{0.f}, m_page_down_next_time{0.f};
         bool m_home_down;
         bool m_end_down;
         bool m_select_all_down;
@@ -97,6 +100,7 @@ namespace bgui {
         );
         void set_wrap(bool enabled) { m_text->set_wrap(enabled); }
         bool is_wrap_enabled() const { return m_text->is_wrap_enabled(); }
+        void set_line_numbers_enabled(bool enabled) { m_text->set_line_numbers_enabled(enabled); }
         void set_editor_guides_enabled(bool enabled) {
             m_text->set_editor_guides_enabled(enabled);
         }

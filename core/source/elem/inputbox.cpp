@@ -174,15 +174,20 @@ void bgui::inputbox::on_pressed() {
 
 void bgui::inputbox::on_clicked() {
     const auto mouse = bgui::get_mouse_position();
+    const bool extend = get_pressed(input_key::left_shift) || get_pressed(input_key::right_shift);
+    if (!extend || m_selection_anchor == std::numeric_limits<size_t>::max())
+        m_selection_anchor = m_cursor_position;
     m_cursor_position = m_input_buffer.empty() ? 0 : m_text->get_cursor_position_at(
         static_cast<float>(mouse.x), static_cast<float>(mouse.y));
-    clear_selection();
+    if (!extend) m_selection_anchor = m_cursor_position;
+    m_mouse_selecting = true;
     m_cursor_blink_start = bgui::get_time();
     set_focused(true);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
 
 void bgui::inputbox::on_released() {
+    m_mouse_selecting = false;
     set_focused(true);
     bgui::get_context().m_actual_cursor = bgui::cursor::ibeam;
 }
@@ -200,7 +205,16 @@ bgui::text& bgui::inputbox::get_label() {
 
 void bgui::inputbox::on_update() {
     auto& ctx = bgui::get_context();
+    const auto previous_cursor = m_cursor_position;
 
+    if (m_mouse_selecting && m_focused) {
+        if (get_pressed(input_key::mouse_left)) {
+            const auto mouse = get_mouse_position();
+            m_cursor_position = m_input_buffer.empty() ? 0 : m_text->get_cursor_position_at(
+                static_cast<float>(mouse.x), static_cast<float>(mouse.y));
+            m_cursor_blink_start = get_time();
+        } else m_mouse_selecting = false;
+    }
     if (m_focused) {
         const auto key_action = [&ctx](input_key key) {
             return ctx.m_input_map[key];
@@ -384,7 +398,8 @@ void bgui::inputbox::on_update() {
                         m_selection_anchor = m_cursor_position;
                     move();
                 } else if (has_selection()) {
-                    if (key == input_key::home || key == input_key::end)
+                    if (key == input_key::home || key == input_key::end ||
+                        key == input_key::page_up || key == input_key::page_down)
                         move();
                     else
                         m_cursor_position =
@@ -449,6 +464,20 @@ void bgui::inputbox::on_update() {
         };
         process_line_key(input_key::home, m_home_down, m_home_next_time, true);
         process_line_key(input_key::end, m_end_down, m_end_next_time, false);
+        if (m_mode == input_mode::multiline) {
+            const auto lines = 1 + std::count(m_input_buffer.begin(), m_input_buffer.end(), '\n');
+            const auto line_height = std::max(1, m_text->get_content_size().y / static_cast<int>(lines));
+            const auto page = std::max(1, processed_height() / line_height - 1);
+            process_cursor_key(ctx.m_input_map[input_key::page_up], m_page_up_down,
+                m_page_up_next_time, input_key::page_up, [this, page] {
+                    for (int i = 0; i < page; ++i) move_cursor_up();
+                });
+            process_cursor_key(ctx.m_input_map[input_key::page_down], m_page_down_down,
+                m_page_down_next_time, input_key::page_down, [this, page] {
+                    for (int i = 0; i < page; ++i) move_cursor_down();
+                });
+        }
+
 
         const auto tab_action = ctx.m_input_map[input_key::tab];
         const bool tab_held =
@@ -533,6 +562,18 @@ void bgui::inputbox::on_update() {
         }
     }
 
+    if (m_scrollable && m_mode == input_mode::multiline && m_cursor_position != previous_cursor) {
+        const auto lines = 1 + std::count(m_input_buffer.begin(), m_input_buffer.end(), '\n');
+        const int height = std::max(1, m_text->get_content_size().y / static_cast<int>(lines));
+        const int row = static_cast<int>(std::count(m_input_buffer.begin(), m_input_buffer.begin() + m_cursor_position, '\n'));
+        const int top = m_text->processed_y() + row * height;
+        const int bottom = top + height;
+        int offset = m_scroll_offset;
+        if (top < processed_y()) offset += top - processed_y();
+        else if (bottom > processed_y() + processed_height()) offset += bottom - processed_y() - processed_height();
+        offset = std::clamp(offset, 0, std::max(0, m_scroll_content_height - processed_height()));
+        if (offset != m_scroll_offset) { m_scroll_offset = offset; mark_layout_dirty(); }
+    }
     linear::on_update();
     if (m_focused) {
         set_style_state(state::focused);
@@ -568,6 +609,7 @@ void bgui::inputbox::set_focused(bool focused) {
         m_delete_down = false;
     }
     if (!focused) {
+        m_mouse_selecting = m_page_up_down = m_page_down_down = false;
         m_backspace_down = false;
         m_delete_down = false;
         m_enter_down = false;

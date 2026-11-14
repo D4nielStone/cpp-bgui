@@ -28,6 +28,8 @@ namespace bgui {
         ,delete_key, f5, keypad_enter, space
         ,equal, minus, zero, keypad_add, keypad_subtract, keypad_zero
         ,f3
+        ,page_up, page_down, keypad_one, keypad_two, keypad_three, keypad_four
+        ,keypad_five, keypad_six, keypad_seven, keypad_eight, keypad_nine, keypad_decimal
     };
     enum class input_action {
         none,

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -27,6 +28,18 @@ namespace {
                 }
             }
         }
+        return nullptr;
+    }
+
+    bgui::element* find_tab(bgui::dock& dock, const std::string& title) {
+        for (auto& [layer, elements] : dock.get_elements())
+            for (auto& element : elements) {
+                if (!element->has_class("dock-tab")) continue;
+                for (auto& [child_layer, children] : element->as_layout()->get_elements())
+                    for (auto& child : children)
+                        if (auto* label = dynamic_cast<bgui::text*>(child.get());
+                            label && label->get_buffer() == title) return element.get();
+            }
         return nullptr;
     }
 
@@ -225,7 +238,7 @@ TEST(DockTest, TabIndicatorAndSeparatorUseScaledDimensions) {
 
     EXPECT_EQ(indicator_height, 3);
     EXPECT_EQ(separator_width, 2);
-    EXPECT_EQ(separator_height, tab_height - 9);
+    EXPECT_EQ(separator_height, std::max(0, tab_height - 9));
 }
 
 TEST(DockTest, TabSeparatorIsHiddenWhenOnlyOneTabRemains) {
@@ -1181,4 +1194,279 @@ TEST(DockTest, ReplacingRootCancelsQueuedTabSelection) {
     tab->on_released();
     bgui::set_layout<bgui::layout>();
     EXPECT_NO_THROW(bgui::on_update());
+}
+
+TEST(DockTest, ActiveTabCollapsesAndFocusRestoresContent) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& window = dock.add_window("Panel", bgui::dock_area::center);
+    dock.get_configuration();
+    bgui::element* tab = nullptr;
+    for (auto& [layer, elements] : dock.get_elements())
+        for (auto& candidate : elements)
+            if (candidate->has_class("dock-tab")) tab = candidate.get();
+    ASSERT_NE(tab, nullptr);
+    tab->on_released();
+    bgui::on_update();
+    dock.on_update();
+    EXPECT_FALSE(window.is_enabled());
+    EXPECT_TRUE(tab->is_enabled());
+    tab->on_released();
+    bgui::on_update();
+    dock.on_update();
+    EXPECT_TRUE(window.is_enabled());
+    auto* overflow = find_button(dock, "dock-tab-overflow");
+    ASSERT_NE(overflow, nullptr);
+    overflow->on_released();
+    bgui::on_update();
+    bool open = false;
+    for (auto& [layer, elements] : overflow->get_elements())
+        for (auto& child : elements)
+            if (child->has_class("context-menu-popup")) open = child->is_enabled();
+    EXPECT_TRUE(open);
+}
+
+TEST(DockTest, CollapsedBottomDockReturnsSpaceAndRestoresRatio) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.compute_style();
+    dock.process_required_size({900, 600});
+    dock.set_final_rect(0, 0, 900, 600);
+    auto& center = dock.add_window("Center", bgui::dock_area::center);
+    auto& bottom = dock.add_window("Bottom", bgui::dock_area::bottom);
+    dock.cascade_style();
+    update_dock(dock);
+    const int original = center.processed_height();
+    auto* overflow = find_button(dock, "dock-tab-overflow");
+    for (auto& [layer, elements] : dock.get_elements())
+        for (auto& child : elements)
+            if (child->has_class("dock-tab-overflow") && child->processed_y() > 300)
+                overflow = dynamic_cast<bgui::button*>(child.get());
+    ASSERT_NE(overflow, nullptr);
+    auto* action = find_button(*overflow, "context-menu-option");
+    ASSERT_NE(action, nullptr);
+    action->on_released();
+    bgui::on_update();
+    dock.set_final_rect(0, 0, 900, 600);
+    update_dock(dock);
+    EXPECT_FALSE(bottom.is_enabled());
+    EXPECT_GT(center.processed_height(), original);
+    dock.focus_window(&bottom);
+    update_dock(dock);
+    EXPECT_TRUE(bottom.is_enabled());
+    EXPECT_EQ(center.processed_height(), original);
+}
+
+TEST(DockTest, DragReleaseDoesNotCollapseTab) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& window = dock.add_window("Panel", bgui::dock_area::center);
+    dock.get_configuration();
+    bgui::element* tab = nullptr;
+    for (auto& [layer, elements] : dock.get_elements())
+        for (auto& candidate : elements)
+            if (candidate->has_class("dock-tab")) tab = candidate.get();
+    ASSERT_NE(tab, nullptr);
+    tab->set_drag({2, 0});
+    dock.on_update();
+    tab->on_released();
+    bgui::on_update();
+    dock.on_update();
+    EXPECT_TRUE(window.is_enabled());
+}
+
+TEST(DockTest, OverflowCanSelectNextTabAndFloatIt) {
+    bgui::scoped_interface interface;
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& first = dock.add_window("First", bgui::dock_area::center);
+    auto& second = dock.add_window("Second", bgui::dock_area::center);
+    dock.merge_window_as_tab(first, second);
+    dock.focus_window(&first);
+    dock.on_update();
+    auto* overflow = find_button(dock, "dock-tab-overflow");
+    ASSERT_NE(overflow, nullptr);
+    std::vector<bgui::button*> options;
+    for (auto& [layer, elements] : overflow->get_elements())
+        for (auto& child : elements)
+            if (child->has_class("context-menu-popup"))
+                for (auto& [menu_layer, items] : child->as_layout()->get_elements())
+                    for (auto& item : items)
+                        if (auto* button = dynamic_cast<bgui::button*>(item.get())) options.push_back(button);
+    ASSERT_EQ(options.size(), 3u);
+    options[1]->on_released();
+    bgui::on_update();
+    dock.on_update();
+    EXPECT_FALSE(first.is_enabled());
+    EXPECT_TRUE(second.is_enabled());
+    options[2]->on_released();
+    bgui::on_update();
+    dock.on_update();
+    EXPECT_TRUE(second.is_floating());
+    EXPECT_TRUE(first.is_enabled());
+}
+
+TEST(DockTest, CollapsedSideTabsAreSquareAndReleaseWidth) {
+    for (const auto area : {bgui::dock_area::left, bgui::dock_area::right}) {
+        for (bool with_center : {false, true}) {
+            bgui::scoped_interface interface;
+            bgui::get_context().m_size = {900, 600};
+            auto& dock = bgui::get_layout().add<bgui::dock>();
+            auto& side = dock.add_window("Side", area);
+            auto& sibling = dock.add_window("Sibling", area);
+            auto& neighbor = dock.add_window("Neighbor", with_center
+                ? bgui::dock_area::center
+                : (area == bgui::dock_area::left ? bgui::dock_area::right : bgui::dock_area::left));
+            dock.merge_window_as_tab(side, sibling);
+            dock.focus_window(&side);
+            for (int i = 0; i < 4; ++i) bgui::on_update();
+            const int before = neighbor.processed_width();
+            auto* active = find_tab(dock, "Side");
+            ASSERT_NE(active, nullptr);
+            active->on_released();
+            for (int i = 0; i < 4; ++i) bgui::on_update();
+            EXPECT_FALSE(side.is_enabled());
+            EXPECT_EQ(active->processed_width(), active->processed_height());
+            EXPECT_GT(neighbor.processed_width(), before);
+            auto* overflow = find_button(dock, "dock-tab-overflow");
+            ASSERT_NE(overflow, nullptr);
+            EXPECT_EQ(overflow->processed_width(), overflow->processed_height());
+            bool has_dot = false;
+            for (auto& [layer, elements] : active->as_layout()->get_elements())
+                for (auto& element : elements)
+                    has_dot |= element->has_class("dock-tab-compact-dot") && element->is_enabled();
+            EXPECT_TRUE(has_dot);
+            active->on_released();
+            for (int i = 0; i < 4; ++i) bgui::on_update();
+            EXPECT_TRUE(side.is_enabled());
+        }
+    }
+}
+
+TEST(DockTest, VerticalDocksCollapseWithCenterOrOppositeNeighbor) {
+    for (float scale : {1.f, 1.5f}) {
+        for (auto area : {bgui::dock_area::top, bgui::dock_area::bottom}) {
+            for (bool with_center : {false, true}) {
+                bgui::scoped_interface interface;
+                bgui::set_global_scale(scale);
+                bgui::get_context().m_size = {900, 600};
+                auto& dock = bgui::get_layout().add<bgui::dock>();
+                auto& panel = dock.add_window("Panel", area);
+                auto& neighbor = dock.add_window("Neighbor", with_center
+                    ? bgui::dock_area::center
+                    : (area == bgui::dock_area::top ? bgui::dock_area::bottom : bgui::dock_area::top));
+                for (int i = 0; i < 4; ++i) bgui::on_update();
+                const int before = neighbor.processed_height();
+                auto* tab = find_tab(dock, "Panel");
+                ASSERT_NE(tab, nullptr);
+                tab->on_released();
+                for (int i = 0; i < 4; ++i) bgui::on_update();
+                EXPECT_FALSE(panel.is_enabled());
+                EXPECT_GT(neighbor.processed_height(), before);
+                tab->on_released();
+                for (int i = 0; i < 4; ++i) bgui::on_update();
+                EXPECT_TRUE(panel.is_enabled());
+                EXPECT_EQ(neighbor.processed_height(), before);
+            }
+        }
+    }
+    bgui::set_global_scale(1.f);
+}
+
+TEST(DockTest, OverflowMenuStaysInsideViewportNearBottomEdge) {
+    bgui::scoped_interface interface;
+    bgui::get_context().m_size = {480, 320};
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.add_window("Bottom", bgui::dock_area::bottom);
+    dock.add_window("Center", bgui::dock_area::center);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    auto* overflow = find_button(dock, "dock-tab-overflow");
+    ASSERT_NE(overflow, nullptr);
+    overflow->on_released();
+    for (int i = 0; i < 2; ++i) bgui::on_update();
+    bool found = false;
+    for (auto& element : overflow->get_elements()[bgui::layer::overlay]) {
+        if (!element->has_class("context-menu-popup")) continue;
+        found = true;
+        EXPECT_TRUE(element->is_enabled());
+        EXPECT_GE(element->processed_x(), 0);
+        EXPECT_GE(element->processed_y(), 0);
+        EXPECT_LE(element->processed_x() + element->processed_width(), 480);
+        EXPECT_LE(element->processed_y() + element->processed_height(), 320);
+    }
+    EXPECT_TRUE(found);
+}
+
+TEST(DockTest, OverflowMenuDrawsAboveWindowAndAcceptsMouseSelection) {
+    bgui::scoped_interface interface;
+    auto& io = bgui::get_context();
+    io.m_size = {900, 600};
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& panel = dock.add_window("Panel", bgui::dock_area::center);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    auto* overflow = find_button(dock, "dock-tab-overflow");
+    ASSERT_NE(overflow, nullptr);
+    overflow->on_released();
+    for (int i = 0; i < 2; ++i) bgui::on_update();
+
+    const auto& elements = dock.get_elements()[bgui::layer::base];
+    const auto window_it = std::find_if(elements.begin(), elements.end(),
+        [&panel](const auto& item) { return item.get() == &panel; });
+    const auto overflow_it = std::find_if(elements.begin(), elements.end(),
+        [overflow](const auto& item) { return item.get() == overflow; });
+    ASSERT_NE(window_it, elements.end());
+    ASSERT_NE(overflow_it, elements.end());
+    EXPECT_LT(window_it, overflow_it);
+
+    bgui::button* collapse = nullptr;
+    for (auto& item : overflow->get_elements()[bgui::layer::overlay]) {
+        if (!item->has_class("context-menu-popup")) continue;
+        for (auto& option : item->as_layout()->get_elements()[bgui::layer::base]) {
+            auto* button = dynamic_cast<bgui::button*>(option.get());
+            if (button && button->get_label().get_buffer() == "Expand / collapse")
+                collapse = button;
+        }
+    }
+    ASSERT_NE(collapse, nullptr);
+    const bgui::vec2i point{collapse->processed_x() + collapse->processed_width() / 2,
+        collapse->processed_y() + collapse->processed_height() / 2};
+    io.m_mouse_left_events.push_back({bgui::input_action::press, point});
+    io.m_mouse_left_events.push_back({bgui::input_action::release, point});
+    bgui::on_update();
+    bgui::on_update();
+    EXPECT_FALSE(panel.is_enabled());
+}
+
+TEST(DockTest, MultipleSideTabsCollapseToTheirOriginalHeaderHeight) {
+    bgui::scoped_interface interface;
+    bgui::get_context().m_size = {900, 600};
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& first = dock.add_window("First", bgui::dock_area::left);
+    auto& second = dock.add_window("Second", bgui::dock_area::left);
+    dock.merge_window_as_tab(first, second);
+    dock.focus_window(&first);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    auto* first_tab = find_tab(dock, "First");
+    auto* second_tab = find_tab(dock, "Second");
+    ASSERT_NE(first_tab, nullptr);
+    ASSERT_NE(second_tab, nullptr);
+    for (auto* tab : {first_tab, second_tab}) {
+        tab->style.layout.padding = bgui::vec4i{8, 4, 8, 4};
+        tab->mark_style_dirty();
+    }
+    for (int i = 0; i < 2; ++i) bgui::on_update();
+    const int header_height = first_tab->processed_height();
+    ASSERT_GT(header_height, 0);
+    first_tab->on_released();
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    EXPECT_EQ(first_tab->processed_width(), header_height);
+    EXPECT_EQ(first_tab->processed_height(), header_height);
+    EXPECT_EQ(second_tab->processed_width(), header_height);
+    EXPECT_EQ(second_tab->processed_height(), header_height);
+    EXPECT_EQ(second_tab->processed_y(), first_tab->processed_y() + header_height);
+    EXPECT_FALSE(first.is_enabled());
+    EXPECT_FALSE(second.is_enabled());
+    second_tab->on_released();
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    EXPECT_TRUE(second.is_enabled());
+    EXPECT_FALSE(first.is_enabled());
 }
