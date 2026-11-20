@@ -1114,7 +1114,7 @@ TEST(DockTest, AfterDetachIdleArrangeShouldKeepLayoutClean) {
     EXPECT_TRUE(other.is_floating());
 }
 
-TEST(DockTest, DetachEnablesPreviouslyHiddenWindows) {
+TEST(DockTest, DetachKeepsOneActiveWindowInTheRemainingGroup) {
     bgui::scoped_interface interface;
     auto& dock = bgui::get_layout().add<bgui::dock>();
     auto& anchor = dock.add_window("Anchor");
@@ -1131,9 +1131,11 @@ TEST(DockTest, DetachEnablesPreviouslyHiddenWindows) {
     dock.on_update();
 
     EXPECT_TRUE(anchor.is_enabled());
-    EXPECT_TRUE(second.is_enabled());
+    EXPECT_FALSE(second.is_enabled());
     EXPECT_TRUE(third.is_enabled());
-    EXPECT_TRUE(dock.get_configuration().tab_groups.empty());
+    const auto config = dock.get_configuration();
+    ASSERT_EQ(config.tab_groups.size(), 1u);
+    EXPECT_EQ(config.tab_groups.front().windows, (std::vector<std::string>{"Anchor", "Second"}));
 }
 
 TEST(DockTest, GenericRemovalRepairsTabbedWindowReferences) {
@@ -1469,4 +1471,93 @@ TEST(DockTest, MultipleSideTabsCollapseToTheirOriginalHeaderHeight) {
     for (int i = 0; i < 4; ++i) bgui::on_update();
     EXPECT_TRUE(second.is_enabled());
     EXPECT_FALSE(first.is_enabled());
+}
+
+TEST(DockTest, FloatingOneTabPreservesRemainingGroupAndNestedSplit) {
+    for (bool float_anchor : {false, true}) {
+        bgui::scoped_interface interface;
+        auto& dock = bgui::get_layout().add<bgui::dock>();
+        auto& first = dock.add_window("First");
+        auto& second = dock.add_window("Second");
+        auto& third = dock.add_window("Third");
+        dock.add_window("Below");
+        auto config = dock.get_configuration();
+        config.splits.push_back({"First", "Below", false, true, .5f});
+        config.tab_groups = {{"First", "Second", {"First", "Second", "Third"}}};
+        dock.apply_configuration(config);
+        (float_anchor ? first : second).set_floating(true);
+        config = dock.get_configuration();
+        ASSERT_EQ(config.splits.size(), 1u);
+        EXPECT_EQ(config.splits[0].anchor, float_anchor ? "Second" : "First");
+        const auto group = std::find_if(config.tab_groups.begin(), config.tab_groups.end(),
+            [](const auto& value) { return value.windows.size() == 2; });
+        ASSERT_NE(group, config.tab_groups.end());
+        EXPECT_EQ(group->windows.back(), "Third");
+        EXPECT_FALSE(third.is_floating());
+        prepare_audit_dock(dock);
+        const float before = dock.get_configuration().splits.front().ratio;
+        for (auto& child : dock.get_elements()[bgui::layer::base]) {
+            if (!child->has_class("dock-splitter") || !child->is_enabled()) continue;
+            if (child->processed_width() < child->processed_height()) continue;
+            child->set_drag({0, 20});
+            child->on_update();
+        }
+        EXPECT_NE(dock.get_configuration().splits.front().ratio, before);
+    }
+}
+
+TEST(DockTest, OverflowControlsStayBelowEveryFloatingWindow) {
+    bgui::scoped_interface interface;
+    bgui::get_context().m_size = {900, 600};
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    dock.add_window("Docked");
+    auto& floating = dock.add<bgui::window>("Floating", .3f, true);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    const auto& elements = dock.get_elements()[bgui::layer::base];
+    const auto floater = std::find_if(elements.begin(), elements.end(),
+        [&floating](const auto& item) { return item.get() == &floating; });
+    for (auto it = elements.begin(); it != elements.end(); ++it)
+        if ((*it)->has_class("dock-tab-overflow")) EXPECT_LT(it, floater);
+}
+
+TEST(DockTest, VerticalSplitInTopDockShrinksAndKeepsLastCollapsedPanelExpanded) {
+    bgui::scoped_interface interface;
+    bgui::get_context().m_size = {900, 600};
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& first = dock.add_window("First", bgui::dock_area::top);
+    auto& second = dock.add_window("Second", bgui::dock_area::top);
+    dock.add_window("Center");
+    auto config = dock.get_configuration();
+    config.splits.push_back({"First", "Second", false, true, .5f});
+    dock.apply_configuration(config);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    const int original = second.processed_height();
+    auto* first_tab = find_tab(dock, "First");
+    auto* second_tab = find_tab(dock, "Second");
+    ASSERT_NE(first_tab, nullptr);
+    ASSERT_NE(second_tab, nullptr);
+    first_tab->on_released();
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    EXPECT_FALSE(first.is_enabled());
+    EXPECT_GT(second.processed_height(), original);
+    second_tab->on_released();
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    EXPECT_TRUE(second.is_enabled());
+    EXPECT_FALSE(first.is_enabled());
+}
+
+TEST(DockTest, FloatingSizeSurvivesDockingAndDockResize) {
+    bgui::scoped_interface interface;
+    bgui::get_context().m_size = {900, 600};
+    auto& dock = bgui::get_layout().add<bgui::dock>();
+    auto& value = dock.add<bgui::window>("Floating", .3f, true);
+    value.style.layout.require_size(310, 230);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    const auto original = value.processed_size();
+    value.set_floating(false);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    EXPECT_NE(value.processed_size(), original);
+    value.set_floating(true);
+    for (int i = 0; i < 4; ++i) bgui::on_update();
+    EXPECT_EQ(value.processed_size(), original);
 }

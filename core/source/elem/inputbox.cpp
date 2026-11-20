@@ -562,7 +562,7 @@ void bgui::inputbox::on_update() {
         }
     }
 
-    if (m_scrollable && m_mode == input_mode::multiline && m_cursor_position != previous_cursor) {
+    if (m_scrollable && m_mode == input_mode::multiline && (m_cursor_position != previous_cursor || m_reveal_cursor)) {
         const auto lines = 1 + std::count(m_input_buffer.begin(), m_input_buffer.end(), '\n');
         const int height = std::max(1, m_text->get_content_size().y / static_cast<int>(lines));
         const int row = static_cast<int>(std::count(m_input_buffer.begin(), m_input_buffer.begin() + m_cursor_position, '\n'));
@@ -574,6 +574,25 @@ void bgui::inputbox::on_update() {
         offset = std::clamp(offset, 0, std::max(0, m_scroll_content_height - processed_height()));
         if (offset != m_scroll_offset) { m_scroll_offset = offset; mark_layout_dirty(); }
     }
+    if (m_scrollable && m_mode == input_mode::multiline && !is_wrap_enabled() && (m_cursor_position != previous_cursor || m_reveal_cursor)) {
+        const auto start = line_start(m_input_buffer, m_cursor_position);
+        const int caret = static_cast<int>(std::ceil(m_text->get_text_width(
+            m_input_buffer.substr(start, m_cursor_position - start))));
+        int gutter = 0;
+        auto& fonts = font_manager::get_instance();
+        if (fonts.has_font(m_text->computed_style.visual.font))
+            gutter = static_cast<int>(std::ceil(m_text->get_line_number_gutter_width(
+                fonts.get_font(m_text->computed_style.visual.font), m_text->m_scale * get_global_scale())));
+        const int left = processed_x() + gutter;
+        const int right = processed_x() + processed_width() - 12;
+        const int x = m_text->processed_x() + gutter + caret;
+        int offset = m_scroll_offset_x;
+        if (x < left) offset += x - left;
+        else if (x > right) offset += x - right;
+        offset = std::max(0, offset);
+        if (offset != m_scroll_offset_x) { m_scroll_offset_x = offset; mark_layout_dirty(); }
+    }
+    m_reveal_cursor = false;
     linear::on_update();
     if (m_focused) {
         set_style_state(state::focused);
@@ -604,6 +623,7 @@ void bgui::inputbox::update_display() {
 
 void bgui::inputbox::set_focused(bool focused) {
     if (focused && !m_focused) {
+        m_reveal_cursor = true;
         m_cursor_blink_start = bgui::get_time();
         m_backspace_down = false;
         m_delete_down = false;

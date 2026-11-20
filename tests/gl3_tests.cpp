@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <filesystem>
+#include <fstream>
 #include <vector>
 #include "os/asset_manager.hpp"
 
@@ -418,4 +419,55 @@ TEST_F(GL3Test, TextMaterialBlockAppliesOverrideAndProjectionChanges) {
     EXPECT_EQ(pixel(24, 56), (std::array<unsigned char, 4>{0, 0, 0, 255}));
     EXPECT_EQ(pixel(48, 56), (std::array<unsigned char, 4>{255, 0, 0, 255}));
     EXPECT_EQ(glGetError(), GL_NO_ERROR);
+}
+
+TEST_F(GL3Test, HudImageTintDoesNotChangeRegularImages) {
+    bgui::texture texture;
+    texture.m_path="hud-tint-test"; texture.m_size={1.f,1.f};
+    texture.m_has_alpha=true; texture.m_generate_mipmap=false;
+    texture.m_buffer={255,255,255,255};
+    bgui::material material;
+    material.m_texture=texture; material.m_use_tex=true;
+    material.m_shader_tag="ui::hud_image";
+    material.set("text_color",bgui::vec4{1.f,0.f,0.f,.5f});
+    material.set("border_size",0.f); material.set("border_radius",0.f);
+    bgui::draw_data data; data.m_clip_rect={0,0,64,64};
+    data.enqueue({material,6,{0,0,64,64}});
+    bgui::gl3_render(&data);
+    EXPECT_NEAR(pixel(32,32)[0],128,2); EXPECT_EQ(pixel(32,32)[1],0);
+    material.m_shader_tag="ui::image";
+    data.enqueue({material,6,{0,0,64,64}}); bgui::gl3_render(&data);
+    EXPECT_EQ(pixel(32,32)[0],255); EXPECT_EQ(pixel(32,32)[1],255);
+    EXPECT_EQ(glGetError(),GL_NO_ERROR);
+}
+
+TEST_F(GL3Test, ProjectFragmentShaderAndInvalidShaderFallback) {
+    const auto path=std::filesystem::temp_directory_path()/"bgui-hud-fragment-test.frag";
+    {std::ofstream out(path);out<<"in vec2 TexCoord; out vec4 FragColor; uniform float hudTime; void main(){ FragColor=vec4(0,1,0,1); }";}
+    bgui::material material; material.m_use_tex=false;
+    material.m_shader_tag="ui::fragment:default:"+path.string();
+    bgui::draw_data data; data.m_clip_rect={0,0,64,64};
+    data.enqueue({material,6,{0,0,64,64}}); bgui::gl3_render(&data);
+    EXPECT_EQ(pixel(32,32)[1],255); EXPECT_EQ(pixel(32,32)[0],0);
+    material.m_shader_tag="ui::fragment:default:"+path.string()+".missing";
+    material.set("bg_color",bgui::vec4{1.f,0.f,0.f,1.f});
+    material.set("bordered",0); material.set("border_radius",0.f);
+    data.enqueue({material,6,{0,0,64,64}});
+    EXPECT_NO_THROW(bgui::gl3_render(&data));
+    EXPECT_EQ(pixel(32,32)[0],255); EXPECT_EQ(pixel(32,32)[1],0);
+    EXPECT_EQ(glGetError(),GL_NO_ERROR);
+    std::filesystem::remove(path);
+}
+
+TEST_F(GL3Test, RoundedBackgroundDoesNotRequireAnOpaqueBorder) {
+    bgui::element widget;
+    widget.style.visual.background.normal=bgui::color{1.f,0.f,0.f,1.f};
+    widget.style.visual.border.normal=bgui::color{0.f};
+    widget.style.visual.border_size=0.f; widget.style.visual.border_radius=12.f;
+    widget.set_final_rect(8,8,48,48);
+    bgui::draw_data data; data.m_clip_rect={0,0,64,64};
+    widget.get_requires(&data); bgui::gl3_render(&data);
+    EXPECT_EQ(pixel(8,8)[0],0);
+    EXPECT_EQ(pixel(32,32)[0],255);
+    EXPECT_EQ(glGetError(),GL_NO_ERROR);
 }

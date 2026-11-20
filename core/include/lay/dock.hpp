@@ -125,6 +125,7 @@ namespace bgui {
         void ensure_tab_controls(tab_group& group);
         void split_window(window& anchor, window& added, bool horizontal, bool after);
         void sync_windows();
+        void set_collapsed(tab_group& group, bool collapsed);
         void update_drop_targets();
         void sync_panel_splitters(dock_area area, panel& value, std::size_t count);
         void resize_area(dock_area area, int delta);

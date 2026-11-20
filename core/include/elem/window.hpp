@@ -32,6 +32,7 @@ namespace bgui {
         bool m_maximized = false;
         vec4i m_minimized_rect{0, 0, 0, 0};
         vec4i m_restore_rect{0, 0, 0, 0};
+        vec4i m_floating_rect{0, 0, 0, 0};
 
         void initialize_context();
         void set_floating_rect(const vec4i& rect);

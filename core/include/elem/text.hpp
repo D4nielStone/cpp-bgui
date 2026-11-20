@@ -25,6 +25,7 @@ namespace bgui {
         size_t m_selection_start = 0;
         size_t m_selection_end = 0;
         bool m_wrap_enabled = true;
+        std::optional<float> m_wrap_width;
         bool m_editor_guides_enabled = false;
         bool m_line_numbers_enabled = false;
         struct text_chunk { size_t codepoint; size_t byte; size_t line; };
@@ -35,6 +36,8 @@ namespace bgui {
         bool m_metrics_valid = false;
         const font* m_metrics_font = nullptr;
         float m_metrics_scale = 0.f;
+        float m_metrics_wrap_width = 0.f;
+        float wrap_width() const;
         bool m_metrics_wrap = false;
         bool m_metrics_numbers = false;
         vec2i m_metrics_size{0};
@@ -58,6 +61,14 @@ namespace bgui {
             mark_layout_dirty();
         }
         bool is_wrap_enabled() const { return m_wrap_enabled; }
+        // Logical pixels; nullopt restores the default wrapping policy.
+        void set_wrap_width(std::optional<float> width) {
+            if (width) width = std::max(1.f, *width);
+            if (m_wrap_width == width) return;
+            m_wrap_width = width;
+            m_metrics_valid = false;
+            mark_layout_dirty();
+        }
         void set_editor_guides_enabled(bool enabled);
         void set_line_numbers_enabled(bool enabled) {
             if (m_line_numbers_enabled == enabled) return;

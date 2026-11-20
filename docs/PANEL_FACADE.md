@@ -107,3 +107,12 @@ used to keep controls readable inside a narrower window.
 `get_horizontal_scroll_offset()` and `get_horizontal_scrollbar_element()` expose
 the horizontal counterparts. Both thumb references borrow the native layout and
 expire with it. Disabling scrolling resets offsets and hides both thumbs.
+
+### Wrapping native text to a content width
+
+Native `bgui::text` exposes `set_wrap_width(std::optional<float>)`. A value sets
+its wrapping width in logical pixels; `std::nullopt` restores the existing
+default policy. Call it together with `set_wrap(true)` when a composed content
+area needs wrapping at its own available width. Width changes invalidate text
+metrics and layout; rendering and cursor hit testing use the same width. The
+widget still belongs to the BGUI tree.

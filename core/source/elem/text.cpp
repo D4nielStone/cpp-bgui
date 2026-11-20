@@ -238,7 +238,7 @@ size_t bgui::text::get_cursor_position_at(float x, float y) const {
     if (line_height <= 0.f)
         return 0;
 
-    const auto rows = build_cursor_rows(m_buffer, font, scale, m_wrap_enabled);
+    const auto rows = build_cursor_rows(m_buffer, font, scale, m_wrap_enabled, wrap_width());
     const float row_position =
         (y - processed_y() - m_draw_offset.y) / line_height;
     const size_t row_index = static_cast<size_t>(std::clamp(
@@ -298,7 +298,7 @@ size_t bgui::text::get_vertical_cursor_position(size_t position, int direction) 
 
     const auto& font = font_manager.get_font(computed_style.visual.font);
     const auto rows = build_cursor_rows(
-        m_buffer, font, m_scale * bgui::get_global_scale(), m_wrap_enabled);
+        m_buffer, font, m_scale * bgui::get_global_scale(), m_wrap_enabled, wrap_width());
     size_t current_row = rows.size();
     float current_x = 0.f;
 
@@ -487,6 +487,20 @@ void bgui::text::on_update() {
     }
 }
 
+float bgui::text::wrap_width() const {
+    if (m_wrap_width) return *m_wrap_width * bgui::get_global_scale();
+    const auto* parent = get_parent();
+    if (parent && parent->type == "inputarea") {
+        const auto& padding = parent->computed_style.layout.padding;
+        auto& fonts = font_manager::get_instance();
+        float gutter = 0.f;
+        if (fonts.has_font(computed_style.visual.font))
+            gutter = get_line_number_gutter_width(fonts.get_font(computed_style.visual.font), m_scale * bgui::get_global_scale());
+        return std::max(1.f, parent->processed_width() - padding.x - padding.z - gutter - 12.f);
+    }
+    return 500.f * bgui::get_global_scale();
+}
+
 void bgui::text::calc_content_size(const layer&) {
     m_draw_offset = {0.f, 0.f};
     auto& font_manager = bgui::font_manager::get_instance();
@@ -503,13 +517,14 @@ void bgui::text::calc_content_size(const layer&) {
     const float scale = m_scale * bgui::get_global_scale();
     if (type != "icon" && m_metrics_valid && m_metrics_font == &font &&
         m_metrics_scale == scale && m_metrics_wrap == m_wrap_enabled &&
+        (!m_wrap_enabled || m_metrics_wrap_width == wrap_width()) &&
         m_metrics_numbers == (m_line_numbers_enabled || m_editor_guides_enabled)) {
         set_content_size(m_metrics_size);
         m_draw_offset = m_metrics_offset;
         return;
     }
     const float line_height = (font.ascent + font.descent + font.line_gap) * scale;
-    const float wrap_width = 500.f * bgui::get_global_scale();
+    const float wrap_width = this->wrap_width();
     float line_width = 0.f;
     float max_width = 0.f;
     float line_y = font.ascent * scale;
@@ -580,8 +595,11 @@ void bgui::text::calc_content_size(const layer&) {
         max_visual_y
     ) - min_visual_y;
     m_draw_offset = {-min_visual_x, -min_visual_y};
+    const auto* input = dynamic_cast<const inputbox*>(get_parent());
+    const float caret_space = !m_wrap_enabled && input && input->get_input_mode() == input_mode::multiline
+        ? 12.f * bgui::get_global_scale() : 0.f;
     set_content_size({
-        static_cast<int>(std::ceil(text_width + get_line_number_gutter_width(
+        static_cast<int>(std::ceil(text_width + caret_space + get_line_number_gutter_width(
             font, m_scale * bgui::get_global_scale()))),
         static_cast<int>(std::ceil(text_height))
     });
@@ -589,6 +607,7 @@ void bgui::text::calc_content_size(const layer&) {
     m_metrics_font = &font;
     m_metrics_scale = scale;
     m_metrics_wrap = m_wrap_enabled;
+    m_metrics_wrap_width = wrap_width;
     m_metrics_numbers = m_line_numbers_enabled || m_editor_guides_enabled;
     m_metrics_size = get_content_size();
     m_metrics_offset = m_draw_offset;
@@ -607,7 +626,7 @@ float bgui::text::get_text_width(const std::string& t) const {
     const auto& chs = font.chs;
     if (chs.empty()) return 0.0f;
     const float scale = m_scale * bgui::get_global_scale();
-    const float wrap_width = 500.f * bgui::get_global_scale();
+    const float wrap_width = this->wrap_width();
 
     float line_x = 0.f;
     float max_line_width = 0.0f;
@@ -882,7 +901,7 @@ void bgui::text::get_requires(bgui::draw_data* data) {
         }
 
         if (m_wrap_enabled &&
-            line_x + advance_this_char > 500.f * bgui::get_global_scale() &&
+            line_x + advance_this_char > wrap_width() &&
             line_x > 0.f) {
             line_y += (ascent + descent + line_gap);
             line_x = 0.f;

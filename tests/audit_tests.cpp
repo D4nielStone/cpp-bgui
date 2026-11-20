@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
+#include <chrono>
+#include <thread>
 #include "bgui.hpp"
 
 std::u32string utf8_to_utf32(const std::string&, std::vector<size_t>*);
@@ -271,3 +273,29 @@ TEST(AuditTest, RejectsInvalidLayoutCounts) {
     }
     std::filesystem::remove(path);
 }
+
+#ifdef BGUI_USE_FREETYPE
+TEST(AuditTest, FontQueueLoadsProjectTtfAndSurvivesMalformedFonts) {
+    bgui::scoped_interface interface;
+    bgui::set_up_freetype();
+    const auto source=bgui::asset_manager::get_instance().resolve_asset_path("fonts/3270NerdFont-Regular.ttf");
+    const auto path=std::filesystem::temp_directory_path()/"bgui-project-font-test.ttf";
+    std::filesystem::copy_file(source,path,std::filesystem::copy_options::overwrite_existing);
+    auto& fonts=bgui::font_manager::get_instance();
+    fonts.m_font_queue.push(path.string());
+    bgui::load_font_queue();
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+    while(!fonts.has_font(path.string()) && std::chrono::steady_clock::now()<deadline) {
+        ASSERT_NO_THROW(bgui::load_font_queue());
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    const auto broken=path.string()+".broken.ttf";
+    {std::ofstream out(broken); out<<"invalid font";}
+    fonts.m_font_queue.push(broken);
+    bgui::load_font_queue();
+    EXPECT_NO_THROW(bgui::shutdown_freetype());
+    std::filesystem::remove(broken);
+    EXPECT_TRUE(fonts.has_font(path.string()));
+    std::filesystem::remove(path);
+}
+#endif

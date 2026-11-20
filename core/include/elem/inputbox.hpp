@@ -26,6 +26,7 @@ namespace bgui {
             size_t selection_anchor;
         };
 
+        bool m_reveal_cursor{true};
         text* m_text;
         std::string m_placeholder, m_input_buffer;
         std::vector<edit_state> m_undo_stack, m_redo_stack;
@@ -98,7 +99,15 @@ namespace bgui {
         void set_highlight_rules(
             std::shared_ptr<const std::vector<syntax_highlight_rule>> rules
         );
-        void set_wrap(bool enabled) { m_text->set_wrap(enabled); }
+        void set_wrap(bool enabled) {
+            m_text->set_wrap(enabled);
+            if (m_mode == input_mode::multiline) {
+                m_text->style.layout.require_mode(enabled ? mode::match_parent : mode::wrap_content, mode::wrap_content);
+                m_scroll_offset_x = 0;
+                m_reveal_cursor = true;
+                mark_layout_dirty();
+            }
+        }
         bool is_wrap_enabled() const { return m_text->is_wrap_enabled(); }
         void set_line_numbers_enabled(bool enabled) { m_text->set_line_numbers_enabled(enabled); }
         void set_editor_guides_enabled(bool enabled) {
@@ -114,6 +123,7 @@ namespace bgui {
         bool clips_children() const override { return true; }
         void set_buffer(const std::string& buffer) {
             m_input_buffer = buffer;
+            m_reveal_cursor = true;
             m_cursor_position = m_input_buffer.size();
             clear_selection();
             m_undo_stack.clear();

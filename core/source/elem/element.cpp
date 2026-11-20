@@ -293,8 +293,8 @@ void element::compute_style() {
 void element::set_properties() {
     m_material.set("bg_color", computed_style.visual.background);
     m_material.set("border_color", computed_style.visual.border);
-    m_material.set("bordered", computed_style.visual.border_radius > 0.f ? true : false);
-    m_material.set("bordered", computed_style.visual.border.a > 0.f ? true : false);
+    m_material.set("bordered", computed_style.visual.border_radius > 0.f ||
+        (computed_style.visual.border_size > 0.f && computed_style.visual.border.a > 0.f));
     m_material.set("border_radius", computed_style.visual.border_radius);
     m_material.set("border_size", computed_style.visual.border_size);
     m_material.set("text_color", computed_style.visual.text);

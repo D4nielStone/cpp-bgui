@@ -347,3 +347,6 @@ DANGER
 [class.danger]
 visual.background.normal = 0.75, 0.23, 0.23, 1.0
 visual.background.hover = 0.88, 0.30, 0.30, 1.0
+
+[class.dock-tab-side]
+visual.border.radius = 6

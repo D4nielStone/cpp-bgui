@@ -266,23 +266,16 @@ void bgui::window::maximize() {
 
 void bgui::window::set_floating(bool floating) {
     if (floating && !m_floating) {
-        const float scale = bgui::get_global_scale();
-
-        if (scale > 0.f &&
-            processed_width() > 0 &&
-            processed_height() > 0) {
-            style.layout.require_mode(
-                bgui::mode::pixel,
-                bgui::mode::pixel
-            );
-
-            style.layout.require_size(
-                processed_width() / scale,
-                processed_height() / scale
-            );
-
-            mark_style_dirty();
+        if (m_floating_rect.z > 0 && m_floating_rect.w > 0) {
+            set_floating_rect(m_floating_rect);
+        } else {
+            const float scale = std::max(0.01f, bgui::get_global_scale());
+            const auto docked = processed_rect();
+            set_floating_rect({docked.x, docked.y,
+                static_cast<int>(480 * scale), static_cast<int>(360 * scale)});
         }
+    } else if (!floating && m_floating && processed_width() > 0 && processed_height() > 0) {
+        m_floating_rect = m_maximized ? m_restore_rect : (m_minimized ? m_minimized_rect : processed_rect());
     }
 
     m_floating = floating;

@@ -185,7 +185,7 @@ namespace bgui {
 
     class dock_splitter final : public element {
     public:
-        dock_splitter(const bool resize_width, std::function<void(int)> resize)
+        dock_splitter(const bool resize_width, std::function<void(dock_splitter&, int)> resize)
             : m_resize_width(resize_width), m_resize(std::move(resize)) {
             type = "element";
             add_class("dock-splitter");
@@ -208,7 +208,7 @@ namespace bgui {
             // A divider drag changes geometry even when idle indicators no
             // longer invalidate the dock on every frame.
             mark_layout_dirty();
-            m_resize(amount);
+            m_resize(*this, amount);
             set_drag({0, 0});
         }
 
@@ -224,7 +224,7 @@ namespace bgui {
 
     private:
         bool m_resize_width;
-        std::function<void(int)> m_resize;
+        std::function<void(dock_splitter&, int)> m_resize;
 
         void update_cursor() const {
             get_context().m_actual_cursor = m_resize_width
@@ -253,13 +253,13 @@ namespace bgui {
         style.layout.padding = vec4i{0};
 
         m_area_splitters[0] = &add<dock_splitter, layer::base>(
-            true, [this](const int delta) { resize_area(dock_area::left, delta); });
+            true, [this](dock_splitter&, const int delta) { resize_area(dock_area::left, delta); });
         m_area_splitters[1] = &add<dock_splitter, layer::base>(
-            true, [this](const int delta) { resize_area(dock_area::right, delta); });
+            true, [this](dock_splitter&, const int delta) { resize_area(dock_area::right, delta); });
         m_area_splitters[2] = &add<dock_splitter, layer::base>(
-            false, [this](const int delta) { resize_area(dock_area::top, delta); });
+            false, [this](dock_splitter&, const int delta) { resize_area(dock_area::top, delta); });
         m_area_splitters[3] = &add<dock_splitter, layer::base>(
-            false, [this](const int delta) { resize_area(dock_area::bottom, delta); });
+            false, [this](dock_splitter&, const int delta) { resize_area(dock_area::bottom, delta); });
 
         constexpr std::array<const char*, 5> names{ "left", "right", "top", "bottom", "center" };
         for (std::size_t index = 0; index < m_drop_targets.size(); ++index) {
@@ -359,10 +359,10 @@ namespace bgui {
         m_nested_splits.push_back({&anchor, &added, horizontal, after});
         auto& split = m_nested_splits.back();
         split.splitter = &add<dock_splitter, layer::base>(
-            horizontal, [this, anchor_ptr = &anchor, added_ptr = &added](const int delta) {
+            horizontal, [this](dock_splitter& control, const int delta) {
                 const auto found = std::find_if(m_nested_splits.begin(), m_nested_splits.end(),
-                    [anchor_ptr, added_ptr](const nested_split& candidate) {
-                        return candidate.anchor == anchor_ptr && candidate.added == added_ptr;
+                    [&control](const nested_split& candidate) {
+                        return candidate.splitter == &control;
                     });
                 if (found == m_nested_splits.end() || found->extent <= 0)
                     return;
@@ -416,7 +416,7 @@ namespace bgui {
                     if (found != m_tab_groups.end()) {
                         const bool collapse = found->active == tab_window && !found->collapsed;
                         focus_window(tab_window);
-                        found->collapsed = collapse;
+                        set_collapsed(*found, collapse);
                         mark_layout_dirty();
                     }
                 }
@@ -454,7 +454,7 @@ namespace bgui {
             overflow.menu.add_button("Expand / collapse", [this, find_group] {
                 auto found = find_group();
                 if (found == m_tab_groups.end()) return;
-                found->collapsed = !found->collapsed;
+                set_collapsed(*found, !found->collapsed);
                 mark_layout_dirty();
             });
             overflow.menu.add_button("Next tab", [this, find_group] {
@@ -597,8 +597,7 @@ namespace bgui {
             m_tab_dragged_window = nullptr;
 
         m_nested_splits.erase(std::remove_if(m_nested_splits.begin(), m_nested_splits.end(), [this, &owned_windows](const nested_split& split) {
-            const bool remove_split = !owned_windows.contains(split.anchor) || !owned_windows.contains(split.added) ||
-                split.anchor->is_floating() || split.added->is_floating();
+            const bool remove_split = !owned_windows.contains(split.anchor) || !owned_windows.contains(split.added);
             if (remove_split && split.splitter)
                 remove(split.splitter);
             return remove_split;
@@ -633,23 +632,48 @@ namespace bgui {
                 group->active = group->windows.front();
                 group->active->set_enable(true);
             }
-            const bool has_floating_member = std::any_of(group->windows.begin(), group->windows.end(), [](const window* value) {
-                return value->is_floating();
-            });
-            if (!has_floating_member) {
-                ++group;
-                continue;
-            }
-            for (auto* member : group->windows) {
+            for (std::size_t index = 0; index < group->windows.size();) {
+                auto* member = group->windows[index];
+                if (!member->is_floating()) { ++index; continue; }
                 member->set_enable(true);
                 member->set_tabbed(false);
+                remove(group->tabs[index]);
+                group->windows.erase(group->windows.begin() + index);
+                group->tabs.erase(group->tabs.begin() + index);
+                group->active_indicators.erase(group->active_indicators.begin() + index);
+                group->separators.erase(group->separators.begin() + index);
             }
-            for (auto* tab : group->tabs)
-                remove(tab);
-            if (group->overflow)
-                remove(group->overflow);
-            group = m_tab_groups.erase(group);
+            if (group->windows.empty()) {
+                if (group->overflow) remove(group->overflow);
+                group = m_tab_groups.erase(group);
+                continue;
+            }
+            auto* old_anchor = group->anchor;
+            if (std::find(group->windows.begin(), group->windows.end(), group->anchor) == group->windows.end()) {
+                group->anchor = group->windows.front();
+                for (auto& panel : m_panels) {
+                    const auto old_slot = std::find(panel.windows.begin(), panel.windows.end(), old_anchor);
+                    const auto new_slot = std::find(panel.windows.begin(), panel.windows.end(), group->anchor);
+                    if (old_slot != panel.windows.end() && new_slot != panel.windows.end())
+                        std::iter_swap(old_slot, new_slot);
+                }
+                for (auto& split : m_nested_splits) {
+                    if (split.anchor == old_anchor) split.anchor = group->anchor;
+                    if (split.added == old_anchor) split.added = group->anchor;
+                }
+            }
+            if (std::find(group->windows.begin(), group->windows.end(), group->active) == group->windows.end())
+                group->active = group->windows.front();
+            for (auto* member : group->windows)
+                member->set_enable(member == group->active && !group->collapsed);
+            ++group;
         }
+
+        m_nested_splits.erase(std::remove_if(m_nested_splits.begin(), m_nested_splits.end(), [this](const nested_split& split) {
+            if (!split.anchor->is_floating() && !split.added->is_floating()) return false;
+            if (split.splitter) remove(split.splitter);
+            return true;
+        }), m_nested_splits.end());
 
         for (auto& panel : m_panels) {
             for (std::size_t index = 0; index < panel.windows.size();) {
@@ -703,7 +727,7 @@ namespace bgui {
             const std::size_t split_index = value.splitters.size();
             auto& splitter = add<dock_splitter, layer::base>(
                 is_horizontal_panel(area),
-                [this, area, split_index](const int delta) {
+                [this, area, split_index](dock_splitter&, const int delta) {
                     resize_panel_split(area, split_index, delta);
                 });
             value.splitters.push_back(&splitter);
@@ -749,6 +773,22 @@ namespace bgui {
         const float min_weight = std::min(0.5f * pair_weight, 80.f / panel.split_extent);
         panel.weights[first_weight] = std::clamp(requested, min_weight, pair_weight - min_weight);
         panel.weights[second_weight] = pair_weight - panel.weights[first_weight];
+    }
+
+    void dock::set_collapsed(tab_group& group, bool collapsed) {
+        group.collapsed = collapsed;
+        if (!collapsed) return;
+        for (const auto& panel : m_panels) {
+            if (std::find(panel.windows.begin(), panel.windows.end(), group.anchor) == panel.windows.end()) continue;
+            std::size_t count = 0;
+            bool all_collapsed = true;
+            for (const auto& candidate : m_tab_groups) {
+                if (std::find(panel.windows.begin(), panel.windows.end(), candidate.anchor) == panel.windows.end()) continue;
+                ++count;
+                all_collapsed = all_collapsed && candidate.collapsed;
+            }
+            if (count > 1 && all_collapsed) group.collapsed = false;
+        }
     }
 
     void dock::focus_window(window* value) {
@@ -1485,8 +1525,29 @@ namespace bgui {
             });
             int remaining_extent = content_extent;
             int cursor = horizontal ? panel.bounds.x : panel.bounds.y;
+            // A compact subtree occupies only its strips; expanded siblings receive the remainder.
+            std::function<int(window*, std::size_t)> compact_height;
+            compact_height = [this, &compact_height, area](window* value, std::size_t first) {
+                const auto group = std::find_if(m_tab_groups.begin(), m_tab_groups.end(),
+                    [value](const tab_group& group) { return group.anchor == value; });
+                int height = -1;
+                if (group != m_tab_groups.end() && group->collapsed) {
+                    height = 1;
+                    for (auto* tab : group->tabs) height = std::max(height, tab->preferred_height());
+                    if (area == dock_area::left || area == dock_area::right)
+                        height *= static_cast<int>(group->tabs.size() + 1);
+                }
+                for (std::size_t i = m_nested_splits.size(); i-- > first;) {
+                    const auto& split = m_nested_splits[i];
+                    if (split.anchor != value) continue;
+                    const int added = compact_height(split.added, 0);
+                    height = height < 0 || added < 0 ? -1 :
+                        (split.horizontal ? std::max(height, added) : height + added + m_splitter_size);
+                }
+                return height;
+            };
             std::function<void(window*, const vec4i&)> arrange_window;
-            arrange_window = [this, &arrange_window, scale, area](window* value, const vec4i& bounds) {
+            arrange_window = [this, &arrange_window, &compact_height, scale, area](window* value, const vec4i& bounds) {
                 auto remaining = bounds;
                 for (auto& split : m_nested_splits) {
                     if (split.anchor != value)
@@ -1522,10 +1583,15 @@ namespace bgui {
                         const int available = std::max(0, remaining.w - m_splitter_size);
                         const int min_extent = std::min(80 * scale, available / 2);
                         const int max_extent = std::max(min_extent, available - min_extent);
-                        const int added_height = std::clamp(
+                        int added_height = std::clamp(
                             static_cast<int>(std::round(available * split.ratio)),
                             min_extent, max_extent
                         );
+                        const auto split_index = static_cast<std::size_t>(&split - m_nested_splits.data());
+                        const int compact_added = compact_height(split.added, 0);
+                        const int compact_anchor = compact_height(value, split_index + 1);
+                        if (compact_added >= 0) added_height = std::min(available, compact_added);
+                        else if (compact_anchor >= 0) added_height = std::max(0, available - compact_anchor);
                         const int anchor_height = available - added_height;
                         split.extent = available;
                         if (split.after) {
@@ -1558,6 +1624,11 @@ namespace bgui {
                     return;
                 }
 
+                const bool side = area == dock_area::left || area == dock_area::right;
+                for (auto* tab : group->tabs) {
+                    if (side) tab->add_class("dock-tab-side");
+                    else tab->remove_class("dock-tab-side");
+                }
                 const bool compact = group->collapsed &&
                     (area == dock_area::left || area == dock_area::right);
                 for (auto* tab : group->tabs) tab->set_compact(compact);
@@ -1574,7 +1645,8 @@ namespace bgui {
                         tab->arrange();
                         group->windows[index]->set_enable(false);
                         group->active_indicators[index]->set_final_rect(
-                            remaining.x, tab_y, std::max(2, side / 8), square);
+                            remaining.x + 2, tab_y + std::min(6, square / 2),
+                            std::max(2, side / 8), std::max(0, square - 12));
                         group->separators[index]->style.visual.visible = false;
                         tab_y += square;
                     }
@@ -1635,8 +1707,9 @@ namespace bgui {
                     const bool active = tab_window == group->active;
 
                     auto* indicator = group->active_indicators[tab_index];
+                    const int inset = side ? std::min(scaled_pixels(6), width / 2) : 0;
                     indicator->set_final_rect(
-                        tab_x, remaining.y, width, std::max(2, scaled_pixels(2))
+                        tab_x + inset, remaining.y, std::max(0, width - 2 * inset), std::max(2, scaled_pixels(2))
                     );
 
                     auto* separator = group->separators[tab_index];
@@ -1663,6 +1736,13 @@ namespace bgui {
                 }
             };
 
+            int compact_space = 0;
+            float expanded_weight = weight_sum;
+            if (!horizontal && !area_collapsed(area)) for (const auto& root : roots) {
+                const int compact = compact_height(root.first, 0);
+                if (compact >= 0) { compact_space += compact; expanded_weight -= root.second; }
+            }
+            int expanded_space = std::max(0, content_extent - compact_space);
             for (std::size_t window_index = 0; window_index < root_count; ++window_index) {
                 const int remaining_count = static_cast<int>(root_count - window_index);
                 const int desired = remaining_count == 1 || weight_sum <= 0.f
@@ -1670,7 +1750,17 @@ namespace bgui {
                     : static_cast<int>(std::round(remaining_extent * roots[window_index].second / weight_sum));
                 const int min_size = std::min(80 * scale, remaining_extent / remaining_count);
                 const int max_size = std::max(min_size, remaining_extent - 80 * scale * (remaining_count - 1));
-                const int extent = std::clamp(desired, min_size, max_size);
+                int extent = std::clamp(desired, min_size, max_size);
+                if (!horizontal && compact_space > 0) {
+                    const int compact = compact_height(roots[window_index].first, 0);
+                    if (compact >= 0) extent = std::min(remaining_extent, compact);
+                    else {
+                        extent = expanded_weight > 0.f ? std::min(remaining_extent,
+                            static_cast<int>(std::round(expanded_space * roots[window_index].second / expanded_weight))) : remaining_extent;
+                        expanded_space -= extent;
+                        expanded_weight -= roots[window_index].second;
+                    }
+                }
                 const vec4i root_bounds = horizontal
                     ? vec4i{cursor, panel.bounds.y, extent, panel.bounds.w}
                     : vec4i{panel.bounds.x, cursor, panel.bounds.z, extent};
@@ -1723,7 +1813,7 @@ namespace bgui {
                 if (element->has_class("dock-drop-preview"))
                     return 6;
                 if (element->has_class("dock-tab-overflow"))
-                    return 6;
+                    return 3;
                 if (element->has_class("dock-tab"))
                     return 3;
                 if (element->has_class("dock-drop-zone"))
